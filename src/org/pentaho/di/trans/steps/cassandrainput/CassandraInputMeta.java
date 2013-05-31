@@ -725,4 +725,12 @@ public class CassandraInputMeta extends BaseStepMeta implements
 
     return new CassandraInputDialog(shell, meta, transMeta, name);
   }
+  
+  /**
+   * Get the UI class for this step.
+   */
+  public String getDialogClassName() {
+    
+    return CassandraInputDialog.class.getCanonicalName();
+  }
 }

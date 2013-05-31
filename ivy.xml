@@ -23,17 +23,16 @@
       changing="true" />
     <dependency org="pentaho-kettle" name="kettle-core" rev="${dependency.kettle.revision}" transitive="false" conf="default->default"
       changing="true" />
+    <dependency org="pentaho-kettle" name="kettle-db" rev="${dependency.kettle.revision}" transitive="false" conf="default->default"
+      changing="true" />
     <dependency org="pentaho-kettle" name="kettle-ui-swt" rev="${dependency.kettle.revision}" transitive="false" conf="default->default"
       changing="true" />
-    <dependency org="pentaho-kettle" name="kettle5-log4j-plugin" rev="${dependency.kettle5-log4j.revision}" transitive="false" conf="default->default"
-      changing="true" />
 
-    <dependency org="pentaho" name="metastore" rev="${dependency.pentaho-metastore.revision}" changing="true" transitive="false" conf="default->default"/>
-    
-    <dependency org="libthrift" name="libthrift" rev="${dependency.libthrift.revision}" transitive="false" conf="default->default"
-      changing="false"/>
+    <dependency org="org.apache.thrift" name="libthrift" rev="${dependency.libthrift.revision}" transitive="false" conf="default->default"
+      changing="false"/>    
     <dependency org="org.apache.cassandra" name="cassandra-all" rev="${dependency.apache-cassandra.revision}" transitive="false" conf="default->default" changing="false"/>
     <dependency org="org.apache.cassandra" name="cassandra-thrift" rev="${dependency.apache-cassandra-thrift.revision}" transitive="false" conf="default->default"  changing="false"/>
+    <dependency org="org.yaml" name="snakeyaml" rev="${dependency.snakeyaml.revision}" transitive="false" conf="default->default"  changing="false"/>
     
     <dependency org="log4j"                    name="log4j"           rev="1.2.14" />
     

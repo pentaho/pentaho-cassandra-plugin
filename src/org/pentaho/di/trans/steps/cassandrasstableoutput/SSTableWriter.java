@@ -43,6 +43,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.apache.cassandra.db.marshal.AsciiType;
+import org.apache.cassandra.dht.RandomPartitioner;
 import org.apache.cassandra.io.sstable.SSTableSimpleUnsortedWriter;
 import org.apache.log4j.helpers.ISO8601DateFormat;
 import org.pentaho.di.core.exception.KettleException;
@@ -128,7 +129,7 @@ public class SSTableWriter {
       directory.mkdir();
     }
     try {
-      writer = new SSTableSimpleUnsortedWriter(directory, keyspace,
+      writer = new SSTableSimpleUnsortedWriter(directory, new RandomPartitioner(), keyspace,
           columnFamily, AsciiType.instance, null, bufferSize);
     } catch (Throwable t) {
       throw new KettleException(

@@ -23,6 +23,8 @@
 package org.pentaho.di.trans.steps.cassandrainput;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.cassandra.thrift.InvalidRequestException;
 import org.eclipse.swt.SWT;
@@ -48,19 +50,27 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
-import org.pentaho.cassandra.CassandraColumnMetaData;
-import org.pentaho.cassandra.CassandraConnection;
+import org.pentaho.cassandra.CassandraUtils;
+import org.pentaho.cassandra.ConnectionFactory;
+import org.pentaho.cassandra.legacy.CassandraColumnMetaData;
+import org.pentaho.cassandra.spi.Connection;
+import org.pentaho.cassandra.spi.Keyspace;
 import org.pentaho.di.core.Const;
-import org.pentaho.di.core.row.RowMeta;
 import org.pentaho.di.core.util.StringUtil;
 import org.pentaho.di.i18n.BaseMessages;
+import org.pentaho.di.trans.Trans;
 import org.pentaho.di.trans.TransMeta;
+import org.pentaho.di.trans.TransPreviewFactory;
 import org.pentaho.di.trans.step.BaseStepMeta;
 import org.pentaho.di.trans.step.StepDialogInterface;
+import org.pentaho.di.ui.core.dialog.EnterNumberDialog;
+import org.pentaho.di.ui.core.dialog.EnterTextDialog;
 import org.pentaho.di.ui.core.dialog.ErrorDialog;
+import org.pentaho.di.ui.core.dialog.PreviewRowsDialog;
 import org.pentaho.di.ui.core.dialog.ShowMessageDialog;
 import org.pentaho.di.ui.core.widget.StyledTextComp;
 import org.pentaho.di.ui.core.widget.TextVar;
+import org.pentaho.di.ui.trans.dialog.TransPreviewProgressDialog;
 import org.pentaho.di.ui.trans.step.BaseStepDialog;
 import org.pentaho.di.ui.trans.steps.tableinput.SQLValuesHighlight;
 
@@ -101,8 +111,11 @@ public class CassandraInputDialog extends BaseStepDialog implements
   private Label m_outputTuplesLab;
   private Button m_outputTuplesBut;
 
+  private Label m_useCQL3Lab;
+  private Button m_useCQL3Check;
+
   private Label m_useThriftLab;
-  private Button m_useThriftBut;
+  private Button m_useThriftCheck;
 
   private Label m_timeoutLab;
   private TextVar m_timeoutText;
@@ -146,7 +159,7 @@ public class CassandraInputDialog extends BaseStepDialog implements
 
     shell.setLayout(formLayout);
     shell.setText(BaseMessages.getString(PKG,
-        "CassandraInputDialog.Shell.Title"));
+        "CassandraInputDialog.Shell.Title")); //$NON-NLS-1$
 
     int middle = props.getMiddlePct();
     int margin = Const.MARGIN;
@@ -154,7 +167,7 @@ public class CassandraInputDialog extends BaseStepDialog implements
     // Stepname line
     m_stepnameLabel = new Label(shell, SWT.RIGHT);
     m_stepnameLabel.setText(BaseMessages.getString(PKG,
-        "CassandraInputDialog.StepName.Label"));
+        "CassandraInputDialog.StepName.Label")); //$NON-NLS-1$
     props.setLook(m_stepnameLabel);
 
     FormData fd = new FormData();
@@ -178,7 +191,7 @@ public class CassandraInputDialog extends BaseStepDialog implements
     m_hostLab = new Label(shell, SWT.RIGHT);
     props.setLook(m_hostLab);
     m_hostLab.setText(BaseMessages.getString(PKG,
-        "CassandraInputDialog.Hostname.Label"));
+        "CassandraInputDialog.Hostname.Label")); //$NON-NLS-1$
     fd = new FormData();
     fd.left = new FormAttachment(0, 0);
     fd.top = new FormAttachment(m_stepnameText, margin);
@@ -205,7 +218,7 @@ public class CassandraInputDialog extends BaseStepDialog implements
     m_portLab = new Label(shell, SWT.RIGHT);
     props.setLook(m_portLab);
     m_portLab.setText(BaseMessages.getString(PKG,
-        "CassandraInputDialog.Port.Label"));
+        "CassandraInputDialog.Port.Label")); //$NON-NLS-1$
     fd = new FormData();
     fd.left = new FormAttachment(0, 0);
     fd.top = new FormAttachment(m_hostText, margin);
@@ -232,7 +245,7 @@ public class CassandraInputDialog extends BaseStepDialog implements
     m_timeoutLab = new Label(shell, SWT.RIGHT);
     props.setLook(m_timeoutLab);
     m_timeoutLab.setText(BaseMessages.getString(PKG,
-        "CassandraInputDialog.Timeout.Label"));
+        "CassandraInputDialog.Timeout.Label")); //$NON-NLS-1$
     fd = new FormData();
     fd.left = new FormAttachment(0, 0);
     fd.top = new FormAttachment(m_portText, margin);
@@ -259,7 +272,7 @@ public class CassandraInputDialog extends BaseStepDialog implements
     m_userLab = new Label(shell, SWT.RIGHT);
     props.setLook(m_userLab);
     m_userLab.setText(BaseMessages.getString(PKG,
-        "CassandraInputDialog.User.Label"));
+        "CassandraInputDialog.User.Label")); //$NON-NLS-1$
     fd = new FormData();
     fd.left = new FormAttachment(0, 0);
     fd.top = new FormAttachment(m_timeoutText, margin);
@@ -286,7 +299,7 @@ public class CassandraInputDialog extends BaseStepDialog implements
     m_passLab = new Label(shell, SWT.RIGHT);
     props.setLook(m_passLab);
     m_passLab.setText(BaseMessages.getString(PKG,
-        "CassandraInputDialog.Password.Label"));
+        "CassandraInputDialog.Password.Label")); //$NON-NLS-1$
     fd = new FormData();
     fd.left = new FormAttachment(0, 0);
     fd.top = new FormAttachment(m_userText, margin);
@@ -316,7 +329,7 @@ public class CassandraInputDialog extends BaseStepDialog implements
     m_keyspaceLab = new Label(shell, SWT.RIGHT);
     props.setLook(m_keyspaceLab);
     m_keyspaceLab.setText(BaseMessages.getString(PKG,
-        "CassandraInputDialog.Keyspace.Label"));
+        "CassandraInputDialog.Keyspace.Label")); //$NON-NLS-1$
     fd = new FormData();
     fd.left = new FormAttachment(0, 0);
     fd.top = new FormAttachment(m_passText, margin);
@@ -342,7 +355,7 @@ public class CassandraInputDialog extends BaseStepDialog implements
     m_outputTuplesLab = new Label(shell, SWT.RIGHT);
     props.setLook(m_outputTuplesLab);
     m_outputTuplesLab.setText(BaseMessages.getString(PKG,
-        "CassandraInputDialog.OutputTuples.Label"));
+        "CassandraInputDialog.OutputTuples.Label")); //$NON-NLS-1$
     fd = new FormData();
     fd.left = new FormAttachment(0, 0);
     fd.top = new FormAttachment(m_keyspaceText, margin);
@@ -365,32 +378,64 @@ public class CassandraInputDialog extends BaseStepDialog implements
       }
     });
 
-    m_useThriftLab = new Label(shell, SWT.RIGHT);
-    props.setLook(m_useThriftLab);
-    m_useThriftLab.setText(BaseMessages.getString(PKG,
-        "CassandraInputDialog.Thrift.Label"));
+    m_useCQL3Lab = new Label(shell, SWT.RIGHT);
+    props.setLook(m_useCQL3Lab);
+    m_useCQL3Lab.setText(BaseMessages.getString(PKG,
+        "CassandraInputDialog.UseCQL3.Label")); //$NON-NLS-1$
     fd = new FormData();
     fd.left = new FormAttachment(0, 0);
     fd.top = new FormAttachment(m_outputTuplesBut, margin);
     fd.right = new FormAttachment(middle, -margin);
-    m_useThriftLab.setLayoutData(fd);
+    m_useCQL3Lab.setLayoutData(fd);
 
-    m_useThriftBut = new Button(shell, SWT.CHECK);
-    props.setLook(m_useThriftBut);
+    m_useCQL3Check = new Button(shell, SWT.CHECK);
+    props.setLook(m_useCQL3Check);
     fd = new FormData();
     fd.right = new FormAttachment(100, 0);
     fd.top = new FormAttachment(m_outputTuplesBut, margin);
     fd.left = new FormAttachment(middle, 0);
-    m_useThriftBut.setLayoutData(fd);
+    m_useCQL3Check.setLayoutData(fd);
+
+    m_useCQL3Check.addSelectionListener(new SelectionAdapter() {
+      @Override
+      public void widgetSelected(SelectionEvent e) {
+        checkWidgets();
+      }
+    });
+
+    m_useThriftLab = new Label(shell, SWT.RIGHT);
+    props.setLook(m_useThriftLab);
+    m_useThriftLab.setText(BaseMessages.getString(PKG,
+        "CassandraInputDialog.Thrift.Label")); //$NON-NLS-1$
+    fd = new FormData();
+    fd.left = new FormAttachment(0, 0);
+    fd.top = new FormAttachment(m_useCQL3Check, margin);
+    fd.right = new FormAttachment(middle, -margin);
+    m_useThriftLab.setLayoutData(fd);
+
+    m_useThriftCheck = new Button(shell, SWT.CHECK);
+    props.setLook(m_useThriftCheck);
+    fd = new FormData();
+    fd.right = new FormAttachment(100, 0);
+    fd.top = new FormAttachment(m_useCQL3Check, margin);
+    fd.left = new FormAttachment(middle, 0);
+    m_useThriftCheck.setLayoutData(fd);
+
+    m_useThriftCheck.addSelectionListener(new SelectionAdapter() {
+      @Override
+      public void widgetSelected(SelectionEvent e) {
+        checkWidgets();
+      }
+    });
 
     // compression check box
     m_compressionLab = new Label(shell, SWT.RIGHT);
     props.setLook(m_compressionLab);
     m_compressionLab.setText(BaseMessages.getString(PKG,
-        "CassandraInputDialog.UseCompression.Label"));
+        "CassandraInputDialog.UseCompression.Label")); //$NON-NLS-1$
     fd = new FormData();
     fd.left = new FormAttachment(0, 0);
-    fd.top = new FormAttachment(m_useThriftBut, margin);
+    fd.top = new FormAttachment(m_useThriftCheck, margin);
     fd.right = new FormAttachment(middle, -margin);
     m_compressionLab.setLayoutData(fd);
 
@@ -399,7 +444,7 @@ public class CassandraInputDialog extends BaseStepDialog implements
     fd = new FormData();
     fd.right = new FormAttachment(100, 0);
     fd.left = new FormAttachment(middle, 0);
-    fd.top = new FormAttachment(m_useThriftBut, margin);
+    fd.top = new FormAttachment(m_useThriftCheck, margin);
     m_useCompressionBut.setLayoutData(fd);
     m_useCompressionBut.addSelectionListener(new SelectionAdapter() {
       @Override
@@ -410,12 +455,15 @@ public class CassandraInputDialog extends BaseStepDialog implements
 
     // Buttons inherited from BaseStepDialog
     wOK = new Button(shell, SWT.PUSH);
-    wOK.setText(BaseMessages.getString(PKG, "System.Button.OK"));
+    wOK.setText(BaseMessages.getString(PKG, "System.Button.OK")); //$NON-NLS-1$
+    wPreview = new Button(shell, SWT.PUSH);
+    wPreview.setText(BaseMessages.getString(PKG, "System.Button.Preview")); //$NON-NLS-1$
 
     wCancel = new Button(shell, SWT.PUSH);
-    wCancel.setText(BaseMessages.getString(PKG, "System.Button.Cancel"));
+    wCancel.setText(BaseMessages.getString(PKG, "System.Button.Cancel")); //$NON-NLS-1$
 
-    setButtonPositions(new Button[] { wOK, wCancel }, margin, m_cqlText);
+    setButtonPositions(new Button[] { wOK, wPreview, wCancel }, margin,
+        m_cqlText);
 
     // position label
     m_positionLab = new Label(shell, SWT.NONE);
@@ -428,7 +476,7 @@ public class CassandraInputDialog extends BaseStepDialog implements
 
     m_showSchemaBut = new Button(shell, SWT.PUSH);
     m_showSchemaBut.setText(BaseMessages.getString(PKG,
-        "CassandraInputDialog.Schema.Button"));
+        "CassandraInputDialog.Schema.Button")); //$NON-NLS-1$
     props.setLook(m_showSchemaBut);
     fd = new FormData();
     fd.right = new FormAttachment(100, 0);
@@ -438,82 +486,7 @@ public class CassandraInputDialog extends BaseStepDialog implements
     m_showSchemaBut.addSelectionListener(new SelectionAdapter() {
       @Override
       public void widgetSelected(SelectionEvent e) {
-        RowMeta outputF = new RowMeta();
-        CassandraConnection conn = null;
-        try {
-          String hostS = transMeta.environmentSubstitute(m_hostText.getText());
-          String portS = transMeta.environmentSubstitute(m_portText.getText());
-          String userS = m_userText.getText();
-          String passS = m_passText.getText();
-          if (!Const.isEmpty(userS) && !Const.isEmpty(passS)) {
-            userS = transMeta.environmentSubstitute(userS);
-            passS = transMeta.environmentSubstitute(passS);
-          }
-          String keyspaceS = transMeta.environmentSubstitute(m_keyspaceText
-              .getText());
-          String cqlText = transMeta.environmentSubstitute(m_cqlText.getText());
-
-          conn = CassandraInputData.getCassandraConnection(hostS,
-              Integer.parseInt(portS), userS, passS);
-          try {
-            conn.setKeyspace(keyspaceS);
-          } catch (InvalidRequestException ire) {
-            logError(
-                BaseMessages
-                    .getString(PKG,
-                        "CassandraInputDialog.Error.ProblemGettingSchemaInfo.Message")
-                    + ":\n\n" + ire.why, ire);
-            new ErrorDialog(
-                shell,
-                BaseMessages
-                    .getString(PKG,
-                        "CassandraInputDialog.Error.ProblemGettingSchemaInfo.Title"),
-                BaseMessages
-                    .getString(PKG,
-                        "CassandraInputDialog.Error.ProblemGettingSchemaInfo.Message")
-                    + ":\n\n" + ire.why, ire);
-            return;
-          }
-
-          String colFam = CassandraInputData
-              .getColumnFamilyNameFromCQLSelectQuery(cqlText);
-          if (Const.isEmpty(colFam)) {
-            throw new Exception(BaseMessages.getString(PKG,
-                "CassandraInput.Error.NoFromClauseInQuery"));
-          }
-
-          if (!CassandraColumnMetaData.columnFamilyExists(conn, colFam)) {
-            throw new Exception(BaseMessages.getString(PKG,
-                "CassandraInput.Error.NonExistentColumnFamily", colFam,
-                keyspaceS));
-          }
-
-          CassandraColumnMetaData cassMeta = new CassandraColumnMetaData(conn,
-              colFam);
-          String schemaDescription = cassMeta.getSchemaDescription();
-          ShowMessageDialog smd = new ShowMessageDialog(shell,
-              SWT.ICON_INFORMATION | SWT.OK, "Schema info", schemaDescription,
-              true);
-          smd.open();
-        } catch (Exception e1) {
-          logError(
-              BaseMessages
-                  .getString(PKG,
-                      "CassandraInputDialog.Error.ProblemGettingSchemaInfo.Message")
-                  + ":\n\n" + e1.getMessage(), e1);
-          new ErrorDialog(
-              shell,
-              BaseMessages.getString(PKG,
-                  "CassandraInputDialog.Error.ProblemGettingSchemaInfo.Title"),
-              BaseMessages
-                  .getString(PKG,
-                      "CassandraInputDialog.Error.ProblemGettingSchemaInfo.Message")
-                  + ":\n\n" + e1.getMessage(), e1);
-        } finally {
-          if (conn != null) {
-            conn.close();
-          }
-        }
+        popupSchemaInfo();
       }
     });
 
@@ -521,7 +494,7 @@ public class CassandraInputDialog extends BaseStepDialog implements
     m_cqlLab = new Label(shell, SWT.NONE);
     props.setLook(m_cqlLab);
     m_cqlLab.setText(BaseMessages.getString(PKG,
-        "CassandraInputDialog.CQL.Label"));
+        "CassandraInputDialog.CQL.Label")); //$NON-NLS-1$
     fd = new FormData();
     fd.left = new FormAttachment(0, 0);
     fd.top = new FormAttachment(m_useCompressionBut, margin);
@@ -529,7 +502,7 @@ public class CassandraInputDialog extends BaseStepDialog implements
     m_cqlLab.setLayoutData(fd);
 
     m_cqlText = new StyledTextComp(transMeta, shell, SWT.MULTI | SWT.LEFT
-        | SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL, "");
+        | SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL, ""); //$NON-NLS-1$
     props.setLook(m_cqlText, props.WIDGET_STYLE_FIXED);
     m_cqlText.addModifyListener(lsMod);
     fd = new FormData();
@@ -603,8 +576,15 @@ public class CassandraInputDialog extends BaseStepDialog implements
       }
     };
 
+    lsPreview = new Listener() {
+      public void handleEvent(Event e) {
+        preview();
+      }
+    };
+
     wCancel.addListener(SWT.Selection, lsCancel);
     wOK.addListener(SWT.Selection, lsOK);
+    wPreview.addListener(SWT.Selection, lsPreview);
 
     lsDef = new SelectionAdapter() {
       @Override
@@ -639,11 +619,75 @@ public class CassandraInputDialog extends BaseStepDialog implements
 
   private void checkWidgets() {
     if (m_outputTuplesBut.getSelection()) {
-      m_useThriftBut.setEnabled(true);
+      m_useThriftCheck.setEnabled(true);
     } else {
-      m_useThriftBut.setSelection(false);
-      m_useThriftBut.setEnabled(false);
+      m_useThriftCheck.setSelection(false);
+      m_useThriftCheck.setEnabled(false);
     }
+
+    if (m_useCQL3Check.getSelection()) {
+      m_useThriftCheck.setSelection(false);
+      m_useThriftCheck.setEnabled(false);
+    } else {
+      if (m_outputTuplesBut.getSelection()) {
+        m_useThriftCheck.setEnabled(true);
+      }
+    }
+
+    if (m_useThriftCheck.getSelection()) {
+      m_useCQL3Check.setSelection(false);
+      m_useCQL3Check.setEnabled(false);
+    } else {
+      m_useCQL3Check.setEnabled(true);
+    }
+
+    checkWidgetsWithRespectToDriver(ConnectionFactory.Driver.LEGACY_THRIFT);
+  }
+
+  private void checkWidgetsWithRespectToDriver(ConnectionFactory.Driver d) {
+    Connection c = ConnectionFactory.getFactory().getConnection(d);
+
+    m_useCQL3Check.setEnabled(c.supportsCQL());
+    if (!c.supportsCQL()) {
+      m_useCQL3Check.setSelection(false);
+      m_outputTuplesBut.setEnabled(true);
+      m_outputTuplesBut.setSelection(true);
+      m_useThriftCheck.setEnabled(true);
+      m_useThriftCheck.setSelection(true);
+    }
+
+    if (m_useThriftCheck.getEnabled()) {
+      m_useThriftCheck.setEnabled(c.supportsNonCQL());
+    }
+
+    if (!c.supportsNonCQL()) {
+      m_useThriftCheck.setSelection(false);
+    }
+
+    if (m_useCQL3Check.getSelection()) {
+      m_outputTuplesBut.setSelection(false);
+      m_outputTuplesBut.setEnabled(false);
+
+      m_outputTuplesLab.setToolTipText(BaseMessages.getString(PKG,
+          "CassandraInputDialog.OutputTuples.TipText")); //$NON-NLS-1$
+    } else {
+      m_outputTuplesBut.setEnabled(true);
+      m_outputTuplesLab.setToolTipText(""); //$NON-NLS-1$
+    }
+  }
+
+  private void getInfo(CassandraInputMeta meta) {
+    meta.setCassandraHost(m_hostText.getText());
+    meta.setCassandraPort(m_portText.getText());
+    meta.setSocketTimeout(m_timeoutText.getText());
+    meta.setUsername(m_userText.getText());
+    meta.setPassword(m_passText.getText());
+    meta.setCassandraKeyspace(m_keyspaceText.getText());
+    meta.setUseCompression(m_useCompressionBut.getSelection());
+    meta.setOutputKeyValueTimestampTuples(m_outputTuplesBut.getSelection());
+    meta.setUseThriftIO(m_useThriftCheck.getSelection());
+    meta.setUseCQL3(m_useCQL3Check.getSelection());
+    meta.setCQLSelectQuery(m_cqlText.getText());
   }
 
   protected void ok() {
@@ -652,17 +696,7 @@ public class CassandraInputDialog extends BaseStepDialog implements
     }
 
     stepname = m_stepnameText.getText();
-    m_currentMeta.setCassandraHost(m_hostText.getText());
-    m_currentMeta.setCassandraPort(m_portText.getText());
-    m_currentMeta.setSocketTimeout(m_timeoutText.getText());
-    m_currentMeta.setUsername(m_userText.getText());
-    m_currentMeta.setPassword(m_passText.getText());
-    m_currentMeta.setCassandraKeyspace(m_keyspaceText.getText());
-    m_currentMeta.setUseCompression(m_useCompressionBut.getSelection());
-    m_currentMeta.setOutputKeyValueTimestampTuples(m_outputTuplesBut
-        .getSelection());
-    m_currentMeta.setUseThriftIO(m_useThriftBut.getSelection());
-    m_currentMeta.setCQLSelectQuery(m_cqlText.getText());
+    getInfo(m_currentMeta);
 
     if (!m_originalMeta.equals(m_currentMeta)) {
       m_currentMeta.setChanged();
@@ -708,7 +742,8 @@ public class CassandraInputDialog extends BaseStepDialog implements
 
     m_outputTuplesBut.setSelection(m_currentMeta
         .getOutputKeyValueTimestampTuples());
-    m_useThriftBut.setSelection(m_currentMeta.getUseThriftIO());
+    m_useThriftCheck.setSelection(m_currentMeta.getUseThriftIO());
+    m_useCQL3Check.setSelection(m_currentMeta.getUseCQL3());
 
     if (!Const.isEmpty(m_currentMeta.getCQLSelectQuery())) {
       m_cqlText.setText(m_currentMeta.getCQLSelectQuery());
@@ -730,7 +765,7 @@ public class CassandraInputDialog extends BaseStepDialog implements
       colnr++;
     }
     m_positionLab.setText(BaseMessages.getString(PKG,
-        "CassandraInputDialog.Position.Label", "" + linenr, "" + colnr));
+        "CassandraInputDialog.Position.Label", "" + linenr, "" + colnr)); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
   }
 
   private void checkPasswordVisible() {
@@ -741,6 +776,136 @@ public class CassandraInputDialog extends BaseStepDialog implements
       m_passText.setEchoChar('*');
     } else {
       m_passText.setEchoChar('\0'); // show everything
+    }
+  }
+
+  private void preview() {
+    CassandraInputMeta oneMeta = new CassandraInputMeta();
+
+    getInfo(oneMeta);
+
+    TransMeta previewMeta = TransPreviewFactory.generatePreviewTransformation(
+        transMeta, oneMeta, m_stepnameText.getText());
+
+    EnterNumberDialog numberDialog = new EnterNumberDialog(shell,
+        props.getDefaultPreviewSize(), BaseMessages.getString(PKG,
+            "CassandraInputDialog.PreviewSize.DialogTitle"), //$NON-NLS-1$
+        BaseMessages.getString(PKG,
+            "CassandraInputDialog.PreviewSize.DialogMessage")); //$NON-NLS-1$
+
+    int previewSize = numberDialog.open();
+    if (previewSize > 0) {
+      TransPreviewProgressDialog progressDialog = new TransPreviewProgressDialog(
+          shell, previewMeta, new String[] { m_stepnameText.getText() },
+          new int[] { previewSize });
+      progressDialog.open();
+
+      Trans trans = progressDialog.getTrans();
+      String loggingText = progressDialog.getLoggingText();
+
+      if (!progressDialog.isCancelled()) {
+        if (trans.getResult() != null && trans.getResult().getNrErrors() > 0) {
+          EnterTextDialog etd = new EnterTextDialog(
+              shell,
+              BaseMessages.getString(PKG, "System.Dialog.PreviewError.Title"), //$NON-NLS-1$
+              BaseMessages.getString(PKG, "System.Dialog.PreviewError.Message"), //$NON-NLS-1$
+              loggingText, true);
+          etd.setReadOnly();
+          etd.open();
+        }
+      }
+      PreviewRowsDialog prd = new PreviewRowsDialog(shell, transMeta, SWT.NONE,
+          m_stepnameText.getText(),
+          progressDialog.getPreviewRowsMeta(m_stepnameText.getText()),
+          progressDialog.getPreviewRows(m_stepnameText.getText()), loggingText);
+      prd.open();
+    }
+  }
+
+  protected void popupSchemaInfo() {
+
+    Connection conn = null;
+    Keyspace kSpace = null;
+    try {
+      String hostS = transMeta.environmentSubstitute(m_hostText.getText());
+      String portS = transMeta.environmentSubstitute(m_portText.getText());
+      String userS = m_userText.getText();
+      String passS = m_passText.getText();
+      if (!Const.isEmpty(userS) && !Const.isEmpty(passS)) {
+        userS = transMeta.environmentSubstitute(userS);
+        passS = transMeta.environmentSubstitute(passS);
+      }
+      String keyspaceS = transMeta.environmentSubstitute(m_keyspaceText
+          .getText());
+      String cqlText = transMeta.environmentSubstitute(m_cqlText.getText());
+
+      try {
+        Map<String, String> opts = new HashMap<String, String>();
+        if (m_useCQL3Check.getSelection()) {
+          opts.put(CassandraUtils.CQLOptions.CQLVERSION_OPTION,
+              CassandraUtils.CQLOptions.CQL3_STRING);
+        }
+
+        conn = CassandraUtils.getCassandraConnection(hostS,
+            Integer.parseInt(portS), userS, passS,
+            ConnectionFactory.Driver.LEGACY_THRIFT, opts);
+
+        conn.setHosts(hostS);
+        conn.setDefaultPort(Integer.parseInt(portS));
+        conn.setUsername(userS);
+        conn.setPassword(passS);
+        kSpace = conn.getKeyspace(keyspaceS);
+      } catch (InvalidRequestException ire) {
+        logError(
+            BaseMessages.getString(PKG,
+                "CassandraInputDialog.Error.ProblemGettingSchemaInfo.Message") //$NON-NLS-1$
+                + ":\n\n" + ire.why, ire); //$NON-NLS-1$
+        new ErrorDialog(shell, BaseMessages.getString(PKG,
+            "CassandraInputDialog.Error.ProblemGettingSchemaInfo.Title"), //$NON-NLS-1$
+            BaseMessages.getString(PKG,
+                "CassandraInputDialog.Error.ProblemGettingSchemaInfo.Message") //$NON-NLS-1$
+                + ":\n\n" + ire.why, ire); //$NON-NLS-1$
+        return;
+      }
+
+      String colFam = CassandraUtils
+          .getColumnFamilyNameFromCQLSelectQuery(cqlText);
+      if (Const.isEmpty(colFam)) {
+        throw new Exception(BaseMessages.getString(PKG,
+            "CassandraInput.Error.NoFromClauseInQuery")); //$NON-NLS-1$
+      }
+
+      if (!kSpace.columnFamilyExists(colFam)) {
+        throw new Exception(BaseMessages.getString(PKG,
+            "CassandraInput.Error.NonExistentColumnFamily", colFam, keyspaceS)); //$NON-NLS-1$
+      }
+
+      CassandraColumnMetaData cassMeta = (CassandraColumnMetaData) kSpace
+          .getColumnFamilyMetaData(colFam);
+
+      String schemaDescription = cassMeta.getSchemaDescription();
+      ShowMessageDialog smd = new ShowMessageDialog(shell, SWT.ICON_INFORMATION
+          | SWT.OK, "Schema info", schemaDescription, true); //$NON-NLS-1$
+      smd.open();
+    } catch (Exception e1) {
+      logError(
+          BaseMessages.getString(PKG,
+              "CassandraOutputDialog.Error.ProblemGettingSchemaInfo.Message") //$NON-NLS-1$
+              + ":\n\n" + e1.getMessage(), e1); //$NON-NLS-1$
+      new ErrorDialog(shell, BaseMessages.getString(PKG,
+          "CassandraOutputDialog.Error.ProblemGettingSchemaInfo.Title"), //$NON-NLS-1$
+          BaseMessages.getString(PKG,
+              "CassandraOutputDialog.Error.ProblemGettingSchemaInfo.Message") //$NON-NLS-1$
+              + ":\n\n" + e1.getMessage(), e1); //$NON-NLS-1$
+    } finally {
+      if (conn != null) {
+        try {
+          conn.closeConnection();
+        } catch (Exception e) {
+          // TODO popup another error dialog
+          e.printStackTrace();
+        }
+      }
     }
   }
 }

@@ -23,12 +23,16 @@
 package org.pentaho.di.trans.steps.cassandrainput;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.eclipse.swt.widgets.Shell;
-import org.pentaho.cassandra.CassandraColumnMetaData;
-import org.pentaho.cassandra.CassandraConnection;
+import org.pentaho.cassandra.CassandraUtils;
+import org.pentaho.cassandra.ConnectionFactory;
+import org.pentaho.cassandra.spi.ColumnFamilyMetaData;
+import org.pentaho.cassandra.spi.Connection;
+import org.pentaho.cassandra.spi.Keyspace;
 import org.pentaho.di.core.CheckResultInterface;
 import org.pentaho.di.core.Const;
 import org.pentaho.di.core.Counter;
@@ -96,6 +100,9 @@ public class CassandraInputMeta extends BaseStepMeta implements
   /** Use thrift IO for tuple mode? */
   protected boolean m_useThriftIO = false;
 
+  /** Whether to use CQL version 3 */
+  protected boolean m_useCQL3 = false;
+
   /**
    * Timeout (milliseconds) to use for socket connections - blank means use
    * cluster default
@@ -161,6 +168,24 @@ public class CassandraInputMeta extends BaseStepMeta implements
    */
   public boolean getUseThriftIO() {
     return m_useThriftIO;
+  }
+
+  /**
+   * Set whether to use CQL version 3 is to be used for CQL IO mode
+   * 
+   * @param cql3 true if CQL version 3 is to be used
+   */
+  public void setUseCQL3(boolean cql3) {
+    m_useCQL3 = cql3;
+  }
+
+  /**
+   * Get whether to use CQL version 3 is to be used for CQL IO mode
+   * 
+   * @param return true if CQL version 3 is to be used
+   */
+  public boolean getUseCQL3() {
+    return m_useCQL3;
   }
 
   /**
@@ -360,9 +385,13 @@ public class CassandraInputMeta extends BaseStepMeta implements
           XMLHandler.addTagValue("socket_timeout", m_socketTimeout));
     }
 
+    retval.append("\n    ").append(
+        XMLHandler.addTagValue("use_cql3", m_useCQL3));
+
     return retval.toString();
   }
 
+  @Override
   public void loadXML(Node stepnode, List<DatabaseMeta> databases,
       Map<String, Counter> counters) throws KettleXMLException {
     m_cassandraHost = XMLHandler.getTagValue(stepnode, "cassandra_host");
@@ -390,9 +419,15 @@ public class CassandraInputMeta extends BaseStepMeta implements
       m_useThriftIO = thrift.equalsIgnoreCase("Y");
     }
 
+    String useCQL3 = XMLHandler.getTagValue(stepnode, "use_cql3");
+    if (!Const.isEmpty(useCQL3)) {
+      m_useCQL3 = useCQL3.equalsIgnoreCase("Y");
+    }
+
     m_socketTimeout = XMLHandler.getTagValue(stepnode, "socket_timeout");
   }
 
+  @Override
   public void readRep(Repository rep, ObjectId id_step,
       List<DatabaseMeta> databases, Map<String, Counter> counters)
       throws KettleException {
@@ -413,10 +448,12 @@ public class CassandraInputMeta extends BaseStepMeta implements
     m_outputKeyValueTimestampTuples = rep.getStepAttributeBoolean(id_step, 0,
         "output_key_value_timestamp_tuples");
     m_useThriftIO = rep.getStepAttributeBoolean(id_step, 0, "use_thrift_io");
+    m_useCQL3 = rep.getStepAttributeBoolean(id_step, 0, "use_cql3");
 
     m_socketTimeout = rep.getStepAttributeString(id_step, 0, "socket_timeout");
   }
 
+  @Override
   public void saveRep(Repository rep, ObjectId id_transformation,
       ObjectId id_step) throws KettleException {
     if (!Const.isEmpty(m_cassandraHost)) {
@@ -458,12 +495,15 @@ public class CassandraInputMeta extends BaseStepMeta implements
     rep.saveStepAttribute(id_transformation, id_step, 0, "use_thrift_io",
         m_useThriftIO);
 
+    rep.saveStepAttribute(id_transformation, id_step, 0, "use_cql3", m_useCQL3);
+
     if (!Const.isEmpty(m_socketTimeout)) {
       rep.saveStepAttribute(id_transformation, id_step, 0, "socket_timeout",
           m_socketTimeout);
     }
   }
 
+  @Override
   public void check(List<CheckResultInterface> remarks, TransMeta transMeta,
       StepMeta stepMeta, RowMetaInterface prev, String[] input,
       String[] output, RowMetaInterface info) {
@@ -579,9 +619,12 @@ public class CassandraInputMeta extends BaseStepMeta implements
 
       // is there a FIRST clause?
       if (subQ.toLowerCase().indexOf("first") > 0) {
-        String firstS = subQ.toLowerCase()
-            .substring(subQ.toLowerCase().indexOf("first") + 5, subQ.length())
-            .trim();
+        String firstS = subQ.substring(subQ.toLowerCase().indexOf("first") + 5,
+            subQ.length()).trim();
+
+        // Strip FIRST part from query
+        subQ = firstS.substring(firstS.indexOf(' ') + 1, firstS.length());
+
         firstS = firstS.substring(0, firstS.indexOf(' '));
         try {
           m_colLimit = Integer.parseInt(firstS);
@@ -591,16 +634,23 @@ public class CassandraInputMeta extends BaseStepMeta implements
                   m_cqlSelectQuery));
           return;
         }
+      } else {
+        subQ = subQ.substring(subQ.toLowerCase().indexOf("select") + 6,
+            subQ.length());
       }
+
+      // Reset FROM index
+      fromIndex = subQ.toLowerCase().indexOf("from");
 
       // now determine if its a select */FIRST or specific set of columns
       String[] cols = null;
-      if (subQ.indexOf("*") > 0) {
+      if (subQ.indexOf("*") >= 0) {
         // nothing special to do here
         m_isSelectStarQuery = true;
       } else {
         m_isSelectStarQuery = false;
-        String colsS = subQ.substring(subQ.indexOf('\''), fromIndex);
+        // String colsS = subQ.substring(subQ.indexOf('\''), fromIndex);
+        String colsS = subQ.substring(0, fromIndex);
         cols = colsS.split(",");
       }
 
@@ -614,48 +664,77 @@ public class CassandraInputMeta extends BaseStepMeta implements
         passS = space.environmentSubstitute(m_password);
       }
       String keyspaceS = space.environmentSubstitute(m_cassandraKeyspace);
-      CassandraConnection conn = null;
+      Connection conn = null;
+      Keyspace kSpace;
       try {
-        conn = CassandraInputData.getCassandraConnection(hostS,
-            Integer.parseInt(portS), userS, passS);
-        conn.setKeyspace(keyspaceS);
+
+        Map<String, String> opts = new HashMap<String, String>();
+        if (m_useCQL3) {
+          opts.put(CassandraUtils.CQLOptions.CQLVERSION_OPTION,
+              CassandraUtils.CQLOptions.CQL3_STRING);
+        }
+
+        conn = CassandraUtils.getCassandraConnection(hostS,
+            Integer.parseInt(portS), userS, passS,
+            ConnectionFactory.Driver.LEGACY_THRIFT, opts);
+
+        /*
+         * conn = CassandraInputData.getCassandraConnection(hostS,
+         * Integer.parseInt(portS), userS, passS); conn.setKeyspace(keyspaceS);
+         */
+        kSpace = conn.getKeyspace(keyspaceS);
       } catch (Exception ex) {
+        ex.printStackTrace();
         logError(ex.getMessage(), ex);
         return;
       }
       try {
-        CassandraColumnMetaData colMeta = new CassandraColumnMetaData(conn,
-            colFamName);
-
-        // Do the key first
-        ValueMetaInterface km = colMeta.getValueMetaForKey();
-        rowMeta.addValueMeta(km);
+        /*
+         * CassandraColumnMetaData colMeta = new CassandraColumnMetaData(conn,
+         * colFamName);
+         */
+        ColumnFamilyMetaData colMeta = kSpace
+            .getColumnFamilyMetaData(colFamName);
 
         if (getOutputKeyValueTimestampTuples()) {
+
+          // Do the key first
+          ValueMetaInterface km = colMeta.getValueMetaForKey();
+          rowMeta.addValueMeta(km);
+
           // special case where user has asked for all row keys, columns and
           // timestamps output as separate rows.
           ValueMetaInterface vm = new ValueMeta("ColumnName",
               ValueMetaInterface.TYPE_STRING);
           rowMeta.addValueMeta(vm);
-          vm = null;
-          String defaultColumnValidator = colMeta.getDefaultValidationClass();
-          if (!Const.isEmpty(defaultColumnValidator)) {
-            if (defaultColumnValidator.indexOf('(') > 0) {
-              defaultColumnValidator = defaultColumnValidator.substring(0,
-                  defaultColumnValidator.indexOf(')'));
-            }
-            if (defaultColumnValidator.endsWith("BytesType")) {
-              vm = new ValueMeta("ColumnValue", ValueMeta.TYPE_BINARY);
-            }
-          }
-          if (vm == null) {
-            vm = new ValueMeta("ColumnValue", ValueMetaInterface.TYPE_STRING);
-          }
+          vm = new ValueMeta("ColumnValue", ValueMeta.TYPE_STRING);
+
+          // ValueMetaInterface tvm = colMeta.getValueMetaForDefaultValidator();
+          // if (tvm != null) {
+          // if (tvm.isBinary()) {
+          // vm = new ValueMeta("ColumnValue", ValueMeta.TYPE_BINARY);
+          // }
+          // }
+
+          /*
+           * String defaultColumnValidator =
+           * colMeta.getDefaultValidationClass(); if
+           * (!Const.isEmpty(defaultColumnValidator)) { if
+           * (defaultColumnValidator.indexOf('(') > 0) { defaultColumnValidator
+           * = defaultColumnValidator.substring(0,
+           * defaultColumnValidator.indexOf(')')); } if
+           * (defaultColumnValidator.endsWith("BytesType")) { vm = new
+           * ValueMeta("ColumnValue", ValueMeta.TYPE_BINARY); } }
+           */
+
+          // if (vm == null) {
+          // vm = new ValueMeta("ColumnValue", ValueMetaInterface.TYPE_STRING);
+          // }
           rowMeta.addValueMeta(vm);
           vm = new ValueMeta("Timestamp", ValueMetaInterface.TYPE_INTEGER);
           rowMeta.addValueMeta(vm);
 
-          conn.close();
+          conn.closeConnection();
 
           // specific columns requested
           if (cols != null) {
@@ -697,7 +776,11 @@ public class CassandraInputMeta extends BaseStepMeta implements
         return;
       } finally {
         if (conn != null) {
-          conn.close();
+          try {
+            conn.closeConnection();
+          } catch (Exception e) {
+            throw new KettleStepException(e);
+          }
         }
       }
     }

@@ -23,7 +23,9 @@
 package org.pentaho.di.trans.steps.cassandraoutput;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.cassandra.thrift.InvalidRequestException;
 import org.eclipse.jface.dialogs.MessageDialog;
@@ -48,8 +50,11 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
-import org.pentaho.cassandra.CassandraColumnMetaData;
-import org.pentaho.cassandra.CassandraConnection;
+import org.pentaho.cassandra.CassandraUtils;
+import org.pentaho.cassandra.ConnectionFactory;
+import org.pentaho.cassandra.legacy.CassandraColumnMetaData;
+import org.pentaho.cassandra.spi.Connection;
+import org.pentaho.cassandra.spi.Keyspace;
 import org.pentaho.di.core.Const;
 import org.pentaho.di.core.Props;
 import org.pentaho.di.core.exception.KettleException;
@@ -61,6 +66,7 @@ import org.pentaho.di.trans.TransMeta;
 import org.pentaho.di.trans.step.BaseStepMeta;
 import org.pentaho.di.trans.step.StepDialogInterface;
 import org.pentaho.di.trans.step.StepMeta;
+import org.pentaho.di.ui.core.dialog.EnterSelectionDialog;
 import org.pentaho.di.ui.core.dialog.ErrorDialog;
 import org.pentaho.di.ui.core.dialog.ShowMessageDialog;
 import org.pentaho.di.ui.core.widget.TextVar;
@@ -119,10 +125,16 @@ public class CassandraOutputDialog extends BaseStepDialog implements
   private Label m_subBatchSizeLab;
   private TextVar m_subBatchSizeText;
 
+  private Label m_unloggedBatchLab;
+  private Button m_unloggedBatchBut;
+
   private Label m_keyFieldLab;
   private CCombo m_keyFieldCombo;
 
   private Button m_getFieldsBut;
+
+  private Label m_useCQL3Lab;
+  private Button m_useCQL3Check;
 
   private Label m_useThriftIOLab;
   private Button m_useThriftIOCheck;
@@ -134,6 +146,9 @@ public class CassandraOutputDialog extends BaseStepDialog implements
 
   private Label m_createColumnFamilyLab;
   private Button m_createColumnFamilyBut;
+
+  private Label m_withClauseLab;
+  private TextVar m_withClauseText;
 
   private Label m_truncateColumnFamilyLab;
   private Button m_truncateColumnFamilyBut;
@@ -152,6 +167,7 @@ public class CassandraOutputDialog extends BaseStepDialog implements
   private Button m_aprioriCQLBut;
 
   private String m_aprioriCQL;
+  private boolean m_dontComplain;
 
   public CassandraOutputDialog(Shell parent, Object in, TransMeta tr,
       String name) {
@@ -576,6 +592,27 @@ public class CassandraOutputDialog extends BaseStepDialog implements
     fd.left = new FormAttachment(middle, 0);
     m_subBatchSizeText.setLayoutData(fd);
 
+    // unlogged batch line
+    m_unloggedBatchLab = new Label(wWriteComp, SWT.RIGHT);
+    m_unloggedBatchLab.setText(BaseMessages.getString(PKG,
+        "CassandraOutputDialog.UnloggedBatch.Label"));
+    m_unloggedBatchLab.setToolTipText(BaseMessages.getString(PKG,
+        "CassandraOutputDialog.UnloggedBatch.TipText"));
+    props.setLook(m_unloggedBatchLab);
+    fd = new FormData();
+    fd.left = new FormAttachment(0, 0);
+    fd.top = new FormAttachment(m_subBatchSizeText, margin);
+    fd.right = new FormAttachment(middle, -margin);
+    m_unloggedBatchLab.setLayoutData(fd);
+
+    m_unloggedBatchBut = new Button(wWriteComp, SWT.CHECK);
+    props.setLook(m_unloggedBatchBut);
+    fd = new FormData();
+    fd.right = new FormAttachment(100, 0);
+    fd.top = new FormAttachment(m_subBatchSizeText, margin);
+    fd.left = new FormAttachment(middle, 0);
+    m_unloggedBatchBut.setLayoutData(fd);
+
     // key field line
     m_keyFieldLab = new Label(wWriteComp, SWT.RIGHT);
     props.setLook(m_keyFieldLab);
@@ -583,23 +620,28 @@ public class CassandraOutputDialog extends BaseStepDialog implements
         "CassandraOutputDialog.KeyField.Label"));
     fd = new FormData();
     fd.left = new FormAttachment(0, 0);
-    fd.top = new FormAttachment(m_subBatchSizeText, margin);
+    fd.top = new FormAttachment(m_unloggedBatchBut, margin);
     fd.right = new FormAttachment(middle, -margin);
     m_keyFieldLab.setLayoutData(fd);
 
     m_getFieldsBut = new Button(wWriteComp, SWT.PUSH | SWT.CENTER);
     props.setLook(m_getFieldsBut);
-    m_getFieldsBut.setText(BaseMessages.getString(PKG,
-        "CassandraOutputDialog.GetFields.Button"));
+    m_getFieldsBut.setText(" "
+        + BaseMessages.getString(PKG, "CassandraOutputDialog.GetFields.Button")
+        + " ");
     fd = new FormData();
     fd.right = new FormAttachment(100, 0);
-    fd.top = new FormAttachment(m_subBatchSizeText, 0);
+    fd.top = new FormAttachment(m_unloggedBatchBut, 0);
     m_getFieldsBut.setLayoutData(fd);
 
     m_getFieldsBut.addSelectionListener(new SelectionAdapter() {
       @Override
       public void widgetSelected(SelectionEvent e) {
-        setupFieldsCombo();
+        if (m_useCQL3Check.getSelection()) {
+          showEnterSelectionDialog();
+        } else {
+          setupFieldsCombo();
+        }
       }
     });
 
@@ -613,9 +655,50 @@ public class CassandraOutputDialog extends BaseStepDialog implements
     m_keyFieldCombo.addModifyListener(lsMod);
     fd = new FormData();
     fd.right = new FormAttachment(m_getFieldsBut, -margin);
-    fd.top = new FormAttachment(m_subBatchSizeText, margin);
+    fd.top = new FormAttachment(m_unloggedBatchBut, margin);
     fd.left = new FormAttachment(middle, 0);
     m_keyFieldCombo.setLayoutData(fd);
+
+    m_useCQL3Lab = new Label(wWriteComp, SWT.RIGHT);
+    props.setLook(m_useCQL3Lab);
+    m_useCQL3Lab.setText(BaseMessages.getString(PKG,
+        "CassandraOutputDialog.UseCQL3.Label"));
+    fd = new FormData();
+    fd.left = new FormAttachment(0, 0);
+    fd.top = new FormAttachment(m_keyFieldCombo, margin);
+    fd.right = new FormAttachment(middle, -margin);
+    m_useCQL3Lab.setLayoutData(fd);
+
+    m_useCQL3Check = new Button(wWriteComp, SWT.CHECK);
+    props.setLook(m_useCQL3Check);
+    fd = new FormData();
+    fd.right = new FormAttachment(100, 0);
+    fd.top = new FormAttachment(m_keyFieldCombo, margin);
+    fd.left = new FormAttachment(middle, 0);
+    m_useCQL3Check.setLayoutData(fd);
+
+    m_useCQL3Check.addSelectionListener(new SelectionAdapter() {
+      @Override
+      public void widgetSelected(SelectionEvent e) {
+        m_useThriftIOCheck.setEnabled(!m_useCQL3Check.getSelection());
+        m_unloggedBatchBut.setEnabled(m_useCQL3Check.getSelection());
+        if (m_useCQL3Check.getSelection()) {
+          m_useThriftIOCheck.setSelection(false);
+          m_getFieldsBut.setText(BaseMessages.getString(PKG,
+              "CassandraOutputDialog.SelectFields.Button"));
+          m_keyFieldLab.setText(BaseMessages.getString(PKG,
+              "CassandraOutputDialog.KeyFields.Label"));
+        } else {
+          m_getFieldsBut.setText(" "
+              + BaseMessages.getString(PKG,
+                  "CassandraOutputDialog.GetFields.Button") + " ");
+          m_keyFieldLab.setText(BaseMessages.getString(PKG,
+              "CassandraOutputDialog.KeyField.Label"));
+          m_unloggedBatchBut.setSelection(false);
+        }
+        checkWidgetsWithRespectToDriver(ConnectionFactory.Driver.LEGACY_THRIFT);
+      }
+    });
 
     m_useThriftIOLab = new Label(wWriteComp, SWT.RIGHT);
     props.setLook(m_useThriftIOLab);
@@ -625,7 +708,7 @@ public class CassandraOutputDialog extends BaseStepDialog implements
         "CassandraOutputDialog.UseThriftIO.TipText"));
     fd = new FormData();
     fd.left = new FormAttachment(0, 0);
-    fd.top = new FormAttachment(m_keyFieldCombo, margin);
+    fd.top = new FormAttachment(m_useCQL3Check, margin);
     fd.right = new FormAttachment(middle, -margin);
     m_useThriftIOLab.setLayoutData(fd);
 
@@ -635,9 +718,20 @@ public class CassandraOutputDialog extends BaseStepDialog implements
     props.setLook(m_useThriftIOCheck);
     fd = new FormData();
     fd.right = new FormAttachment(100, 0);
-    fd.top = new FormAttachment(m_keyFieldCombo, margin);
+    fd.top = new FormAttachment(m_useCQL3Check, margin);
     fd.left = new FormAttachment(middle, 0);
     m_useThriftIOCheck.setLayoutData(fd);
+
+    m_useThriftIOCheck.addSelectionListener(new SelectionAdapter() {
+      @Override
+      public void widgetSelected(SelectionEvent e) {
+        m_useCQL3Check.setEnabled(!m_useThriftIOCheck.getSelection());
+        if (m_useThriftIOCheck.getSelection()) {
+          m_useCQL3Check.setSelection(false);
+        }
+        checkWidgetsWithRespectToDriver(ConnectionFactory.Driver.LEGACY_THRIFT);
+      }
+    });
 
     fd = new FormData();
     fd.left = new FormAttachment(0, 0);
@@ -763,6 +857,35 @@ public class CassandraOutputDialog extends BaseStepDialog implements
       }
     });
 
+    // table creation with clause line
+    m_withClauseLab = new Label(wSchemaComp, SWT.RIGHT);
+    m_withClauseLab.setText(BaseMessages.getString(PKG,
+        "CassandraOutputDialog.CreateTableWithClause.Label"));
+    m_withClauseLab.setToolTipText(BaseMessages.getString(PKG,
+        "CassandraOutputDialog.CreateTableWithClause.TipText"));
+    props.setLook(m_withClauseLab);
+    fd = new FormData();
+    fd.left = new FormAttachment(0, 0);
+    fd.top = new FormAttachment(m_createColumnFamilyBut, margin);
+    fd.right = new FormAttachment(middle, -margin);
+    m_withClauseLab.setLayoutData(fd);
+
+    m_withClauseText = new TextVar(transMeta, wSchemaComp, SWT.SINGLE
+        | SWT.LEFT | SWT.BORDER);
+    props.setLook(m_withClauseText);
+    m_withClauseText.addModifyListener(new ModifyListener() {
+      public void modifyText(ModifyEvent e) {
+        m_withClauseText.setToolTipText(transMeta
+            .environmentSubstitute(m_withClauseText.getText()));
+      }
+    });
+    m_withClauseText.addModifyListener(lsMod);
+    fd = new FormData();
+    fd.right = new FormAttachment(100, 0);
+    fd.top = new FormAttachment(m_createColumnFamilyBut, margin);
+    fd.left = new FormAttachment(middle, 0);
+    m_withClauseText.setLayoutData(fd);
+
     // truncate column family line
     m_truncateColumnFamilyLab = new Label(wSchemaComp, SWT.RIGHT);
     props.setLook(m_truncateColumnFamilyLab);
@@ -772,7 +895,7 @@ public class CassandraOutputDialog extends BaseStepDialog implements
         "CassandraOutputDialog.TruncateColumnFamily.TipText"));
     fd = new FormData();
     fd.left = new FormAttachment(0, 0);
-    fd.top = new FormAttachment(m_createColumnFamilyBut, margin);
+    fd.top = new FormAttachment(m_withClauseText, margin);
     fd.right = new FormAttachment(middle, -margin);
     m_truncateColumnFamilyLab.setLayoutData(fd);
 
@@ -782,7 +905,7 @@ public class CassandraOutputDialog extends BaseStepDialog implements
     props.setLook(m_truncateColumnFamilyBut);
     fd = new FormData();
     fd.right = new FormAttachment(100, 0);
-    fd.top = new FormAttachment(m_createColumnFamilyBut, margin);
+    fd.top = new FormAttachment(m_withClauseText, margin);
     fd.left = new FormAttachment(middle, 0);
     m_truncateColumnFamilyBut.setLayoutData(fd);
     m_truncateColumnFamilyBut.addSelectionListener(new SelectionAdapter() {
@@ -974,7 +1097,8 @@ public class CassandraOutputDialog extends BaseStepDialog implements
   }
 
   protected void setupColumnFamiliesCombo() {
-    CassandraConnection conn = null;
+    Connection conn = null;
+    Keyspace kSpace = null;
 
     try {
       String hostS = transMeta.environmentSubstitute(m_hostText.getText());
@@ -988,11 +1112,17 @@ public class CassandraOutputDialog extends BaseStepDialog implements
       String keyspaceS = transMeta.environmentSubstitute(m_keyspaceText
           .getText());
 
-      conn = CassandraOutputData.getCassandraConnection(hostS,
-          Integer.parseInt(portS), userS, passS);
-
       try {
-        conn.setKeyspace(keyspaceS);
+        Map<String, String> opts = new HashMap<String, String>();
+        if (m_useCQL3Check.getSelection()) {
+          opts.put(CassandraUtils.CQLOptions.CQLVERSION_OPTION,
+              CassandraUtils.CQLOptions.CQL3_STRING);
+        }
+        conn = CassandraUtils.getCassandraConnection(hostS,
+            Integer.parseInt(portS), userS, passS,
+            ConnectionFactory.Driver.LEGACY_THRIFT, opts);
+
+        kSpace = conn.getKeyspace(keyspaceS);
       } catch (InvalidRequestException ire) {
         logError(
             BaseMessages.getString(PKG,
@@ -1006,7 +1136,9 @@ public class CassandraOutputDialog extends BaseStepDialog implements
         return;
       }
 
-      List<String> colFams = CassandraColumnMetaData.getColumnFamilyNames(conn);
+      List<String> colFams = kSpace.getColumnFamilyNames();
+      // List<String> colFams =
+      // CassandraColumnMetaData.getColumnFamilyNames(conn);
       m_columnFamilyCombo.removeAll();
       for (String famName : colFams) {
         m_columnFamilyCombo.add(famName);
@@ -1022,6 +1154,84 @@ public class CassandraOutputDialog extends BaseStepDialog implements
           BaseMessages.getString(PKG,
               "CassandraOutputDialog.Error.ProblemGettingSchemaInfo.Message")
               + ":\n\n" + ex.getMessage(), ex);
+    } finally {
+      if (conn != null) {
+        try {
+          conn.closeConnection();
+        } catch (Exception e) {
+          // TODO popup another error dialog
+          e.printStackTrace();
+        }
+      }
+    }
+  }
+
+  protected void showEnterSelectionDialog() {
+    StepMeta stepMeta = transMeta.findStep(stepname);
+
+    String[] choices = null;
+    if (stepMeta != null) {
+      try {
+        RowMetaInterface row = transMeta.getPrevStepFields(stepMeta);
+
+        if (row.size() == 0) {
+          MessageDialog.openError(shell, BaseMessages.getString(PKG,
+              "CassandraOutputData.Message.NoIncomingFields.Title"),
+              BaseMessages.getString(PKG,
+                  "CassandraOutputData.Message.NoIncomingFields"));
+
+          return;
+        }
+
+        choices = new String[row.size()];
+        for (int i = 0; i < row.size(); i++) {
+          ValueMetaInterface vm = row.getValueMeta(i);
+          choices[i] = vm.getName();
+        }
+
+        EnterSelectionDialog dialog = new EnterSelectionDialog(shell, choices,
+            BaseMessages.getString(PKG,
+                "CassandraOutputDialog.SelectKeyFieldsDialog.Title"),
+            BaseMessages.getString(PKG,
+                "CassandraOutputDialog.SelectKeyFieldsDialog.Message"));
+        dialog.setMulti(true);
+        if (!Const.isEmpty(m_keyFieldCombo.getText())) {
+          String current = m_keyFieldCombo.getText();
+          String[] parts = current.split(",");
+          int[] currentSelection = new int[parts.length];
+          int count = 0;
+          for (String s : parts) {
+            int index = row.indexOfValue(s.trim());
+            if (index >= 0) {
+              currentSelection[count++] = index;
+            }
+          }
+
+          dialog.setSelectedNrs(currentSelection);
+        }
+
+        dialog.open();
+
+        int[] selected = dialog.getSelectionIndeces(); // SIC
+        if (selected != null && selected.length > 0) {
+          StringBuilder newSelection = new StringBuilder();
+          boolean first = true;
+          for (int i : selected) {
+            if (first) {
+              newSelection.append(choices[i]);
+              first = false;
+            } else {
+              newSelection.append(",").append(choices[i]);
+            }
+          }
+
+          m_keyFieldCombo.setText(newSelection.toString());
+        }
+      } catch (KettleException ex) {
+        MessageDialog.openError(shell, BaseMessages.getString(PKG,
+            "CassandraOutputData.Message.NoIncomingFields.Title"), BaseMessages
+            .getString(PKG, "CassandraOutputData.Message.NoIncomingFields"));
+      }
     }
   }
 
@@ -1087,6 +1297,9 @@ public class CassandraOutputDialog extends BaseStepDialog implements
     m_currentMeta.setUseCompression(m_useCompressionBut.getSelection());
     m_currentMeta.setAprioriCQL(m_aprioriCQL);
     m_currentMeta.setUseThriftIO(m_useThriftIOCheck.getSelection());
+    m_currentMeta.setUseCQL3(m_useCQL3Check.getSelection());
+    m_currentMeta.setCreateTableClause(m_withClauseText.getText());
+    m_currentMeta.setDontComplainAboutAprioriCQLFailing(m_dontComplain);
 
     if (!m_originalMeta.equals(m_currentMeta)) {
       m_currentMeta.setChanged();
@@ -1106,14 +1319,17 @@ public class CassandraOutputDialog extends BaseStepDialog implements
   protected void popupCQLEditor(ModifyListener lsMod) {
 
     EnterCQLDialog ecd = new EnterCQLDialog(shell, transMeta, lsMod,
-        "CQL to execute before inserting first row", m_aprioriCQL);
+        BaseMessages.getString(PKG, "CassandraOutputDialog.CQL.Button"),
+        m_aprioriCQL, m_dontComplain);
 
     m_aprioriCQL = ecd.open();
+    m_dontComplain = ecd.getDontComplainStatus();
   }
 
   protected void popupSchemaInfo() {
 
-    CassandraConnection conn = null;
+    Connection conn = null;
+    Keyspace kSpace = null;
     try {
       String hostS = transMeta.environmentSubstitute(m_hostText.getText());
       String portS = transMeta.environmentSubstitute(m_portText.getText());
@@ -1126,19 +1342,36 @@ public class CassandraOutputDialog extends BaseStepDialog implements
       String keyspaceS = transMeta.environmentSubstitute(m_keyspaceText
           .getText());
 
-      conn = CassandraOutputData.getCassandraConnection(hostS,
-          Integer.parseInt(portS), userS, passS);
       try {
-        conn.setKeyspace(keyspaceS);
+        Map<String, String> opts = new HashMap<String, String>();
+        if (m_useCQL3Check.getSelection()) {
+          opts.put(CassandraUtils.CQLOptions.CQLVERSION_OPTION,
+              CassandraUtils.CQLOptions.CQL3_STRING);
+        }
+
+        conn = CassandraUtils.getCassandraConnection(hostS,
+            Integer.parseInt(portS), userS, passS,
+            ConnectionFactory.Driver.LEGACY_THRIFT, opts);
+
+        conn.setHosts(hostS);
+        conn.setDefaultPort(Integer.parseInt(portS));
+        conn.setUsername(userS);
+        conn.setPassword(passS);
+        kSpace = conn.getKeyspace(keyspaceS);
+
+        // conn = CassandraOutputData.getCassandraConnection(hostS,
+        // Integer.parseInt(portS), userS, passS);
+        //
+        // conn.setKeyspace(keyspaceS);
       } catch (InvalidRequestException ire) {
         logError(
             BaseMessages.getString(PKG,
-                "CassandraInputDialog.Error.ProblemGettingSchemaInfo.Message")
+                "CassandraOutputDialog.Error.ProblemGettingSchemaInfo.Message")
                 + ":\n\n" + ire.why, ire);
         new ErrorDialog(shell, BaseMessages.getString(PKG,
-            "CassandraInputDialog.Error.ProblemGettingSchemaInfo.Title"),
+            "CassandraOutputDialog.Error.ProblemGettingSchemaInfo.Title"),
             BaseMessages.getString(PKG,
-                "CassandraInputDialog.Error.ProblemGettingSchemaInfo.Message")
+                "CassandraOutputDialog.Error.ProblemGettingSchemaInfo.Message")
                 + ":\n\n" + ire.why, ire);
         return;
       }
@@ -1149,13 +1382,16 @@ public class CassandraOutputDialog extends BaseStepDialog implements
         throw new Exception("No colummn family (table) name specified!");
       }
 
-      if (!CassandraColumnMetaData.columnFamilyExists(conn, colFam)) {
+      // if (!CassandraColumnMetaData.columnFamilyExists(conn, colFam)) {
+      if (!kSpace.columnFamilyExists(colFam)) {
         throw new Exception("The column family '" + colFam + "' does not "
             + "seem to exist in the keyspace '" + keyspaceS);
       }
 
-      CassandraColumnMetaData cassMeta = new CassandraColumnMetaData(conn,
-          colFam);
+      CassandraColumnMetaData cassMeta = (CassandraColumnMetaData) kSpace
+          .getColumnFamilyMetaData(colFam);
+      // CassandraColumnMetaData cassMeta = new CassandraColumnMetaData(conn,
+      // colFam);
       String schemaDescription = cassMeta.getSchemaDescription();
       ShowMessageDialog smd = new ShowMessageDialog(shell, SWT.ICON_INFORMATION
           | SWT.OK, "Schema info", schemaDescription, true);
@@ -1172,7 +1408,12 @@ public class CassandraOutputDialog extends BaseStepDialog implements
               + ":\n\n" + e1.getMessage(), e1);
     } finally {
       if (conn != null) {
-        conn.close();
+        try {
+          conn.closeConnection();
+        } catch (Exception e) {
+          // TODO popup another error dialog
+          e.printStackTrace();
+        }
       }
     }
   }
@@ -1236,6 +1477,10 @@ public class CassandraOutputDialog extends BaseStepDialog implements
       m_keyFieldCombo.setText(m_currentMeta.getKeyField());
     }
 
+    if (!Const.isEmpty(m_currentMeta.getCreateTableWithClause())) {
+      m_withClauseText.setText(m_currentMeta.getCreateTableWithClause());
+    }
+
     m_createColumnFamilyBut.setSelection(m_currentMeta.getCreateColumnFamily());
     m_truncateColumnFamilyBut.setSelection(m_currentMeta
         .getTruncateColumnFamily());
@@ -1245,10 +1490,48 @@ public class CassandraOutputDialog extends BaseStepDialog implements
         .getInsertFieldsNotInMeta());
     m_useCompressionBut.setSelection(m_currentMeta.getUseCompression());
     m_useThriftIOCheck.setSelection(m_currentMeta.getUseThriftIO());
+    m_useCQL3Check.setSelection(m_currentMeta.getUseCQL3());
+
+    m_dontComplain = m_currentMeta.getDontComplainAboutAprioriCQLFailing();
 
     m_aprioriCQL = m_currentMeta.getAprioriCQL();
     if (m_aprioriCQL == null) {
       m_aprioriCQL = "";
+    }
+
+    if (m_useCQL3Check.getSelection()) {
+      m_useThriftIOCheck.setSelection(false);
+      m_getFieldsBut.setText(BaseMessages.getString(PKG,
+          "CassandraOutputDialog.SelectFields.Button"));
+      m_keyFieldLab.setText(BaseMessages.getString(PKG,
+          "CassandraOutputDialog.KeyFields.Label"));
+    } else {
+      m_getFieldsBut.setText(" "
+          + BaseMessages.getString(PKG,
+              "CassandraOutputDialog.GetFields.Button") + " ");
+      m_keyFieldLab.setText(BaseMessages.getString(PKG,
+          "CassandraOutputDialog.KeyField.Label"));
+      m_unloggedBatchBut.setSelection(false);
+    }
+
+    checkWidgetsWithRespectToDriver(ConnectionFactory.Driver.LEGACY_THRIFT);
+  }
+
+  private void checkWidgetsWithRespectToDriver(ConnectionFactory.Driver d) {
+    Connection c = ConnectionFactory.getFactory().getConnection(d);
+
+    m_useCQL3Check.setEnabled(c.supportsCQL());
+    if (!c.supportsCQL()) {
+      m_useCQL3Check.setSelection(false);
+      m_unloggedBatchBut.setSelection(false);
+      m_unloggedBatchBut.setEnabled(false);
+      m_useThriftIOCheck.setEnabled(true);
+      m_useThriftIOCheck.setSelection(true);
+    }
+
+    m_useThriftIOCheck.setEnabled(c.supportsNonCQL());
+    if (!c.supportsNonCQL()) {
+      m_useThriftIOCheck.setSelection(false);
     }
   }
 

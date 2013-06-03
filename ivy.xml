@@ -36,5 +36,7 @@
     
     <dependency org="log4j"                    name="log4j"           rev="1.2.14" conf="provided->default" />
     
+    <dependency org="junit" name="junit" rev="4.5" conf="test->default" />
+    
   </dependencies>
 </ivy-module>

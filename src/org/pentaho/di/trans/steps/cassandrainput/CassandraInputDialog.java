@@ -57,7 +57,6 @@ import org.pentaho.di.i18n.BaseMessages;
 import org.pentaho.di.trans.TransMeta;
 import org.pentaho.di.trans.step.BaseStepMeta;
 import org.pentaho.di.trans.step.StepDialogInterface;
-import org.pentaho.di.trans.step.StepMetaInterface;
 import org.pentaho.di.ui.core.dialog.ErrorDialog;
 import org.pentaho.di.ui.core.dialog.ShowMessageDialog;
 import org.pentaho.di.ui.core.widget.StyledTextComp;
@@ -115,7 +114,7 @@ public class CassandraInputDialog extends BaseStepDialog implements
   private Label m_cqlLab;
   private StyledTextComp m_cqlText;
 
-  public CassandraInputDialog(Shell parent, StepMetaInterface in, TransMeta tr, String name) {
+  public CassandraInputDialog(Shell parent, Object in, TransMeta tr, String name) {
 
     super(parent, (BaseStepMeta) in, tr, name);
 

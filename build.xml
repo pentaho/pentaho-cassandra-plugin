@@ -17,6 +17,9 @@
 
 	<!-- Import the common_build.xml file which contains all the default tasks -->	
 	<import file="build-res/subfloor-pkg.xml"/>
+	
+	<property name="lib.provided.dir" value="lib-provided" description="Ivy dependencies of 'provided' configuration are placed here"/>
+	  
 
   <!--
     AS STATED ABOVE, THE ONLY TASKS THAT SHOULD EXIST IN THIS BUILD FILE ARE
@@ -39,6 +42,52 @@
     <mkdir dir="${stage.dir}" />
     <mkdir dir="${stage.dir}/${ivy.artifact.id}" />
   </target>
+	
+	<!-- Setup the compile classpath to include the provided jars and the api jar -->
+    <path id="classpath">
+      <fileset dir="${devlib.dir}">
+        <include name="**/*.jar" />
+      </fileset>
+      <fileset dir="${lib.dir}">
+        <include name="**/*.jar" />
+      </fileset>
+      <fileset dir="${lib.provided.dir}">
+        <include name="**/*.jar" />
+      </fileset>
+    </path>
+    
+    <!-- Setup the classpath used for testing to include the provided jars -->
+    <path id="test.classpath">
+      <fileset dir="${devlib.dir}">
+        <include name="**/*.jar" />
+      </fileset>
+      <fileset dir="${lib.dir}">
+        <include name="**/*.jar" />
+      </fileset>
+      <fileset dir="${lib.provided.dir}">
+        <include name="**/*.jar" />
+      </fileset>
+      <fileset dir="${testlib.dir}">
+        <include name="**/*.jar" />
+      </fileset>
+      <pathelement path="${testclasses.dir}" />
+      <pathelement path="${classes.dir}" />
+      <pathelement path="${classes.common-mapred.dir}" />
+    </path>
+	
+	<!-- 
+	  resolve related targets so we can resolve "provided" jars separate from 
+	  normal ones so they don't get automatically packaged in with the archives.
+	  -->
+	  <target name="clean-jars" depends="subfloor.clean-jars">
+	    <delete dir="${lib.provided.dir}"/>
+	  </target>
+	
+	<!-- Resolve provided dependencies to a separate directory -->
+	  <target name="resolve-default" depends="subfloor.resolve-default">
+	    <ivy:resolve file="${ivyfile}" conf="provided" />
+	    <ivy:retrieve conf="provided" pattern="${lib.provided.dir}/[module]-[revision](-[classifier]).[ext]" symlink="${ivy.use.symlinks.internal}" />
+	  </target>
 
 	
 </project>

@@ -58,7 +58,7 @@ import org.w3c.dom.Node;
 public class CassandraOutputMeta extends BaseStepMeta implements
     StepMetaInterface {
 
-  protected static final Class<?> PKG = CassandraOutputMeta.class;
+  public static final Class<?> PKG = CassandraOutputMeta.class;
 
   /** The host to contact */
   protected String m_cassandraHost = "localhost";
@@ -93,11 +93,17 @@ public class CassandraOutputMeta extends BaseStepMeta implements
    */
   protected String m_batchSize = "100";
 
+  /** True if unlogged (i.e. non atomic) batch writes are to be used. CQL 3 only */
+  protected boolean m_unloggedBatch = false;
+
   /** Whether to use GZIP compression of CQL queries */
   protected boolean m_useCompression = false;
 
   /** Whether to create the specified column family (table) if it doesn't exist */
   protected boolean m_createColumnFamily = true;
+
+  /** Anything to include in the WITH clause at table creation time? */
+  protected String m_createTableWithClause;
 
   /** The field in the incoming data to use as the key for inserts */
   protected String m_keyField = "";
@@ -145,8 +151,17 @@ public class CassandraOutputMeta extends BaseStepMeta implements
    */
   protected String m_aprioriCQL = "";
 
+  /**
+   * Whether or not an exception generated when executing apriori CQL statements
+   * should stop the step
+   */
+  protected boolean m_dontComplainAboutAprioriCQLFailing;
+
   /** Use thrift IO-based batch mutate instead of CQL? */
   protected boolean m_useThriftIO = false;
+
+  /** Whether to use CQL version 3 */
+  protected boolean m_useCQL3 = false;
 
   /**
    * Set the host for sending schema updates to
@@ -370,6 +385,14 @@ public class CassandraOutputMeta extends BaseStepMeta implements
     return m_createColumnFamily;
   }
 
+  public void setCreateTableClause(String w) {
+    m_createTableWithClause = w;
+  }
+
+  public String getCreateTableWithClause() {
+    return m_createTableWithClause;
+  }
+
   /**
    * Set the consistency to use (e.g. ONE, QUORUM etc).
    * 
@@ -406,6 +429,24 @@ public class CassandraOutputMeta extends BaseStepMeta implements
    */
   public String getBatchSize() {
     return m_batchSize;
+  }
+
+  /**
+   * Set whether unlogged batch writes (non-atomic) are to be used
+   * 
+   * @param u true if unlogged batch operations are to be used
+   */
+  public void setUseUnloggedBatches(boolean u) {
+    m_unloggedBatch = u;
+  }
+
+  /**
+   * Get whether unlogged batch writes (non-atomic) are to be used
+   * 
+   * @return true if unlogged batch operations are to be used
+   */
+  public boolean getUseUnloggedBatch() {
+    return m_unloggedBatch;
   }
 
   /**
@@ -536,6 +577,24 @@ public class CassandraOutputMeta extends BaseStepMeta implements
   }
 
   /**
+   * Set whether to complain or not if any apriori CQL statements fail
+   * 
+   * @param c true if failures should be ignored (but logged)
+   */
+  public void setDontComplainAboutAprioriCQLFailing(boolean c) {
+    m_dontComplainAboutAprioriCQLFailing = c;
+  }
+
+  /**
+   * Get whether to complain or not if any apriori CQL statements fail
+   * 
+   * @return true if failures should be ignored (but logged)
+   */
+  public boolean getDontComplainAboutAprioriCQLFailing() {
+    return m_dontComplainAboutAprioriCQLFailing;
+  }
+
+  /**
    * Set whether to use Thrift IO-based batch mutate instead of batch CQL.
    * 
    * @param useThrift true if Thrift IO is to be used rather than CQL.
@@ -551,6 +610,24 @@ public class CassandraOutputMeta extends BaseStepMeta implements
    */
   public boolean getUseThriftIO() {
     return m_useThriftIO;
+  }
+
+  /**
+   * Set whether to use CQL version 3 is to be used for CQL IO mode
+   * 
+   * @param cql3 true if CQL version 3 is to be used
+   */
+  public void setUseCQL3(boolean cql3) {
+    m_useCQL3 = cql3;
+  }
+
+  /**
+   * Get whether to use CQL version 3 is to be used for CQL IO mode
+   * 
+   * @param return true if CQL version 3 is to be used
+   */
+  public boolean getUseCQL3() {
+    return m_useCQL3;
   }
 
   @Override
@@ -650,17 +727,34 @@ public class CassandraOutputMeta extends BaseStepMeta implements
         XMLHandler
             .addTagValue("truncate_column_family", m_truncateColumnFamily));
 
+    retval.append("\n    ").append(
+        XMLHandler.addTagValue("unlogged_batch", m_unloggedBatch));
+
+    retval.append("\n    ").append(
+        XMLHandler.addTagValue("dont_complain_apriori_cql",
+            m_dontComplainAboutAprioriCQLFailing));
+
     if (!Const.isEmpty(m_aprioriCQL)) {
       retval.append("\n    ").append(
           XMLHandler.addTagValue("apriori_cql", m_aprioriCQL));
     }
 
+    if (!Const.isEmpty(m_createTableWithClause)) {
+      retval.append("\n    ").append(
+          XMLHandler.addTagValue("create_table_with_clause",
+              m_createTableWithClause));
+    }
+
     retval.append("\n    ").append(
         XMLHandler.addTagValue("use_thrift_io", m_useThriftIO));
+
+    retval.append("\n    ").append(
+        XMLHandler.addTagValue("use_cql3", m_useCQL3));
 
     return retval.toString();
   }
 
+  @Override
   public void loadXML(Node stepnode, List<DatabaseMeta> databases,
       Map<String, Counter> counters) throws KettleXMLException {
     m_cassandraHost = XMLHandler.getTagValue(stepnode, "cassandra_host");
@@ -692,12 +786,32 @@ public class CassandraOutputMeta extends BaseStepMeta implements
 
     m_aprioriCQL = XMLHandler.getTagValue(stepnode, "apriori_cql");
 
+    m_createTableWithClause = XMLHandler.getTagValue(stepnode,
+        "create_table_with_clause");
+
     String useThrift = XMLHandler.getTagValue(stepnode, "use_thrift_io");
     if (!Const.isEmpty(useThrift)) {
       m_useThriftIO = useThrift.equalsIgnoreCase("Y");
     }
+
+    String useCQL3 = XMLHandler.getTagValue(stepnode, "use_cql3");
+    if (!Const.isEmpty(useCQL3)) {
+      m_useCQL3 = useCQL3.equalsIgnoreCase("Y");
+    }
+
+    String unloggedBatch = XMLHandler.getTagValue(stepnode, "unlogged_batch");
+    if (!Const.isEmpty(unloggedBatch)) {
+      m_unloggedBatch = unloggedBatch.equalsIgnoreCase("Y");
+    }
+
+    String dontComplain = XMLHandler.getTagValue(stepnode,
+        "dont_complain_apriori_cql");
+    if (!Const.isEmpty(dontComplain)) {
+      m_dontComplainAboutAprioriCQLFailing = dontComplain.equalsIgnoreCase("Y");
+    }
   }
 
+  @Override
   public void readRep(Repository rep, ObjectId id_step,
       List<DatabaseMeta> databases, Map<String, Counter> counters)
       throws KettleException {
@@ -732,12 +846,22 @@ public class CassandraOutputMeta extends BaseStepMeta implements
         "update_cassandra_meta");
     m_truncateColumnFamily = rep.getStepAttributeBoolean(id_step, 0,
         "truncate_column_family");
+    m_unloggedBatch = rep.getStepAttributeBoolean(id_step, 0, "unlogged_batch");
 
     m_aprioriCQL = rep.getStepAttributeString(id_step, 0, "apriori_cql");
 
+    m_createTableWithClause = rep.getStepAttributeString(id_step, 0,
+        "create_table_with_clause");
+
     m_useThriftIO = rep.getStepAttributeBoolean(id_step, 0, "use_thrift_io");
+
+    m_dontComplainAboutAprioriCQLFailing = rep.getStepAttributeBoolean(id_step,
+        0, "dont_complain_aprior_cql");
+
+    m_useCQL3 = rep.getStepAttributeBoolean(id_step, 0, "use_cql3");
   }
 
+  @Override
   public void saveRep(Repository rep, ObjectId id_transformation,
       ObjectId id_step) throws KettleException {
     if (!Const.isEmpty(m_cassandraHost)) {
@@ -820,16 +944,28 @@ public class CassandraOutputMeta extends BaseStepMeta implements
         "update_cassandra_meta", m_updateCassandraMeta);
     rep.saveStepAttribute(id_transformation, id_step, 0,
         "truncate_column_family", m_truncateColumnFamily);
+    rep.saveStepAttribute(id_transformation, id_step, 0, "unlogged_batch",
+        m_unloggedBatch);
 
     if (!Const.isEmpty(m_aprioriCQL)) {
       rep.saveStepAttribute(id_transformation, id_step, 0, "apriori_cql",
           m_aprioriCQL);
     }
 
+    if (!Const.isEmpty(m_createTableWithClause)) {
+      rep.saveStepAttribute(id_transformation, id_step, 0,
+          "create_table_with_clause", m_aprioriCQL);
+    }
+
     rep.saveStepAttribute(id_transformation, id_step, 0, "use_thrift_io",
         m_useThriftIO);
+
+    rep.saveStepAttribute(id_transformation, id_step, 0, "use_cql3", m_useCQL3);
+    rep.saveStepAttribute(id_transformation, id_step, 0,
+        "dont_complain_apriori_cql", m_dontComplainAboutAprioriCQLFailing);
   }
 
+  @Override
   public void check(List<CheckResultInterface> remarks, TransMeta transMeta,
       StepMeta stepMeta, RowMetaInterface prev, String[] input,
       String[] output, RowMetaInterface info) {

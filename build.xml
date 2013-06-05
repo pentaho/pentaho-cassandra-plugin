@@ -36,7 +36,6 @@
 		<delete dir="${dist.dir}" />
 		<delete dir="${stage.dir}" />
 	</target>
-
   
   <target name="assemble.init">
     <mkdir dir="${stage.dir}" />

@@ -26,6 +26,9 @@
     <dependency org="pentaho-kettle" name="kettle-ui-swt" rev="${dependency.kettle.revision}" transitive="false" conf="default->default"
       changing="true" />
 
+    <dependency org="pentaho"             name="metastore"           rev="${dependency.pentaho-metastore.revision}"   changing="true" />
+
+    <dependency org="com.google.guava" name="guava" rev="${dependency.guava.revision}" transitive="false" conf="default->default"  changing="false"/>
     <dependency org="org.apache.thrift" name="libthrift" rev="${dependency.libthrift.revision}" transitive="false" conf="default->default"
       changing="false"/>    
     <dependency org="org.apache.cassandra" name="cassandra-all" rev="${dependency.apache-cassandra.revision}" transitive="false" conf="default->default" changing="false"/>

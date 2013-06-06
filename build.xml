@@ -59,6 +59,7 @@
 			<exclude name="commons-vfs*.jar" />
 			<exclude name="pentaho-vfs-browser*.jar" />
 			<exclude name="scannotation*.jar" />
+			<exclude name="metastore*.jar" />
 			<exclude name="dom4j*.jar" />	      	
 			<exclude name="jface*.jar" />	      	
 			<exclude name="x86*.jar" />	      	

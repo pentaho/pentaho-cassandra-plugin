@@ -91,16 +91,35 @@ public class CassandraInput extends BaseStep implements StepInterface {
    */
   protected Map<String, Integer> m_outputFormatMap = new HashMap<String, Integer>();
 
+  /** Current input row being processed (if executing for each row) */
+  protected Object[] m_currentInputRowDrivingQuery = null;
+
+  /** Column family name */
+  protected String m_colFamName;
+
   @Override
   public boolean processRow(StepMetaInterface smi, StepDataInterface sdi)
       throws KettleException {
 
     if (!isStopped()) {
+
+      if (m_meta.getExecuteForEachIncomingRow()
+          && m_currentInputRowDrivingQuery == null) {
+        m_currentInputRowDrivingQuery = getRow();
+
+        if (m_currentInputRowDrivingQuery == null) {
+          // no more input, no more queries to make
+          setOutputDone();
+          return false;
+        }
+
+        if (!first) {
+          initQuery();
+        }
+      }
+
       if (first) {
         first = false;
-
-        m_data = (CassandraInputData) sdi;
-        m_meta = (CassandraInputMeta) smi;
 
         // Get the connection to Cassandra
         String hostS = environmentSubstitute(m_meta.getCassandraHost());
@@ -151,21 +170,21 @@ public class CassandraInput extends BaseStep implements StepInterface {
         }
 
         // check the source column family (table) first
-        String colFamName = CassandraUtils
+        m_colFamName = CassandraUtils
             .getColumnFamilyNameFromCQLSelectQuery(environmentSubstitute(m_meta
                 .getCQLSelectQuery()));
 
-        if (Const.isEmpty(colFamName)) {
+        if (Const.isEmpty(m_colFamName)) {
           throw new KettleException(BaseMessages.getString(
               CassandraInputMeta.PKG,
               "CassandraInput.Error.NonExistentColumnFamily")); //$NON-NLS-1$
         }
 
         try {
-          if (!m_keyspace.columnFamilyExists(colFamName)) {
+          if (!m_keyspace.columnFamilyExists(m_colFamName)) {
             throw new KettleException(BaseMessages.getString(
                 CassandraInputMeta.PKG,
-                "CassandraInput.Error.NonExistentColumnFamily", colFamName, //$NON-NLS-1$
+                "CassandraInput.Error.NonExistentColumnFamily", m_colFamName, //$NON-NLS-1$
                 keyspaceS));
           }
         } catch (Exception ex) {
@@ -198,56 +217,19 @@ public class CassandraInput extends BaseStep implements StepInterface {
         // column family name (key) is the first field output
         try {
           logBasic(BaseMessages.getString(CassandraInputMeta.PKG,
-              "CassandraInput.Info.GettintMetaData", colFamName)); //$NON-NLS-1$
+              "CassandraInput.Info.GettintMetaData", m_colFamName)); //$NON-NLS-1$
 
-          m_cassandraMeta = m_keyspace.getColumnFamilyMetaData(colFamName);
+          m_cassandraMeta = m_keyspace.getColumnFamilyMetaData(m_colFamName);
         } catch (Exception e) {
           closeConnection();
           throw new KettleException(e.getMessage(), e);
         }
 
-        String queryS = environmentSubstitute(m_meta.getCQLSelectQuery());
-        Compression compression = m_meta.getUseCompression() ? Compression.GZIP
-            : Compression.NONE;
-        try {
-          if (!m_meta.getUseThriftIO()) {
-            logBasic(BaseMessages.getString(
-                CassandraInputMeta.PKG,
-                "CassandraInput.Info.ExecutingQuery", //$NON-NLS-1$
-                queryS,
-                (m_meta.getUseCompression() ? BaseMessages.getString(
-                    CassandraInputMeta.PKG,
-                    "CassandraInput.Info.UsingGZIPCompression") : ""))); //$NON-NLS-1$ //$NON-NLS-2$
-
-            m_cqlHandler = m_keyspace.getCQLRowHandler();
-            m_cqlHandler.newRowQuery(this, colFamName, queryS,
-                compression.name(), "", //$NON-NLS-1$
-                m_meta.getOutputKeyValueTimestampTuples(), log);
-
-          } else if (m_meta.getOutputKeyValueTimestampTuples()) {
-            // --------------- use non-CQL IO (only applicable for <key, value>
-            // tuple mode at present) ----------
-
-            m_nonCqlHandler = m_keyspace.getNonCQLRowHandler();
-
-            List<String> userCols = (m_meta.m_specificCols != null && m_meta.m_specificCols
-                .size() > 0) ? m_meta.m_specificCols : null;
-
-            m_nonCqlHandler.newRowQuery(this, colFamName, userCols,
-                m_meta.m_rowLimit, m_meta.m_colLimit, m_meta.m_rowBatchSize,
-                m_meta.m_colBatchSize, "", log); //$NON-NLS-1$
-
-            // --------------- end non-CQL IO mode
-          }
-        } catch (Exception e) {
-          closeConnection();
-
-          throw new KettleException(e.getMessage(), e);
-        }
+        initQuery();
       }
 
+      Object[] outRowData = null;
       if (!m_meta.getUseThriftIO()) {
-        Object[] outRowData = null;
         try {
           outRowData = m_cqlHandler.getNextOutputRow(m_data.getOutputRowMeta(),
               m_outputFormatMap);
@@ -266,16 +248,11 @@ public class CassandraInput extends BaseStep implements StepInterface {
           if (checkFeedback(getProcessed())) {
             logBasic("Read " + getProcessed() + " rows from Cassandra"); //$NON-NLS-1$ //$NON-NLS-2$
           }
-        } else {
-          // we're done now
-          closeConnection();
-          setOutputDone();
-          return false;
         }
       } else if (m_meta.getOutputKeyValueTimestampTuples()) {
         // TODO move code from the first block down to here for this. This is so
         // we can prepare for handling an "execute for each row" new feature.
-        Object[] outRowData = null;
+        outRowData = null;
         try {
           outRowData = m_nonCqlHandler.getNextOutputRow(m_data
               .getOutputRowMeta());
@@ -294,16 +271,22 @@ public class CassandraInput extends BaseStep implements StepInterface {
           if (checkFeedback(getProcessed())) {
             logBasic("Read " + getProcessed() + " rows from Cassandra"); //$NON-NLS-1$ //$NON-NLS-2$
           }
-        } else {
-          // we're done now
-          closeConnection();
-          setOutputDone();
-          return false;
         }
       } else {
         throw new KettleException(BaseMessages.getString(
             CassandraInputMeta.PKG,
             "CassandraInput.Error.TupleModeMustBeUsedForNonCQLIO")); //$NON-NLS-1$
+      }
+
+      if (outRowData == null) {
+        if (!m_meta.getExecuteForEachIncomingRow()) {
+          // we're done now
+          closeConnection();
+          setOutputDone();
+          return false;
+        } else {
+          m_currentInputRowDrivingQuery = null; // finished with this row
+        }
       }
     } else {
       closeConnection();
@@ -311,6 +294,65 @@ public class CassandraInput extends BaseStep implements StepInterface {
     }
 
     return true;
+  }
+
+  @Override
+  public boolean init(StepMetaInterface stepMeta, StepDataInterface stepData) {
+    if (super.init(stepMeta, stepData)) {
+      m_data = (CassandraInputData) stepData;
+      m_meta = (CassandraInputMeta) stepMeta;
+    }
+
+    return true;
+  }
+
+  protected void initQuery() throws KettleException {
+    String queryS = environmentSubstitute(m_meta.getCQLSelectQuery());
+    if (m_meta.getExecuteForEachIncomingRow()) {
+      queryS = fieldSubstitute(queryS, getInputRowMeta(),
+          m_currentInputRowDrivingQuery);
+    }
+    Compression compression = m_meta.getUseCompression() ? Compression.GZIP
+        : Compression.NONE;
+    try {
+      if (!m_meta.getUseThriftIO()) {
+        logBasic(BaseMessages.getString(
+            CassandraInputMeta.PKG,
+            "CassandraInput.Info.ExecutingQuery", //$NON-NLS-1$
+            queryS,
+            (m_meta.getUseCompression() ? BaseMessages.getString(
+                CassandraInputMeta.PKG,
+                "CassandraInput.Info.UsingGZIPCompression") : ""))); //$NON-NLS-1$ //$NON-NLS-2$
+
+        if (m_cqlHandler == null) {
+          m_cqlHandler = m_keyspace.getCQLRowHandler();
+        }
+        m_cqlHandler.newRowQuery(this, m_colFamName, queryS,
+            compression.name(), "", //$NON-NLS-1$
+            m_meta.getOutputKeyValueTimestampTuples(), log);
+
+      } else if (m_meta.getOutputKeyValueTimestampTuples()) {
+        // --------------- use non-CQL IO (only applicable for <key, value>
+        // tuple mode at present) ----------
+
+        if (m_nonCqlHandler == null) {
+          m_nonCqlHandler = m_keyspace.getNonCQLRowHandler();
+        }
+
+        List<String> userCols = (m_meta.m_specificCols != null && m_meta.m_specificCols
+            .size() > 0) ? m_meta.m_specificCols : null;
+
+        m_nonCqlHandler.newRowQuery(this, m_colFamName, userCols,
+            m_meta.m_rowLimit, m_meta.m_colLimit, m_meta.m_rowBatchSize,
+            m_meta.m_colBatchSize, "", log); //$NON-NLS-1$
+
+        // --------------- end non-CQL IO mode
+      }
+    } catch (Exception e) {
+      closeConnection();
+
+      throw new KettleException(e.getMessage(), e);
+    }
   }
 
   @Override

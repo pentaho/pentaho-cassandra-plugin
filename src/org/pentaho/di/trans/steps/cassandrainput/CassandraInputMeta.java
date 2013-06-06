@@ -103,6 +103,9 @@ public class CassandraInputMeta extends BaseStepMeta implements
   /** Whether to use CQL version 3 */
   protected boolean m_useCQL3 = false;
 
+  /** Whether to execute the query for each incoming row */
+  protected boolean m_executeForEachIncomingRow;
+
   /**
    * Timeout (milliseconds) to use for socket connections - blank means use
    * cluster default
@@ -335,6 +338,24 @@ public class CassandraInputMeta extends BaseStepMeta implements
     return m_outputKeyValueTimestampTuples;
   }
 
+  /**
+   * Set whether the query should be executed for each incoming row
+   * 
+   * @param e true if the query should be executed for each incoming row
+   */
+  public void setExecuteForEachIncomingRow(boolean e) {
+    m_executeForEachIncomingRow = e;
+  }
+
+  /**
+   * Get whether the query should be executed for each incoming row
+   * 
+   * @return true if the query should be executed for each incoming row
+   */
+  public boolean getExecuteForEachIncomingRow() {
+    return m_executeForEachIncomingRow;
+  }
+
   @Override
   public String getXML() {
     StringBuffer retval = new StringBuffer();
@@ -388,6 +409,10 @@ public class CassandraInputMeta extends BaseStepMeta implements
     retval.append("\n    ").append(
         XMLHandler.addTagValue("use_cql3", m_useCQL3));
 
+    retval.append("    ").append( //$NON-NLS-1$
+        XMLHandler.addTagValue(
+            "execute_for_each_row", m_executeForEachIncomingRow)); //$NON-NLS-1$
+
     return retval.toString();
   }
 
@@ -424,6 +449,12 @@ public class CassandraInputMeta extends BaseStepMeta implements
       m_useCQL3 = useCQL3.equalsIgnoreCase("Y");
     }
 
+    String executeForEachR = XMLHandler.getTagValue(stepnode,
+        "execute_for_each_row");
+    if (!Const.isEmpty(executeForEachR)) {
+      m_executeForEachIncomingRow = executeForEachR.equalsIgnoreCase("Y");
+    }
+
     m_socketTimeout = XMLHandler.getTagValue(stepnode, "socket_timeout");
   }
 
@@ -449,6 +480,9 @@ public class CassandraInputMeta extends BaseStepMeta implements
         "output_key_value_timestamp_tuples");
     m_useThriftIO = rep.getStepAttributeBoolean(id_step, 0, "use_thrift_io");
     m_useCQL3 = rep.getStepAttributeBoolean(id_step, 0, "use_cql3");
+
+    m_executeForEachIncomingRow = rep.getStepAttributeBoolean(id_step,
+        "execute_for_each_row"); //$NON-NLS-1$        
 
     m_socketTimeout = rep.getStepAttributeString(id_step, 0, "socket_timeout");
   }
@@ -496,6 +530,10 @@ public class CassandraInputMeta extends BaseStepMeta implements
         m_useThriftIO);
 
     rep.saveStepAttribute(id_transformation, id_step, 0, "use_cql3", m_useCQL3);
+
+    rep.saveStepAttribute(id_transformation, id_step, 0,
+        "execute_for_each_row", //$NON-NLS-1$
+        m_executeForEachIncomingRow);
 
     if (!Const.isEmpty(m_socketTimeout)) {
       rep.saveStepAttribute(id_transformation, id_step, 0, "socket_timeout",

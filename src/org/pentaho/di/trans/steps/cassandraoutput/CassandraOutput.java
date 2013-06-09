@@ -109,7 +109,11 @@ public class CassandraOutput extends BaseStep implements StepInterface {
   /** Whether to use Thrift for IO or not */
   protected boolean m_useThriftIO;
 
+  /** Consistency level to use */
   protected String m_consistencyLevel;
+
+  /** Options for keyspace and row handlers */
+  protected Map<String, String> m_opts;
 
   protected void initialize(StepMetaInterface smi, StepDataInterface sdi)
       throws KettleException {
@@ -322,6 +326,7 @@ public class CassandraOutput extends BaseStep implements StepInterface {
 
       m_consistency = environmentSubstitute(m_meta.getConsistency());
       m_batchInsertCQL = CassandraUtils.newCQLBatch(m_batchSize, m_consistency,
+          m_meta.getUseCQL3(),
           (m_meta.getUseUnloggedBatch() && m_meta.getUseCQL3()));
 
       m_batch = new ArrayList<Object[]>();
@@ -417,7 +422,7 @@ public class CassandraOutput extends BaseStep implements StepInterface {
       } else {
         // construct CQL
         m_batchInsertCQL = CassandraUtils.newCQLBatch(m_batchSize,
-            m_consistency,
+            m_consistency, m_meta.getUseCQL3(),
             (m_meta.getUseUnloggedBatch() && m_meta.getUseCQL3()));
       }
       int rowsAdded = 0;
@@ -433,7 +438,7 @@ public class CassandraOutput extends BaseStep implements StepInterface {
           if (CassandraUtils.addRowToCQLBatch(m_batchInsertCQL,
               m_columnFamilyName, getInputRowMeta(), r, m_cassandraMeta,
               m_meta.getInsertFieldsNotInMeta(), (m_meta.getUseCQL3() ? 3 : 2),
-              log)) {
+              m_opts, log)) {
             rowsAdded++;
           }
         }
@@ -538,24 +543,46 @@ public class CassandraOutput extends BaseStep implements StepInterface {
       passS = environmentSubstitute(passS);
     }
 
-    Map<String, String> opts = new HashMap<String, String>();
+    m_opts = new HashMap<String, String>();
     if (!Const.isEmpty(timeoutS)) {
-      opts.put(CassandraUtils.ConnectionOptions.SOCKET_TIMEOUT, timeoutS);
+      m_opts.put(CassandraUtils.ConnectionOptions.SOCKET_TIMEOUT, timeoutS);
     }
 
-    opts.put(CassandraUtils.BatchOptions.BATCH_TIMEOUT, "" //$NON-NLS-1$
+    m_opts.put(CassandraUtils.BatchOptions.BATCH_TIMEOUT, "" //$NON-NLS-1$
         + m_cqlBatchInsertTimeout);
 
     // Set CQL version 3 if specified
     if (m_meta.getUseCQL3()) {
-      opts.put(CassandraUtils.CQLOptions.CQLVERSION_OPTION,
+      m_opts.put(CassandraUtils.CQLOptions.CQLVERSION_OPTION,
           CassandraUtils.CQLOptions.CQL3_STRING);
     }
 
-    if (opts.size() > 0) {
+    // Set TTL if specified
+    String ttl = m_meta.getTTL();
+    ttl = environmentSubstitute(ttl);
+    if (!Const.isEmpty(ttl) && !ttl.startsWith("-")) {
+      String ttlUnit = m_meta.getTTLUnit();
+      CassandraOutputMeta.TTLUnits theUnit = CassandraOutputMeta.TTLUnits.NONE;
+      for (CassandraOutputMeta.TTLUnits u : CassandraOutputMeta.TTLUnits
+          .values()) {
+        if (ttlUnit.equals(u.toString())) {
+          theUnit = u;
+          break;
+        }
+      }
+      int value = -1;
+      try {
+        value = Integer.parseInt(ttl);
+        value = theUnit.convertToSeconds(value);
+        m_opts.put("TTL", "" + value);
+      } catch (NumberFormatException e) {
+      }
+    }
+
+    if (m_opts.size() > 0) {
       logBasic(BaseMessages.getString(CassandraOutputMeta.PKG,
           "CassandraOutput.Message.UsingConnectionOptions", //$NON-NLS-1$
-          CassandraUtils.optionsToString(opts)));
+          CassandraUtils.optionsToString(m_opts)));
     }
 
     Connection connection = null;
@@ -566,7 +593,7 @@ public class CassandraOutput extends BaseStep implements StepInterface {
 
       connection = CassandraUtils.getCassandraConnection(actualHostToUse,
           Integer.parseInt(portS), userS, passS,
-          ConnectionFactory.Driver.LEGACY_THRIFT, opts);
+          ConnectionFactory.Driver.LEGACY_THRIFT, m_opts);
 
       // set the global connection only if this connection is not being used
       // just for schema changes

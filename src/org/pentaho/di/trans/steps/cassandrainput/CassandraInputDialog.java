@@ -127,6 +127,8 @@ public class CassandraInputDialog extends BaseStepDialog implements
   private Label m_cqlLab;
   private StyledTextComp m_cqlText;
 
+  private Button m_executeForEachRowBut;
+
   public CassandraInputDialog(Shell parent, Object in, TransMeta tr, String name) {
 
     super(parent, (BaseStepMeta) in, tr, name);
@@ -135,6 +137,7 @@ public class CassandraInputDialog extends BaseStepDialog implements
     m_originalMeta = (CassandraInputMeta) m_currentMeta.clone();
   }
 
+  @Override
   public String open() {
     Shell parent = getParent();
     Display display = parent.getDisplay();
@@ -146,6 +149,7 @@ public class CassandraInputDialog extends BaseStepDialog implements
 
     // used to listen to a text field (m_wStepname)
     ModifyListener lsMod = new ModifyListener() {
+      @Override
       public void modifyText(ModifyEvent e) {
         m_currentMeta.setChanged();
       }
@@ -202,6 +206,7 @@ public class CassandraInputDialog extends BaseStepDialog implements
         | SWT.BORDER);
     props.setLook(m_hostText);
     m_hostText.addModifyListener(new ModifyListener() {
+      @Override
       public void modifyText(ModifyEvent e) {
         m_hostText.setToolTipText(transMeta.environmentSubstitute(m_hostText
             .getText()));
@@ -229,6 +234,7 @@ public class CassandraInputDialog extends BaseStepDialog implements
         | SWT.BORDER);
     props.setLook(m_portText);
     m_portText.addModifyListener(new ModifyListener() {
+      @Override
       public void modifyText(ModifyEvent e) {
         m_portText.setToolTipText(transMeta.environmentSubstitute(m_portText
             .getText()));
@@ -256,6 +262,7 @@ public class CassandraInputDialog extends BaseStepDialog implements
         | SWT.BORDER);
     props.setLook(m_timeoutText);
     m_timeoutText.addModifyListener(new ModifyListener() {
+      @Override
       public void modifyText(ModifyEvent e) {
         m_timeoutText.setToolTipText(transMeta
             .environmentSubstitute(m_timeoutText.getText()));
@@ -283,6 +290,7 @@ public class CassandraInputDialog extends BaseStepDialog implements
         | SWT.BORDER);
     props.setLook(m_userText);
     m_userText.addModifyListener(new ModifyListener() {
+      @Override
       public void modifyText(ModifyEvent e) {
         m_userText.setToolTipText(transMeta.environmentSubstitute(m_userText
             .getText()));
@@ -312,6 +320,7 @@ public class CassandraInputDialog extends BaseStepDialog implements
     m_passText.setEchoChar('*');
     // If the password contains a variable, don't hide it.
     m_passText.getTextWidget().addModifyListener(new ModifyListener() {
+      @Override
       public void modifyText(ModifyEvent e) {
         checkPasswordVisible();
       }
@@ -340,6 +349,7 @@ public class CassandraInputDialog extends BaseStepDialog implements
         | SWT.BORDER);
     props.setLook(m_keyspaceText);
     m_keyspaceText.addModifyListener(new ModifyListener() {
+      @Override
       public void modifyText(ModifyEvent e) {
         m_keyspaceText.setToolTipText(transMeta
             .environmentSubstitute(m_keyspaceText.getText()));
@@ -453,6 +463,25 @@ public class CassandraInputDialog extends BaseStepDialog implements
       }
     });
 
+    // execute for each row
+    Label executeForEachLab = new Label(shell, SWT.RIGHT);
+    props.setLook(executeForEachLab);
+    executeForEachLab.setText(BaseMessages.getString(PKG,
+        "CassandraInputDialog.ExecuteForEachRow.Label"));
+    fd = new FormData();
+    fd.right = new FormAttachment(middle, -margin);
+    fd.left = new FormAttachment(0, 0);
+    fd.top = new FormAttachment(m_useCompressionBut, margin);
+    executeForEachLab.setLayoutData(fd);
+
+    m_executeForEachRowBut = new Button(shell, SWT.CHECK);
+    props.setLook(m_executeForEachRowBut);
+    fd = new FormData();
+    fd.right = new FormAttachment(100, 0);
+    fd.left = new FormAttachment(middle, 0);
+    fd.top = new FormAttachment(m_useCompressionBut, margin);
+    m_executeForEachRowBut.setLayoutData(fd);
+
     // Buttons inherited from BaseStepDialog
     wOK = new Button(shell, SWT.PUSH);
     wOK.setText(BaseMessages.getString(PKG, "System.Button.OK")); //$NON-NLS-1$
@@ -497,7 +526,7 @@ public class CassandraInputDialog extends BaseStepDialog implements
         "CassandraInputDialog.CQL.Label")); //$NON-NLS-1$
     fd = new FormData();
     fd.left = new FormAttachment(0, 0);
-    fd.top = new FormAttachment(m_useCompressionBut, margin);
+    fd.top = new FormAttachment(m_executeForEachRowBut, margin);
     fd.right = new FormAttachment(middle, -margin);
     m_cqlLab.setLayoutData(fd);
 
@@ -512,6 +541,7 @@ public class CassandraInputDialog extends BaseStepDialog implements
     fd.bottom = new FormAttachment(m_showSchemaBut, -margin);
     m_cqlText.setLayoutData(fd);
     m_cqlText.addModifyListener(new ModifyListener() {
+      @Override
       public void modifyText(ModifyEvent e) {
         setPosition();
         m_cqlText.setToolTipText(transMeta.environmentSubstitute(m_cqlText
@@ -565,18 +595,21 @@ public class CassandraInputDialog extends BaseStepDialog implements
 
     // Add listeners
     lsCancel = new Listener() {
+      @Override
       public void handleEvent(Event e) {
         cancel();
       }
     };
 
     lsOK = new Listener() {
+      @Override
       public void handleEvent(Event e) {
         ok();
       }
     };
 
     lsPreview = new Listener() {
+      @Override
       public void handleEvent(Event e) {
         preview();
       }
@@ -688,6 +721,7 @@ public class CassandraInputDialog extends BaseStepDialog implements
     meta.setUseThriftIO(m_useThriftCheck.getSelection());
     meta.setUseCQL3(m_useCQL3Check.getSelection());
     meta.setCQLSelectQuery(m_cqlText.getText());
+    meta.setExecuteForEachIncomingRow(m_executeForEachRowBut.getSelection());
   }
 
   protected void ok() {
@@ -744,6 +778,8 @@ public class CassandraInputDialog extends BaseStepDialog implements
         .getOutputKeyValueTimestampTuples());
     m_useThriftCheck.setSelection(m_currentMeta.getUseThriftIO());
     m_useCQL3Check.setSelection(m_currentMeta.getUseCQL3());
+    m_executeForEachRowBut.setSelection(m_currentMeta
+        .getExecuteForEachIncomingRow());
 
     if (!Const.isEmpty(m_currentMeta.getCQLSelectQuery())) {
       m_cqlText.setText(m_currentMeta.getCQLSelectQuery());
@@ -779,10 +815,43 @@ public class CassandraInputDialog extends BaseStepDialog implements
     }
   }
 
+  private boolean checkForUnresolved(CassandraInputMeta meta, String title) {
+    String query = transMeta.environmentSubstitute(meta.getCQLSelectQuery());
+
+    boolean notOk = (query.contains("${") || query.contains("?{")); //$NON-NLS-1$ //$NON-NLS-2$
+
+    if (notOk) {
+      ShowMessageDialog smd = new ShowMessageDialog(
+          shell,
+          SWT.ICON_WARNING | SWT.OK,
+          title,
+          BaseMessages
+              .getString(
+                  PKG,
+                  "CassandraInputDialog.Warning.Message.CassandraQueryContainsUnresolvedVarsFieldSubs")); //$NON-NLS-1$
+      smd.open();
+    }
+
+    return !notOk;
+  }
+
   private void preview() {
     CassandraInputMeta oneMeta = new CassandraInputMeta();
-
     getInfo(oneMeta);
+
+    // Turn off execute for each incoming row (if set). Query is still going to
+    // be stuffed if the user has specified field replacement (i.e. ?{...}) in
+    // the query string
+    oneMeta.setExecuteForEachIncomingRow(false);
+
+    if (!checkForUnresolved(
+        oneMeta,
+        BaseMessages
+            .getString(
+                PKG,
+                "CassandraInputDialog.Warning.Message.CassandraQueryContainsUnresolvedVarsFieldSubs.PreviewTitle"))) { //$NON-NLS-1$
+      return;
+    }
 
     TransMeta previewMeta = TransPreviewFactory.generatePreviewTransformation(
         transMeta, oneMeta, m_stepnameText.getText());

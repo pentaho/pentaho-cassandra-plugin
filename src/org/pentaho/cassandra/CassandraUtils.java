@@ -379,12 +379,15 @@ public class CassandraUtils {
    * @param numRows the number of rows to be inserted in this batch
    * @param consistency the consistency (e.g. ONE, QUORUM etc.) to use, or null
    *          to use the default.
+   * @param cql3 true if this is a CQL 3 batch (CQL 3 does not use
+   *          "WITH CONSISTENCY", and this is now set programatically at the
+   *          driver level)
    * @param unloggedBatch true if this is to be an unlogged batch (CQL 3 only)
    * 
    * @return a StringBuilder initialized for the batch.
    */
   public static StringBuilder newCQLBatch(int numRows, String consistency,
-      boolean unloggedBatch) {
+      boolean cql3, boolean unloggedBatch) {
 
     // make a stab at a reasonable initial capacity
     StringBuilder batch = new StringBuilder(numRows * 80);
@@ -394,7 +397,7 @@ public class CassandraUtils {
       batch.append("BEGIN BATCH"); //$NON-NLS-1$
     }
 
-    if (!Const.isEmpty(consistency)) {
+    if (!cql3 && !Const.isEmpty(consistency)) {
       batch.append(" USING CONSISTENCY ").append(consistency); //$NON-NLS-1$
     }
 

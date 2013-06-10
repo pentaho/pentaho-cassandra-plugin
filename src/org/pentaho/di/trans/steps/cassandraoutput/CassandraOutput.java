@@ -322,6 +322,7 @@ public class CassandraOutput extends BaseStep implements StepInterface {
 
       m_consistency = environmentSubstitute(m_meta.getConsistency());
       m_batchInsertCQL = CassandraUtils.newCQLBatch(m_batchSize, m_consistency,
+          m_meta.getUseCQL3(),
           (m_meta.getUseUnloggedBatch() && m_meta.getUseCQL3()));
 
       m_batch = new ArrayList<Object[]>();
@@ -417,7 +418,7 @@ public class CassandraOutput extends BaseStep implements StepInterface {
       } else {
         // construct CQL
         m_batchInsertCQL = CassandraUtils.newCQLBatch(m_batchSize,
-            m_consistency,
+            m_consistency, m_meta.getUseCQL3(),
             (m_meta.getUseUnloggedBatch() && m_meta.getUseCQL3()));
       }
       int rowsAdded = 0;

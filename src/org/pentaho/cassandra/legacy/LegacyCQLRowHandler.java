@@ -79,10 +79,12 @@ public class LegacyCQLRowHandler implements CQLRowHandler {
 
   protected StepInterface m_requestingStep;
 
+  @Override
   public boolean supportsCQLVersion(int cqlMajVersion) {
     return (cqlMajVersion == 2 || cqlMajVersion == 3);
   }
 
+  @Override
   public void setOptions(Map<String, String> options) {
     m_options = options;
 
@@ -105,6 +107,7 @@ public class LegacyCQLRowHandler implements CQLRowHandler {
     }
   }
 
+  @Override
   @SuppressWarnings("deprecation")
   public void commitCQLBatch(StepInterface requestingStep, StringBuilder batch,
       String compress, String consistencyLevel, LogChannelInterface log)
@@ -149,6 +152,7 @@ public class LegacyCQLRowHandler implements CQLRowHandler {
     final Compression comp2 = comp;
     final ConsistencyLevel c2 = c;
     Thread t = new Thread(new Runnable() {
+      @Override
       public void run() {
         try {
           if (m_cql3) {
@@ -209,6 +213,7 @@ public class LegacyCQLRowHandler implements CQLRowHandler {
    * @return true if the row was added to the batch
    * @throws Exception if a problem occurs
    */
+  @Override
   public boolean addRowToCQLBatch(StringBuilder batch, String colFamilyName,
       RowMetaInterface inputMeta, Object[] row,
       boolean insertFieldsNotInMetaData, LogChannelInterface log)
@@ -242,6 +247,7 @@ public class LegacyCQLRowHandler implements CQLRowHandler {
    * @param log the log to use
    * @throws Exception if a problem occurs
    */
+  @Override
   public void newRowQuery(StepInterface requestingStep, String colFamName,
       String cqlQuery, String compress, String consistencyLevel,
       boolean outputTuples, LogChannelInterface log) throws Exception {
@@ -303,6 +309,7 @@ public class LegacyCQLRowHandler implements CQLRowHandler {
    * @throws Exception if a query hasn't been executed or another problem
    *           occurs.
    */
+  @Override
   public Object[] getNextOutputRow(RowMetaInterface outputRowMeta,
       Map<String, Integer> outputFormatMap) throws Exception {
 
@@ -389,6 +396,7 @@ public class LegacyCQLRowHandler implements CQLRowHandler {
     return cassandraRowToKettleTupleMode(outputRowMeta);
   }
 
+  @Override
   public void setKeyspace(Keyspace keyspace) {
     m_keyspace = (LegacyKeyspace) keyspace;
   }

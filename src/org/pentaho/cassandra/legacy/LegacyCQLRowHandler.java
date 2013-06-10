@@ -226,7 +226,8 @@ public class LegacyCQLRowHandler implements CQLRowHandler {
     }
 
     return CassandraUtils.addRowToCQLBatch(batch, colFamilyName, inputMeta,
-        row, m_metaData, insertFieldsNotInMetaData, (m_cql3 ? 3 : 2), log);
+        row, m_metaData, insertFieldsNotInMetaData, (m_cql3 ? 3 : 2),
+        m_options, log);
   }
 
   /**

@@ -444,7 +444,8 @@ public class CassandraUtils {
    *          This is irrelevant if the user has opted to have the step
    *          initially update the Cassandra meta data for incoming fields that
    *          are not known about.
-   * @param vqlMajVersion the major version number of the cql version to use
+   * @param cqlMajVersion the major version number of the cql version to use
+   * @param additionalOpts additional options for the insert statement
    * @param log for logging
    * 
    * @return true if the row was added to the batch
@@ -454,7 +455,8 @@ public class CassandraUtils {
   public static boolean addRowToCQLBatch(StringBuilder batch,
       String colFamilyName, RowMetaInterface inputMeta, Object[] row,
       ColumnFamilyMetaData familyMeta, boolean insertFieldsNotInMetaData,
-      int cqlMajVersion, LogChannelInterface log) throws Exception {
+      int cqlMajVersion, Map<String, String> additionalOpts,
+      LogChannelInterface log) throws Exception {
 
     if (!preAddChecks(inputMeta, familyMeta.getKeyColumnNames(), row, log)) {
       return false;
@@ -561,17 +563,46 @@ public class CassandraUtils {
         continue;
       }
 
-      // batch.append(", '")
-      // .append(kettleValueToCQL(colMeta, row[i], cqlMajVersion))
-      // .append("'");
       batch.append(cqlMajVersion >= 3 && i == 0 ? "" : ", ").append( //$NON-NLS-1$ //$NON-NLS-2$
           kettleValueToCQL(colMeta, row[i], cqlMajVersion));
-      // }
     }
 
-    batch.append(")\n"); //$NON-NLS-1$
+    batch.append(")"); //$NON-NLS-1$
+
+    if (containsInsertOptions(additionalOpts)) {
+      batch.append(" USING "); //$NON-NLS-1$
+
+      first = true;
+      for (Map.Entry<String, String> o : additionalOpts.entrySet()) {
+        if (validInsertOption(o.getKey())) {
+          if (first) {
+            batch.append(o.getKey()).append(" ").append(o.getValue()); //$NON-NLS-1$
+            first = false;
+          } else {
+            batch.append(" AND ").append(o.getKey()).append(" ") //$NON-NLS-1$ //$NON-NLS-2$
+                .append(o.getValue());
+          }
+        }
+      }
+    }
+
+    batch.append("\n"); //$NON-NLS-1$
 
     return true;
+  }
+
+  protected static boolean validInsertOption(String opt) {
+    return (opt.equalsIgnoreCase("ttl") || opt.equalsIgnoreCase("timestamp")); //$NON-NLS-1$ //$NON-NLS-2$
+  }
+
+  protected static boolean containsInsertOptions(Map<String, String> opts) {
+    for (String opt : opts.keySet()) {
+      if (validInsertOption(opt)) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   protected static String escapeSingleQuotes(String source) {

@@ -296,7 +296,7 @@ public class CassandraUtils {
       boolean ok = false;
       for (int i = 0; i < inputMeta.size(); i++) {
         String colName = inputMeta.getValueMeta(i).getName();
-        if (keyColNames.contains(colName)) {
+        if (!keyColNames.contains(colName)) {
           ValueMetaInterface v = inputMeta.getValueMeta(i);
           if (!v.isNull(row[i])) {
             ok = true;

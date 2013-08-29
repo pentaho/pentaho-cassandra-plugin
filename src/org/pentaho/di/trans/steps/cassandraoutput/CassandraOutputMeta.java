@@ -757,7 +757,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements
 
     if (!Const.isEmpty(m_username)) {
       retval.append("\n    ").append( //$NON-NLS-1$
-          XMLHandler.addTagValue("cassandra_user", m_username)); //$NON-NLS-1$
+          XMLHandler.addTagValue("username", m_username)); //$NON-NLS-1$
     }
 
     if (!Const.isEmpty(m_cassandraKeyspace)) {
@@ -861,6 +861,10 @@ public class CassandraOutputMeta extends BaseStepMeta implements
     m_socketTimeout = XMLHandler.getTagValue(stepnode, "socket_timeout"); //$NON-NLS-1$
     m_username = XMLHandler.getTagValue(stepnode, "username"); //$NON-NLS-1$
     m_password = XMLHandler.getTagValue(stepnode, "password"); //$NON-NLS-1$
+    if (!Const.isEmpty(m_password)) {
+      m_password = Encr.decryptPasswordOptionallyEncrypted(m_password);
+    }
+
     m_cassandraKeyspace = XMLHandler
         .getTagValue(stepnode, "cassandra_keyspace"); //$NON-NLS-1$
     m_columnFamily = XMLHandler.getTagValue(stepnode, "column_family"); //$NON-NLS-1$

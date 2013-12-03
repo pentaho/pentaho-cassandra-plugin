@@ -177,6 +177,36 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
   // compound keys. It will however read CQL 2 tables (equivalent to CQL 3 with
   // "COMPACT STORAGE")
 
+  protected static enum CFMetaDataElements {
+    COMPARATOR( "comparator" ), DEFAULT_VALIDATOR( "default_validator" ), COLUMN_ALIASES( "column_aliases" ), KEY_ALIASES( //$NON-NLS-2$
+        "key_aliases" ), KEY_VALIDATOR( "key_validator" ), BLOOM_FILTER_FP_CHANCE( "bloom_filter_fp_chance" ), CACHING(
+        "caching" ), COMPACTION_STRATEGY_CLASS( "compaction_strategy_class" ), COMPACTION_STRATEGY_OPTIONS(
+        "compaction_strategy_options" ), COMPRESSION_PARAMETERS( "compression_parameters" ), /*
+                                                                                              * DEFAULT_READ_CONSISTENCY(
+                                                                                              * "default_read_consistency"
+                                                                                              * ),
+                                                                                              * DEFAULT_WRITE_CONSISTENCY
+                                                                                              * (
+                                                                                              * "default_write_consistency"
+                                                                                              * ),
+                                                                                              */GC_GRACE_SECONDS(
+        "gc_grace_seconds" ), LOCAL_READ_REPAIR_CHANCE( "local_read_repair_chance" ), MAX_COMPACTION_THRESHOLD(
+        "max_compaction_threshold" ), MIN_COMPACTION_THRESHOLD( "min_compaction_threshold" ), POPULATE_IO_CACHE_ON_FLUSH(
+        "populate_io_cache_on_flush" ), READ_REPAIR_CHANCE( "read_repair_chance" ), REPLICATE_ON_WRITE(
+        "replicate_on_write" ), TYPE( "type" ), VALUE_ALIAS( "value_alias" );
+
+    private final String m_name;
+
+    CFMetaDataElements( String name ) {
+      m_name = name;
+    }
+
+    @Override
+    public String toString() {
+      return m_name;
+    }
+  };
+
   /**
    * Refresh the meta data for a CQL 3 table
    * 
@@ -210,16 +240,39 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
     // key are, since these are not listed as normal columns), key validator,
     // default validator and comparator (full composite key type that
     // allows us to get the decoders for the additional part(s) of the key
+    String cqlQ =
+        "select " + CFMetaDataElements.COMPARATOR + ", " + CFMetaDataElements.DEFAULT_VALIDATOR + ","
+            + CFMetaDataElements.COLUMN_ALIASES + ", " + CFMetaDataElements.KEY_ALIASES + ", "
+            + CFMetaDataElements.KEY_VALIDATOR
+            + ", "
+            + CFMetaDataElements.BLOOM_FILTER_FP_CHANCE
+            + ", "
+            + CFMetaDataElements.CACHING
+            + ", "
+            + CFMetaDataElements.COMPACTION_STRATEGY_CLASS
+            + ", "
+            + CFMetaDataElements.COMPACTION_STRATEGY_OPTIONS
+            + ", "
+            + CFMetaDataElements.COMPRESSION_PARAMETERS
+            + ", "
+            // + CFMetaDataElements.DEFAULT_READ_CONSISTENCY + ", " + CFMetaDataElements.DEFAULT_WRITE_CONSISTENCY +
+            // ", "
+            + CFMetaDataElements.GC_GRACE_SECONDS + ", " + CFMetaDataElements.LOCAL_READ_REPAIR_CHANCE + ", "
+            + CFMetaDataElements.MAX_COMPACTION_THRESHOLD + ", " + CFMetaDataElements.MIN_COMPACTION_THRESHOLD + ", "
+            + CFMetaDataElements.POPULATE_IO_CACHE_ON_FLUSH + ", " + CFMetaDataElements.READ_REPAIR_CHANCE + ", "
+            + CFMetaDataElements.REPLICATE_ON_WRITE + ", " + CFMetaDataElements.TYPE + ", "
+            + CFMetaDataElements.VALUE_ALIAS + " from system.schema_columnfamilies where keyspace_name='"
+            + conn.m_keyspaceName + "' and columnfamily_name='" + m_columnFamilyName + "';";
 
-    String cqlQ = "select comparator, default_validator, column_aliases, " //$NON-NLS-1$
-        + "key_aliases, key_validator, bloom_filter_fp_chance, caching, " //$NON-NLS-1$
-        + "compaction_strategy_class, compaction_strategy_options, compression_parameters, " //$NON-NLS-1$
-        + "default_read_consistency, default_write_consistency, gc_grace_seconds, " //$NON-NLS-1$
-        + "local_read_repair_chance, max_compaction_threshold, min_compaction_threshold, " //$NON-NLS-1$
-        + "populate_io_cache_on_flush, read_repair_chance, replicate_on_write, type, value_alias " //$NON-NLS-1$
-        + "from system.schema_columnfamilies " + "where keyspace_name='" //$NON-NLS-1$ //$NON-NLS-2$
-        + conn.m_keyspaceName + "' and columnfamily_name='" //$NON-NLS-1$
-        + m_columnFamilyName + "';"; //$NON-NLS-1$
+    //    String cqlQ = "select comparator, default_validator, column_aliases, " //$NON-NLS-1$
+    //        + "key_aliases, key_validator, bloom_filter_fp_chance, caching, " //$NON-NLS-1$
+    //        + "compaction_strategy_class, compaction_strategy_options, compression_parameters, " //$NON-NLS-1$
+    //        + "default_read_consistency, default_write_consistency, gc_grace_seconds, " //$NON-NLS-1$
+    //        + "local_read_repair_chance, max_compaction_threshold, min_compaction_threshold, " //$NON-NLS-1$
+    //        + "populate_io_cache_on_flush, read_repair_chance, replicate_on_write, type, value_alias " //$NON-NLS-1$
+    //        + "from system.schema_columnfamilies " + "where keyspace_name='" //$NON-NLS-1$ //$NON-NLS-2$
+    //        + conn.m_keyspaceName + "' and columnfamily_name='" //$NON-NLS-1$
+    //        + m_columnFamilyName + "';"; //$NON-NLS-1$
 
     byte[] data = cqlQ.getBytes( Charset.forName( "UTF-8" ) ); //$NON-NLS-1$
 
@@ -250,7 +303,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
     List<Column> cols = row.getColumns();
 
     // now column aliases (if needed)
-    Column keyCols = cols.get( 2 );
+    Column keyCols = cols.get( CFMetaDataElements.COLUMN_ALIASES.ordinal() );
     Object keyColsS = deserializer.compose( keyCols.bufferForValue() );
     String p = keyColsS.toString().trim();
     String[] colAliasParts = p.split( "," ); //$NON-NLS-1$
@@ -268,7 +321,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
 
     List<String> decodersForAdditionalCompoundKeyCols = new ArrayList<String>();
     List<String> namesOfAdditionalCompoundKeyCols = new ArrayList<String>();
-    Column compCol = cols.get( 0 );
+    Column compCol = cols.get( CFMetaDataElements.COMPARATOR.ordinal() );
     Object decodedComp = deserializer.compose( compCol.bufferForValue() );
 
     p = decodedComp.toString();
@@ -326,7 +379,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
     }
 
     // now the default column value validator
-    Column defaultV = cols.get( 1 );
+    Column defaultV = cols.get( CFMetaDataElements.DEFAULT_VALIDATOR.ordinal() );
     Object decodedValidator = deserializer.compose( defaultV.bufferForValue() );
     m_defaultValidationClass = decodedValidator.toString();
 
@@ -369,7 +422,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
             m_columnMeta.put( colName, m_columnComparator );
           }
 
-          Column valueAlias = cols.get( 20 );
+          Column valueAlias = cols.get( CFMetaDataElements.VALUE_ALIAS.ordinal() );
           if ( valueAlias != null && valueAlias.bufferForValue() != null ) {
             Object valueAliasS = deserializer.compose( valueAlias.bufferForValue() );
 
@@ -393,7 +446,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
             m_columnMeta.put( colName, decodersForAdditionalCompoundKeyCols.get( i ) );
           }
 
-          Column valueAlias = cols.get( 20 );
+          Column valueAlias = cols.get( CFMetaDataElements.VALUE_ALIAS.ordinal() );
           if ( valueAlias != null && valueAlias.bufferForValue() != null ) {
             Object valueAliasS = deserializer.compose( valueAlias.bufferForValue() );
 
@@ -422,7 +475,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
     // key validation - checks for composite partition key
     String keyName = "key"; //$NON-NLS-1$
     List<String> partitionKeyNames = new ArrayList<String>();
-    Column keyV = cols.get( 4 );
+    Column keyV = cols.get( CFMetaDataElements.KEY_VALIDATOR.ordinal() );
     Object kV = deserializer.compose( keyV.bufferForValue() );
     m_keyValidator = kV.toString().trim();
     String keyValParts = m_keyValidator;
@@ -443,7 +496,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
     Map<String, String> tempColMeta = new LinkedHashMap<String, String>();
 
     // now key alias(es)
-    Column keyAlias = cols.get( 3 );
+    Column keyAlias = cols.get( CFMetaDataElements.KEY_ALIASES.ordinal() );
     if ( keyAlias != null && keyAlias.bufferForValue() != null ) {
       Object alias = deserializer.compose( keyAlias.bufferForValue() );
       String aliasS = alias.toString();
@@ -533,7 +586,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
     AbstractType axDeserializer = null;
 
     // bloom filter fp chance
-    Column bf = cols.get( 5 );
+    Column bf = cols.get( CFMetaDataElements.BLOOM_FILTER_FP_CHANCE.ordinal() );
     axDeserializer = DoubleType.instance;
     if ( bf != null && bf.bufferForValue() != null ) {
       Object bfv = axDeserializer.compose( bf.bufferForValue() );
@@ -542,21 +595,21 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
     }
 
     // caching
-    Column caching = cols.get( 6 );
+    Column caching = cols.get( CFMetaDataElements.CACHING.ordinal() );
     if ( caching != null && caching.bufferForValue() != null ) {
       Object cachV = deserializer.compose( caching.bufferForValue() );
       m_schemaDescription.append( "\n\tCaching: " + cachV.toString() ); //$NON-NLS-1$
     }
 
     // compaction strategy class
-    Column compaction = cols.get( 7 );
+    Column compaction = cols.get( CFMetaDataElements.COMPACTION_STRATEGY_CLASS.ordinal() );
     if ( compaction != null && compaction.bufferForValue() != null ) {
       Object compV = deserializer.compose( compaction.bufferForValue() );
       m_schemaDescription.append( "\n\tCompaction strategy: " + compV.toString() ); //$NON-NLS-1$
     }
 
     // compaction strategy options
-    compaction = cols.get( 8 );
+    compaction = cols.get( CFMetaDataElements.COMPACTION_STRATEGY_OPTIONS.ordinal() );
     if ( compaction != null && compaction.bufferForValue() != null ) {
       Object compV = deserializer.compose( compaction.bufferForValue() );
       m_schemaDescription.append( "\n\tCompaction strategy options: " //$NON-NLS-1$
@@ -564,31 +617,31 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
     }
 
     // compression
-    Column compression = cols.get( 9 );
+    Column compression = cols.get( CFMetaDataElements.COMPRESSION_PARAMETERS.ordinal() );
     if ( compression != null && compression.bufferForValue() != null ) {
       Object compV = deserializer.compose( compression.bufferForValue() );
       m_schemaDescription.append( "\n\tCompression parameters: " //$NON-NLS-1$
           + compV.toString() );
     }
 
-    // default read consistency
-    Column defRead = cols.get( 10 );
-    if ( defRead != null && defRead.bufferForValue() != null ) {
-      Object readV = deserializer.compose( defRead.bufferForValue() );
-      m_schemaDescription.append( "\n\tDefault read consistency: " //$NON-NLS-1$
-          + readV.toString() );
-    }
-
-    // default write consistency
-    Column defWrite = cols.get( 11 );
-    if ( defWrite != null && defWrite.bufferForValue() != null ) {
-      Object writeV = deserializer.compose( defWrite.bufferForValue() );
-      m_schemaDescription.append( "\n\tDefault write consistency: " //$NON-NLS-1$
-          + writeV.toString() );
-    }
+    // // default read consistency
+    // Column defRead = cols.get( CFMetaDataElements.DEFAULT_READ_CONSISTENCY.ordinal() );
+    // if ( defRead != null && defRead.bufferForValue() != null ) {
+    // Object readV = deserializer.compose( defRead.bufferForValue() );
+    //      m_schemaDescription.append( "\n\tDefault read consistency: " //$NON-NLS-1$
+    // + readV.toString() );
+    // }
+    //
+    // // default write consistency
+    // Column defWrite = cols.get( CFMetaDataElements.DEFAULT_WRITE_CONSISTENCY.ordinal() );
+    // if ( defWrite != null && defWrite.bufferForValue() != null ) {
+    // Object writeV = deserializer.compose( defWrite.bufferForValue() );
+    //      m_schemaDescription.append( "\n\tDefault write consistency: " //$NON-NLS-1$
+    // + writeV.toString() );
+    // }
 
     // gc grace seconds
-    Column gc = cols.get( 12 );
+    Column gc = cols.get( CFMetaDataElements.GC_GRACE_SECONDS.ordinal() );
     axDeserializer = IntegerType.instance;
     if ( gc != null && gc.bufferForValue() != null ) {
       Object gcV = axDeserializer.compose( gc.bufferForValue() );
@@ -596,7 +649,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
     }
 
     // local read repair chance
-    Column localRead = cols.get( 13 );
+    Column localRead = cols.get( CFMetaDataElements.LOCAL_READ_REPAIR_CHANCE.ordinal() );
     axDeserializer = DoubleType.instance;
     if ( localRead != null && localRead.bufferForValue() != null ) {
       Object localV = axDeserializer.compose( localRead.bufferForValue() );
@@ -605,7 +658,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
     }
 
     // max compaction threshold
-    Column maxComp = cols.get( 14 );
+    Column maxComp = cols.get( CFMetaDataElements.MAX_COMPACTION_THRESHOLD.ordinal() );
     axDeserializer = IntegerType.instance;
     if ( maxComp != null && maxComp.bufferForValue() != null ) {
       Object compV = axDeserializer.compose( maxComp.bufferForValue() );
@@ -614,7 +667,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
     }
 
     // min compaction threshold
-    Column minComp = cols.get( 15 );
+    Column minComp = cols.get( CFMetaDataElements.MIN_COMPACTION_THRESHOLD.ordinal() );
     if ( minComp != null && minComp.bufferForValue() != null ) {
       Object compV = axDeserializer.compose( minComp.bufferForValue() );
       m_schemaDescription.append( "\n\tMin compaction threshold: " //$NON-NLS-1$
@@ -622,7 +675,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
     }
 
     // populate IO cache on flush
-    Column pop = cols.get( 16 );
+    Column pop = cols.get( CFMetaDataElements.POPULATE_IO_CACHE_ON_FLUSH.ordinal() );
     axDeserializer = BooleanType.instance;
     if ( pop != null && pop.bufferForValue() != null ) {
       Object popV = axDeserializer.compose( pop.bufferForValue() );
@@ -631,7 +684,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
     }
 
     // read repair chance
-    Column readRep = cols.get( 17 );
+    Column readRep = cols.get( CFMetaDataElements.READ_REPAIR_CHANCE.ordinal() );
     axDeserializer = DoubleType.instance;
     if ( readRep != null && readRep.bufferForValue() != null ) {
       Object readV = axDeserializer.compose( readRep.bufferForValue() );
@@ -639,7 +692,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
     }
 
     // replicate on write
-    Column repWrite = cols.get( 18 );
+    Column repWrite = cols.get( CFMetaDataElements.REPLICATE_ON_WRITE.ordinal() );
     axDeserializer = BooleanType.instance;
     if ( repWrite != null && repWrite.bufferForValue() != null ) {
       Object repV = axDeserializer.compose( repWrite.bufferForValue() );
@@ -647,7 +700,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
     }
 
     // type?
-    Column type = cols.get( 19 );
+    Column type = cols.get( CFMetaDataElements.TYPE.ordinal() );
     if ( type != null && type.bufferForValue() != null ) {
       Object typeV = deserializer.compose( type.bufferForValue() );
       m_schemaDescription.append( "\n\tType: " + typeV.toString() ); //$NON-NLS-1$
@@ -1064,6 +1117,9 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
     } else if ( transCoder.indexOf( "DecimalType" ) > 0 ) { //$NON-NLS-1$
       DecimalType dt = DecimalType.instance;
       decomposed = dt.decompose( vm.getBigNumber( value ) );
+    } else if ( transCoder.indexOf( "BytesType" ) > 0 ) { //$NON-NLS-1$
+      BytesType bt = BytesType.instance;
+      decomposed = bt.decompose( ByteBuffer.wrap( vm.getBinary( value ) ) );
     } else if ( transCoder.indexOf( "DynamicCompositeType" ) > 0 ) { //$NON-NLS-1$
       AbstractType serializer = null;
       if ( vm.isString() ) {
@@ -1422,7 +1478,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
       return result;
     } else if ( decoder.indexOf( "DecimalType" ) > 0 ) { //$NON-NLS-1$
       deserializer = DecimalType.instance;
-    } else if ( decoder.indexOf( "BytesType" ) > 0 ) {
+    } else if ( decoder.indexOf( "BytesType" ) > 0 ) { //$NON-NLS-1$
       deserializer = BytesType.instance;
       result = deserializer.getString( valueBuff );
 

@@ -214,7 +214,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
     String cqlQ = "select comparator, default_validator, column_aliases, " //$NON-NLS-1$
         + "key_aliases, key_validator, bloom_filter_fp_chance, caching, " //$NON-NLS-1$
         + "compaction_strategy_class, compaction_strategy_options, compression_parameters, " //$NON-NLS-1$
-        + "default_read_consistency, default_write_consistency, gc_grace_seconds, " //$NON-NLS-1$
+        + "gc_grace_seconds, " //$NON-NLS-1$
         + "local_read_repair_chance, max_compaction_threshold, min_compaction_threshold, " //$NON-NLS-1$
         + "populate_io_cache_on_flush, read_repair_chance, replicate_on_write, type, value_alias " //$NON-NLS-1$
         + "from system.schema_columnfamilies " + "where keyspace_name='" //$NON-NLS-1$ //$NON-NLS-2$
@@ -369,7 +369,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
             m_columnMeta.put( colName, m_columnComparator );
           }
 
-          Column valueAlias = cols.get( 20 );
+          Column valueAlias = cols.get( 18 );
           if ( valueAlias != null && valueAlias.bufferForValue() != null ) {
             Object valueAliasS = deserializer.compose( valueAlias.bufferForValue() );
 
@@ -393,7 +393,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
             m_columnMeta.put( colName, decodersForAdditionalCompoundKeyCols.get( i ) );
           }
 
-          Column valueAlias = cols.get( 20 );
+          Column valueAlias = cols.get( 18 );
           if ( valueAlias != null && valueAlias.bufferForValue() != null ) {
             Object valueAliasS = deserializer.compose( valueAlias.bufferForValue() );
 
@@ -571,24 +571,8 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
           + compV.toString() );
     }
 
-    // default read consistency
-    Column defRead = cols.get( 10 );
-    if ( defRead != null && defRead.bufferForValue() != null ) {
-      Object readV = deserializer.compose( defRead.bufferForValue() );
-      m_schemaDescription.append( "\n\tDefault read consistency: " //$NON-NLS-1$
-          + readV.toString() );
-    }
-
-    // default write consistency
-    Column defWrite = cols.get( 11 );
-    if ( defWrite != null && defWrite.bufferForValue() != null ) {
-      Object writeV = deserializer.compose( defWrite.bufferForValue() );
-      m_schemaDescription.append( "\n\tDefault write consistency: " //$NON-NLS-1$
-          + writeV.toString() );
-    }
-
     // gc grace seconds
-    Column gc = cols.get( 12 );
+    Column gc = cols.get( 10 );
     axDeserializer = IntegerType.instance;
     if ( gc != null && gc.bufferForValue() != null ) {
       Object gcV = axDeserializer.compose( gc.bufferForValue() );
@@ -596,7 +580,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
     }
 
     // local read repair chance
-    Column localRead = cols.get( 13 );
+    Column localRead = cols.get( 11 );
     axDeserializer = DoubleType.instance;
     if ( localRead != null && localRead.bufferForValue() != null ) {
       Object localV = axDeserializer.compose( localRead.bufferForValue() );
@@ -605,7 +589,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
     }
 
     // max compaction threshold
-    Column maxComp = cols.get( 14 );
+    Column maxComp = cols.get( 12 );
     axDeserializer = IntegerType.instance;
     if ( maxComp != null && maxComp.bufferForValue() != null ) {
       Object compV = axDeserializer.compose( maxComp.bufferForValue() );
@@ -614,7 +598,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
     }
 
     // min compaction threshold
-    Column minComp = cols.get( 15 );
+    Column minComp = cols.get( 13 );
     if ( minComp != null && minComp.bufferForValue() != null ) {
       Object compV = axDeserializer.compose( minComp.bufferForValue() );
       m_schemaDescription.append( "\n\tMin compaction threshold: " //$NON-NLS-1$
@@ -622,7 +606,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
     }
 
     // populate IO cache on flush
-    Column pop = cols.get( 16 );
+    Column pop = cols.get( 14 );
     axDeserializer = BooleanType.instance;
     if ( pop != null && pop.bufferForValue() != null ) {
       Object popV = axDeserializer.compose( pop.bufferForValue() );
@@ -631,7 +615,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
     }
 
     // read repair chance
-    Column readRep = cols.get( 17 );
+    Column readRep = cols.get( 15 );
     axDeserializer = DoubleType.instance;
     if ( readRep != null && readRep.bufferForValue() != null ) {
       Object readV = axDeserializer.compose( readRep.bufferForValue() );
@@ -639,7 +623,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
     }
 
     // replicate on write
-    Column repWrite = cols.get( 18 );
+    Column repWrite = cols.get( 16 );
     axDeserializer = BooleanType.instance;
     if ( repWrite != null && repWrite.bufferForValue() != null ) {
       Object repV = axDeserializer.compose( repWrite.bufferForValue() );
@@ -647,7 +631,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
     }
 
     // type?
-    Column type = cols.get( 19 );
+    Column type = cols.get( 17 );
     if ( type != null && type.bufferForValue() != null ) {
       Object typeV = deserializer.compose( type.bufferForValue() );
       m_schemaDescription.append( "\n\tType: " + typeV.toString() ); //$NON-NLS-1$

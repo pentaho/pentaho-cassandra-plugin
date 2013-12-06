@@ -630,6 +630,7 @@ public class CassandraUtils {
 			return quote + cassandraString + quote;
 		}
 		case ValueMetaInterface.TYPE_DATE:
+		case ValueMetaInterface.TYPE_TIMESTAMP:
 			// milliseconds since epoch is supposedly OK
 			// Date toConvert = vm.getDate(value);
 			// LongType lt = LongType.instance;

@@ -181,15 +181,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
     COMPARATOR( "comparator" ), DEFAULT_VALIDATOR( "default_validator" ), COLUMN_ALIASES( "column_aliases" ), KEY_ALIASES( //$NON-NLS-2$
         "key_aliases" ), KEY_VALIDATOR( "key_validator" ), BLOOM_FILTER_FP_CHANCE( "bloom_filter_fp_chance" ), CACHING(
         "caching" ), COMPACTION_STRATEGY_CLASS( "compaction_strategy_class" ), COMPACTION_STRATEGY_OPTIONS(
-        "compaction_strategy_options" ), COMPRESSION_PARAMETERS( "compression_parameters" ), /*
-                                                                                              * DEFAULT_READ_CONSISTENCY(
-                                                                                              * "default_read_consistency"
-                                                                                              * ),
-                                                                                              * DEFAULT_WRITE_CONSISTENCY
-                                                                                              * (
-                                                                                              * "default_write_consistency"
-                                                                                              * ),
-                                                                                              */GC_GRACE_SECONDS(
+        "compaction_strategy_options" ), COMPRESSION_PARAMETERS( "compression_parameters" ), GC_GRACE_SECONDS(
         "gc_grace_seconds" ), LOCAL_READ_REPAIR_CHANCE( "local_read_repair_chance" ), MAX_COMPACTION_THRESHOLD(
         "max_compaction_threshold" ), MIN_COMPACTION_THRESHOLD( "min_compaction_threshold" ), POPULATE_IO_CACHE_ON_FLUSH(
         "populate_io_cache_on_flush" ), READ_REPAIR_CHANCE( "read_repair_chance" ), REPLICATE_ON_WRITE(
@@ -263,16 +255,6 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
             + CFMetaDataElements.REPLICATE_ON_WRITE + ", " + CFMetaDataElements.TYPE + ", "
             + CFMetaDataElements.VALUE_ALIAS + " from system.schema_columnfamilies where keyspace_name='"
             + conn.m_keyspaceName + "' and columnfamily_name='" + m_columnFamilyName + "';";
-
-    //    String cqlQ = "select comparator, default_validator, column_aliases, " //$NON-NLS-1$
-    //        + "key_aliases, key_validator, bloom_filter_fp_chance, caching, " //$NON-NLS-1$
-    //        + "compaction_strategy_class, compaction_strategy_options, compression_parameters, " //$NON-NLS-1$
-    //        + "default_read_consistency, default_write_consistency, gc_grace_seconds, " //$NON-NLS-1$
-    //        + "local_read_repair_chance, max_compaction_threshold, min_compaction_threshold, " //$NON-NLS-1$
-    //        + "populate_io_cache_on_flush, read_repair_chance, replicate_on_write, type, value_alias " //$NON-NLS-1$
-    //        + "from system.schema_columnfamilies " + "where keyspace_name='" //$NON-NLS-1$ //$NON-NLS-2$
-    //        + conn.m_keyspaceName + "' and columnfamily_name='" //$NON-NLS-1$
-    //        + m_columnFamilyName + "';"; //$NON-NLS-1$
 
     byte[] data = cqlQ.getBytes( Charset.forName( "UTF-8" ) ); //$NON-NLS-1$
 
@@ -623,22 +605,6 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
       m_schemaDescription.append( "\n\tCompression parameters: " //$NON-NLS-1$
           + compV.toString() );
     }
-
-    // // default read consistency
-    // Column defRead = cols.get( CFMetaDataElements.DEFAULT_READ_CONSISTENCY.ordinal() );
-    // if ( defRead != null && defRead.bufferForValue() != null ) {
-    // Object readV = deserializer.compose( defRead.bufferForValue() );
-    //      m_schemaDescription.append( "\n\tDefault read consistency: " //$NON-NLS-1$
-    // + readV.toString() );
-    // }
-    //
-    // // default write consistency
-    // Column defWrite = cols.get( CFMetaDataElements.DEFAULT_WRITE_CONSISTENCY.ordinal() );
-    // if ( defWrite != null && defWrite.bufferForValue() != null ) {
-    // Object writeV = deserializer.compose( defWrite.bufferForValue() );
-    //      m_schemaDescription.append( "\n\tDefault write consistency: " //$NON-NLS-1$
-    // + writeV.toString() );
-    // }
 
     // gc grace seconds
     Column gc = cols.get( CFMetaDataElements.GC_GRACE_SECONDS.ordinal() );

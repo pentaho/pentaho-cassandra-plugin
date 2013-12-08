@@ -235,20 +235,9 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
     String cqlQ =
         "select " + CFMetaDataElements.COMPARATOR + ", " + CFMetaDataElements.DEFAULT_VALIDATOR + ","
             + CFMetaDataElements.COLUMN_ALIASES + ", " + CFMetaDataElements.KEY_ALIASES + ", "
-            + CFMetaDataElements.KEY_VALIDATOR
-            + ", "
-            + CFMetaDataElements.BLOOM_FILTER_FP_CHANCE
-            + ", "
-            + CFMetaDataElements.CACHING
-            + ", "
-            + CFMetaDataElements.COMPACTION_STRATEGY_CLASS
-            + ", "
-            + CFMetaDataElements.COMPACTION_STRATEGY_OPTIONS
-            + ", "
-            + CFMetaDataElements.COMPRESSION_PARAMETERS
-            + ", "
-            // + CFMetaDataElements.DEFAULT_READ_CONSISTENCY + ", " + CFMetaDataElements.DEFAULT_WRITE_CONSISTENCY +
-            // ", "
+            + CFMetaDataElements.KEY_VALIDATOR + ", " + CFMetaDataElements.BLOOM_FILTER_FP_CHANCE + ", "
+            + CFMetaDataElements.CACHING + ", " + CFMetaDataElements.COMPACTION_STRATEGY_CLASS + ", "
+            + CFMetaDataElements.COMPACTION_STRATEGY_OPTIONS + ", " + CFMetaDataElements.COMPRESSION_PARAMETERS + ", "
             + CFMetaDataElements.GC_GRACE_SECONDS + ", " + CFMetaDataElements.LOCAL_READ_REPAIR_CHANCE + ", "
             + CFMetaDataElements.MAX_COMPACTION_THRESHOLD + ", " + CFMetaDataElements.MIN_COMPACTION_THRESHOLD + ", "
             + CFMetaDataElements.POPULATE_IO_CACHE_ON_FLUSH + ", " + CFMetaDataElements.READ_REPAIR_CHANCE + ", "

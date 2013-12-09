@@ -500,7 +500,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
         + columnFamNameAdditionalInfo );
 
     String keyDescription = "\n\n\tKey" //$NON-NLS-1$
-        + ( compoundKey ? ( partitionKeyNames.size() > 1 ? " ((composite) compound): " : " (compound): " ) : " : " ); //$NON-NLS-1$ //$NON-NLS-2$
+        + ( compoundKey ? ( partitionKeyNames.size() > 1 ? " ((composite) compound): " : " (compound): " ) : " : " ); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
     m_schemaDescription.append( keyDescription );
     if ( partitionKeyNames.size() == 1 ) {
       m_schemaDescription.append( partitionKeyNames.get( 0 ) );
@@ -1064,6 +1064,9 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
     } else if ( transCoder.indexOf( "DecimalType" ) > 0 ) { //$NON-NLS-1$
       DecimalType dt = DecimalType.instance;
       decomposed = dt.decompose( vm.getBigNumber( value ) );
+    } else if ( transCoder.indexOf( "BytesType" ) > 0 ) { //$NON-NLS-1$
+      BytesType bt = BytesType.instance;
+      decomposed = bt.decompose( ByteBuffer.wrap( vm.getBinary( value ) ) );
     } else if ( transCoder.indexOf( "DynamicCompositeType" ) > 0 ) { //$NON-NLS-1$
       AbstractType serializer = null;
       if ( vm.isString() ) {
@@ -1422,7 +1425,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
       return result;
     } else if ( decoder.indexOf( "DecimalType" ) > 0 ) { //$NON-NLS-1$
       deserializer = DecimalType.instance;
-    } else if ( decoder.indexOf( "BytesType" ) > 0 ) {
+    } else if ( decoder.indexOf( "BytesType" ) > 0 ) { //$NON-NLS-1$
       deserializer = BytesType.instance;
       result = deserializer.getString( valueBuff );
 

@@ -44,6 +44,7 @@ import org.apache.cassandra.db.marshal.DecimalType;
 import org.apache.cassandra.db.marshal.DoubleType;
 import org.apache.cassandra.db.marshal.DynamicCompositeType;
 import org.apache.cassandra.db.marshal.FloatType;
+import org.apache.cassandra.db.marshal.InetAddressType;
 import org.apache.cassandra.db.marshal.Int32Type;
 import org.apache.cassandra.db.marshal.IntegerType;
 import org.apache.cassandra.db.marshal.LexicalUUIDType;
@@ -267,7 +268,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
 
     List<CqlRow> rl2 = result2.getRows();
 
-    AbstractType deserializer = UTF8Type.instance;
+    AbstractType<?> deserializer = UTF8Type.instance;
 
     // process first result
     CqlRow row = rl.get( 0 );
@@ -554,7 +555,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
         + m_defaultValidationClass );
 
     // read repair chance etc.
-    AbstractType axDeserializer = null;
+    AbstractType<?> axDeserializer = null;
 
     // bloom filter fp chance
     Column bf = cols.get( CFMetaDataElements.BLOOM_FILTER_FP_CHANCE.ordinal() );
@@ -1025,6 +1026,10 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
       }
     }
 
+    // we can safely strip off ReversedType, as the base type
+    // is what we need in this case
+    fullTransCoder = stripReversedTypeIfNecessary( fullTransCoder );
+
     String transCoder = fullTransCoder;
 
     // if it's a composite type make sure that we check only against the
@@ -1040,6 +1045,9 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
     } else if ( transCoder.indexOf( "AsciiType" ) > 0 ) { //$NON-NLS-1$
       AsciiType at = AsciiType.instance;
       decomposed = at.decompose( vm.getString( value ) );
+    } else if ( transCoder.indexOf( "InetAddressType" ) > 0 ) { //$NON-NLS-1$
+      InetAddressType it = InetAddressType.instance;
+      decomposed = it.fromString( vm.getString( value ) );
     } else if ( transCoder.indexOf( "LongType" ) > 0 ) { //$NON-NLS-1$
       LongType lt = LongType.instance;
       decomposed = lt.decompose( vm.getInteger( value ) );
@@ -1076,7 +1084,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
       BytesType bt = BytesType.instance;
       decomposed = bt.decompose( ByteBuffer.wrap( vm.getBinary( value ) ) );
     } else if ( transCoder.indexOf( "DynamicCompositeType" ) > 0 ) { //$NON-NLS-1$
-      AbstractType serializer = null;
+      AbstractType<?> serializer = null;
       if ( vm.isString() ) {
         try {
           serializer = TypeParser.parse( fullTransCoder );
@@ -1090,7 +1098,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
             vm.getTypeDesc(), fullTransCoder ) );
       }
     } else if ( transCoder.indexOf( "CompositeType" ) > 0 ) { //$NON-NLS-1$
-      AbstractType serializer = null;
+      AbstractType<?> serializer = null;
       if ( vm.isString() ) {
         try {
           serializer = TypeParser.parse( fullTransCoder );
@@ -1123,8 +1131,9 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
    */
   public ByteBuffer columnNameToByteBuffer( String colName ) throws KettleException {
 
-    AbstractType serializer = null;
+    AbstractType<?> serializer = null;
     String fullEncoder = m_columnComparator;
+    fullEncoder = stripReversedTypeIfNecessary( fullEncoder );
     String encoder = fullEncoder;
 
     // if it's a composite type make sure that we check only against the
@@ -1139,6 +1148,8 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
       serializer = AsciiType.instance;
     } else if ( encoder.indexOf( "LongType" ) > 0 ) { //$NON-NLS-1$
       serializer = LongType.instance;
+    } else if ( encoder.indexOf( "InetAddressType" ) > 0 ) { //$NON-NLS-1$
+      serializer = InetAddressType.instance;
     } else if ( encoder.indexOf( "DoubleType" ) > 0 ) { //$NON-NLS-1$
       serializer = DoubleType.instance;
     } else if ( encoder.indexOf( "DateType" ) > 0 ) { //$NON-NLS-1$
@@ -1157,6 +1168,8 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
       serializer = Int32Type.instance;
     } else if ( encoder.indexOf( "DecimalType" ) > 0 ) { //$NON-NLS-1$
       serializer = DecimalType.instance;
+    } else if ( encoder.indexOf( "BytesType" ) > 0 ) { //$NON-NLS-1$
+      serializer = BytesType.instance;
     } else if ( encoder.indexOf( "DynamicCompositeType" ) > 0 ) { //$NON-NLS-1$
       try {
         serializer = TypeParser.parse( fullEncoder );
@@ -1208,10 +1221,35 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
     return getValueMetaForColumn( "" ); //$NON-NLS-1$
   }
 
+  /**
+   * Removes an enclosing ReversedType if necessary. ReversedType is just a wrapper around a single base type. It simply
+   * reverses the comparator of the base type, so for our purposes we just need the base type.
+   * 
+   * @param type
+   *          type string to check
+   * @return type string stripped of enclosing ReversedType (if necessary)
+   */
+  private static String stripReversedTypeIfNecessary( String type ) {
+    if ( type.indexOf( '(' ) > 0 ) {
+      String prefix = type.substring( 0, type.indexOf( '(' ) );
+
+      if ( prefix.indexOf( "ReversedType" ) < 0 ) { //$NON-NLS-1$
+        return type;
+      }
+
+      String baseType = type.substring( type.indexOf( "(" ) + 1, type.lastIndexOf( ")" ) ); //$NON-NLS-1$ //$NON-NLS-2$
+      return baseType;
+    }
+
+    return type;
+  }
+
   protected int cassandraTypeToKettleType( String type ) {
     int kettleType = 0;
+    type = stripReversedTypeIfNecessary( type );
+
     if ( type.indexOf( "UTF8Type" ) > 0 || type.indexOf( "AsciiType" ) > 0 //$NON-NLS-1$ //$NON-NLS-2$
-        || type.indexOf( "UUIDType" ) > 0 || type.indexOf( "CompositeType" ) > 0 ) { //$NON-NLS-1$ //$NON-NLS-2$
+        || type.indexOf( "UUIDType" ) > 0 || type.indexOf( "CompositeType" ) > 0 || type.indexOf( "InetAddressType" ) > 0 ) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
       kettleType = ValueMetaInterface.TYPE_STRING;
     } else if ( type.indexOf( "LongType" ) > 0 || type.indexOf( "IntegerType" ) > 0 //$NON-NLS-1$ //$NON-NLS-2$
         || type.indexOf( "Int32Type" ) > 0 ) { //$NON-NLS-1$
@@ -1226,6 +1264,10 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
       kettleType = ValueMetaInterface.TYPE_BINARY;
     } else if ( type.indexOf( "BooleanType" ) > 0 ) { //$NON-NLS-1$
       kettleType = ValueMetaInterface.TYPE_BOOLEAN;
+    } else {
+      throw new IllegalArgumentException( BaseMessages.getString( PKG,
+          "CassandraColumnMetaData.Error.UnsupportedCassandraType" )
+          + " " + type );
     }
 
     return kettleType;
@@ -1384,8 +1426,10 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
       return null;
     }
 
+    decoder = stripReversedTypeIfNecessary( decoder );
+
     Object result = null;
-    AbstractType deserializer = null;
+    AbstractType<?> deserializer = null;
     String fullDecoder = decoder;
 
     // if it's a composite type make sure that we check only against the
@@ -1398,6 +1442,11 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
       deserializer = UTF8Type.instance;
     } else if ( decoder.indexOf( "AsciiType" ) > 0 ) { //$NON-NLS-1$
       deserializer = AsciiType.instance;
+    } else if ( decoder.indexOf( "InetAddressType" ) > 0 ) { //$NON-NLS-1$
+      deserializer = InetAddressType.instance;
+
+      result = deserializer.getString( valueBuff );
+      return result;
     } else if ( decoder.indexOf( "LongType" ) > 0 ) { //$NON-NLS-1$
       deserializer = LongType.instance;
     } else if ( decoder.indexOf( "DoubleType" ) > 0 ) { //$NON-NLS-1$
@@ -1463,8 +1512,8 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
 
     if ( deserializer == null ) {
       throw new KettleException( BaseMessages.getString( PKG,
-          "CassandraColumnMetaData.Error.CantFindADeserializerForType", //$NON-NLS-1$
-          fullDecoder ) );
+          "CassandraColumnMetaData.Error.CantFindADeserializerForType" ) //$NON-NLS-1$
+          + " :" + fullDecoder ); //$NON-NLS-1$
     }
 
     result = deserializer.compose( valueBuff );

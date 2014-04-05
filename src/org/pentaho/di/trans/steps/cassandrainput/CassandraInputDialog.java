@@ -894,8 +894,11 @@ public class CassandraInputDialog extends BaseStepDialog implements StepDialogIn
       }
 
       if ( !kSpace.columnFamilyExists( colFam ) ) {
-        throw new Exception( BaseMessages.getString( PKG,
-            "CassandraInput.Error.NonExistentColumnFamily", colFam, keyspaceS ) ); //$NON-NLS-1$
+        throw new Exception(
+            BaseMessages
+                .getString(
+                    PKG,
+                    "CassandraInput.Error.NonExistentColumnFamily", m_useCQL3Check.getSelection() ? CassandraUtils.removeQuotes( colFam ) : colFam, keyspaceS ) ); //$NON-NLS-1$
       }
 
       CassandraColumnMetaData cassMeta = (CassandraColumnMetaData) kSpace.getColumnFamilyMetaData( colFam );

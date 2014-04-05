@@ -61,6 +61,7 @@ import org.apache.cassandra.thrift.CqlResult;
 import org.apache.cassandra.thrift.CqlRow;
 import org.apache.cassandra.thrift.KeySlice;
 import org.apache.cassandra.thrift.KsDef;
+import org.pentaho.cassandra.CassandraUtils;
 import org.pentaho.cassandra.spi.ColumnFamilyMetaData;
 import org.pentaho.cassandra.spi.Keyspace;
 import org.pentaho.di.core.Const;
@@ -139,7 +140,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
   public CassandraColumnMetaData( LegacyKeyspace keyspace, String columnFamily, boolean cql3 ) throws Exception {
     m_cql3 = cql3;
     m_keyspace = keyspace;
-    m_columnFamilyName = columnFamily;
+    m_columnFamilyName = m_cql3 ? CassandraUtils.removeQuotes( columnFamily ) : columnFamily;
 
     refresh( (CassandraConnection) m_keyspace.getConnection() );
   }
@@ -161,7 +162,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
    */
   @Override
   public void setColumnFamilyName( String colFamName ) {
-    m_columnFamilyName = colFamName;
+    m_columnFamilyName = m_cql3 ? CassandraUtils.removeQuotes( colFamName ) : colFamName;
   }
 
   /**

@@ -2,7 +2,7 @@
  *
  * Pentaho Big Data
  *
- * Copyright (C) 2002-2013 by Pentaho : http://www.pentaho.com
+ * Copyright (C) 2002-2014 by Pentaho : http://www.pentaho.com
  *
  *******************************************************************************
  *
@@ -21,6 +21,12 @@
  ******************************************************************************/
 
 package org.pentaho.cassandra.legacy;
+
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 import org.apache.cassandra.db.marshal.AbstractType;
 import org.apache.cassandra.db.marshal.UTF8Type;
@@ -44,12 +50,6 @@ import org.pentaho.di.core.row.RowMetaInterface;
 import org.pentaho.di.core.row.ValueMetaInterface;
 import org.pentaho.di.i18n.BaseMessages;
 
-import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
 /**
  * Implementation of Keyspace that wraps legacy routines
  *
@@ -69,15 +69,19 @@ public class LegacyKeyspace implements Keyspace {
   /**
    * Set the connection for this keyspace to use
    *
-   * @param conn the connection to use
-   * @throws Exception if a problem occurs
+   * @param conn
+   *          the connection to use
+   * @throws Exception
+   *           if a problem occurs
    */
+  @Override
   public void setConnection( Connection conn ) {
     m_conn = (CassandraConnection) conn;
 
     m_currentKeyspace = m_conn.m_keyspaceName;
   }
 
+  @Override
   public Connection getConnection() {
     return m_conn;
   }
@@ -85,9 +89,12 @@ public class LegacyKeyspace implements Keyspace {
   /**
    * Set the current keyspace
    *
-   * @param keyspaceName the name of the keyspace to use
-   * @throws Exception if a problem occurs
+   * @param keyspaceName
+   *          the name of the keyspace to use
+   * @throws Exception
+   *           if a problem occurs
    */
+  @Override
   public void setKeyspace( String keyspaceName ) throws Exception {
     if ( m_conn != null ) {
       m_conn.setKeyspace( keyspaceName );
@@ -101,15 +108,16 @@ public class LegacyKeyspace implements Keyspace {
   /**
    * Set any special options for keyspace operations (e.g. compression of CQL)
    *
-   * @param options the options to use. Can be null.
+   * @param options
+   *          the options to use. Can be null.
    */
+  @Override
   public void setOptions( Map<String, String> options ) {
     m_options = options;
 
     if ( m_options != null ) {
       for ( Map.Entry<String, String> e : m_options.entrySet() ) {
-        if ( e.getKey().equalsIgnoreCase(
-            CassandraUtils.CQLOptions.CQLVERSION_OPTION )
+        if ( e.getKey().equalsIgnoreCase( CassandraUtils.CQLOptions.CQLVERSION_OPTION )
             && e.getValue().equals( CassandraUtils.CQLOptions.CQL3_STRING ) ) {
           m_cql3 = true;
         }
@@ -120,16 +128,21 @@ public class LegacyKeyspace implements Keyspace {
   /**
    * Execute a CQL statement.
    *
-   * @param cql              the CQL to execute
-   * @param compression      the compression to use (GZIP or NONE)
-   * @param consistencyLevel the consistency level to use
-   * @param log              log to write to (may be null)
-   * @throws UnsupportedOperationException if CQL is not supported by the
-   *                                       underlying driver
-   * @throws Exception                     if a problem occurs
+   * @param cql
+   *          the CQL to execute
+   * @param compression
+   *          the compression to use (GZIP or NONE)
+   * @param consistencyLevel
+   *          the consistency level to use
+   * @param log
+   *          log to write to (may be null)
+   * @throws UnsupportedOperationException
+   *           if CQL is not supported by the underlying driver
+   * @throws Exception
+   *           if a problem occurs
    */
-  public void executeCQL( String cql, String compression,
-      String consistencyLevel, LogChannelInterface log )
+  @Override
+  public void executeCQL( String cql, String compression, String consistencyLevel, LogChannelInterface log )
     throws UnsupportedOperationException, Exception {
 
     ConsistencyLevel c = ConsistencyLevel.ONE; // default for CQL
@@ -151,8 +164,7 @@ public class LegacyKeyspace implements Keyspace {
     if ( m_conn != null ) {
       if ( m_cql3 ) {
         // m_conn.getClient().set_cql_version(CQL3_VERSION);
-        m_conn.getClient()
-            .execute_cql3_query( ByteBuffer.wrap( queryBytes ), z, c );
+        m_conn.getClient().execute_cql3_query( ByteBuffer.wrap( queryBytes ), z, c );
       } else {
         m_conn.getClient().execute_cql_query( ByteBuffer.wrap( queryBytes ), z );
       }
@@ -163,8 +175,10 @@ public class LegacyKeyspace implements Keyspace {
    * Get a list of the names of the column families in this keyspace
    *
    * @return a list of column family names in the current keyspace
-   * @throws Exception if a problem occurs
+   * @throws Exception
+   *           if a problem occurs
    */
+  @Override
   public List<String> getColumnFamilyNames() throws Exception {
 
     if ( m_cql3 ) {
@@ -176,12 +190,8 @@ public class LegacyKeyspace implements Keyspace {
     if ( keySpace != null ) {
       colFams = keySpace.getCf_defs();
     } else {
-      throw new Exception(
-          BaseMessages
-              .getString(
-                  PKG,
-                  "LegacyKeyspace.Error.UnableToGetMetaDataForKeyspace", m_currentKeyspace )
-      ); //$NON-NLS-1$
+      throw new Exception( BaseMessages.getString( PKG, "LegacyKeyspace.Error.UnableToGetMetaDataForKeyspace",
+          m_currentKeyspace ) ); //$NON-NLS-1$
     }
 
     List<String> colFamNames = new ArrayList<String>();
@@ -193,11 +203,12 @@ public class LegacyKeyspace implements Keyspace {
   }
 
   /**
-   * Queries CQL system.schema_columnfamilies table to retrieve all column
-   * families (including CQL tables that are not exposed to Thrift)
+   * Queries CQL system.schema_columnfamilies table to retrieve all column families (including CQL tables that are not
+   * exposed to Thrift)
    *
    * @return a list of column family (table) names
-   * @throws Exception if a problem occurs
+   * @throws Exception
+   *           if a problem occurs
    */
   protected List<String> getColumnFamilyNamesCQL3() throws Exception {
     ConsistencyLevel c = ConsistencyLevel.ONE; // default for CQL
@@ -206,14 +217,11 @@ public class LegacyKeyspace implements Keyspace {
 
     String keyspaceName = m_currentKeyspace;
 
-    String
-        cqlQ =
-        "select keyspace_name, columnfamily_name from system.schema_columnfamilies where keyspace_name='" //$NON-NLS-1$
-            + keyspaceName + "';"; //$NON-NLS-1$
+    String cqlQ = "select keyspace_name, columnfamily_name from system.schema_columnfamilies where keyspace_name='" //$NON-NLS-1$
+        + keyspaceName + "';"; //$NON-NLS-1$
     byte[] data = cqlQ.getBytes( Charset.forName( "UTF-8" ) ); //$NON-NLS-1$
 
-    CqlResult result = m_conn.m_client.execute_cql3_query(
-        ByteBuffer.wrap( data ), z, c );
+    CqlResult result = m_conn.m_client.execute_cql3_query( ByteBuffer.wrap( data ), z, c );
 
     List<CqlRow> rl = result.getRows();
 
@@ -233,45 +241,50 @@ public class LegacyKeyspace implements Keyspace {
   /**
    * Create a keyspace.
    *
-   * @param keyspaceName the name of the keyspace
-   * @param options      additional options (see
-   *                     http://www.datastax.com/docs/1.0/configuration
-   *                     /storage_configuration)
-   * @param log          log to write to (may be null)
-   * @throws UnsupportedOperationException if the underlying driver does not
-   *                                       support creating keyspaces
-   * @throws Exception                     if a problem occurs
+   * @param keyspaceName
+   *          the name of the keyspace
+   * @param options
+   *          additional options (see http://www.datastax.com/docs/1.0/configuration /storage_configuration)
+   * @param log
+   *          log to write to (may be null)
+   * @throws UnsupportedOperationException
+   *           if the underlying driver does not support creating keyspaces
+   * @throws Exception
+   *           if a problem occurs
    */
-  public void createKeyspace( String keyspaceName, Map<String, Object> options,
-      LogChannelInterface log ) throws UnsupportedOperationException, Exception {
-    throw new UnsupportedOperationException(
-        "Legacy driver does not support keyspace creation" ); //$NON-NLS-1$
+  @Override
+  public void createKeyspace( String keyspaceName, Map<String, Object> options, LogChannelInterface log )
+    throws UnsupportedOperationException, Exception {
+    throw new UnsupportedOperationException( "Legacy driver does not support keyspace creation" ); //$NON-NLS-1$
   }
 
   /**
    * Check to see if the named column family exists in the current keyspace
    *
-   * @param colFamName the column family name to check
+   * @param colFamName
+   *          the column family name to check
    * @return true if the named column family exists in the current keyspace
-   * @throws Exception if a problem occurs
+   * @throws Exception
+   *           if a problem occurs
    */
+  @Override
   public boolean columnFamilyExists( String colFamName ) throws Exception {
     List<String> colFamNames = getColumnFamilyNames();
-    return colFamNames.contains( colFamName );
+    return colFamNames.contains( m_cql3 ? CassandraUtils.removeQuotes( colFamName ) : colFamName );
   }
 
   /**
    * Get meta data for the named column family
    *
-   * @param familyName the name of the column family to get meta data for
+   * @param familyName
+   *          the name of the column family to get meta data for
    * @return the column family meta data
-   * @throws Exception if the named column family does not exist in the keyspace
-   *                   or a problem occurs
+   * @throws Exception
+   *           if the named column family does not exist in the keyspace or a problem occurs
    */
-  public ColumnFamilyMetaData getColumnFamilyMetaData( String familyName )
-    throws Exception {
-    CassandraColumnMetaData meta = new CassandraColumnMetaData( this,
-        familyName, m_cql3 );
+  @Override
+  public ColumnFamilyMetaData getColumnFamilyMetaData( String familyName ) throws Exception {
+    CassandraColumnMetaData meta = new CassandraColumnMetaData( this, familyName, m_cql3 );
 
     return meta;
   }
@@ -279,36 +292,39 @@ public class LegacyKeyspace implements Keyspace {
   /**
    * Create a column family in the current keyspace.
    *
-   * @param colFamName            the name of the column family to create
-   * @param rowMeta               the incoming fields to base the column family schema on
-   * @param keyIndexes            the index(es) of the incoming field(s) to use as the key
-   * @param createTableWithClause any WITH clause to include when creating the
-   *                              table
-   * @param log                   log to write to (may be null)
+   * @param colFamilyName
+   *          the name of the column family to create
+   * @param rowMeta
+   *          the incoming fields to base the column family schema on
+   * @param keyIndexes
+   *          the index(es) of the incoming field(s) to use as the key
+   * @param createTableWithClause
+   *          any WITH clause to include when creating the table
+   * @param log
+   *          log to write to (may be null)
    * @return true if the column family was created successfully
-   * @throws Exception if a problem occurs
+   * @throws Exception
+   *           if a problem occurs
    */
-  public boolean createColumnFamily( String colFamilyName,
-      RowMetaInterface rowMeta, List<Integer> keyIndexes,
+  @Override
+  public boolean createColumnFamily( String colFamilyName, RowMetaInterface rowMeta, List<Integer> keyIndexes,
       String createTableWithClause, LogChannelInterface log ) throws Exception {
 
     if ( keyIndexes.size() > 1 && !m_cql3 ) {
-      throw new Exception( BaseMessages.getString( PKG,
-          "LegacyKeyspace.Error.OnlySingleColumnKeysAreSupported" ) ); //$NON-NLS-1$
+      throw new Exception( BaseMessages.getString( PKG, "LegacyKeyspace.Error.OnlySingleColumnKeysAreSupported" ) ); //$NON-NLS-1$
     }
 
     String quoteChar = m_cql3 ? "\"" : "'"; //$NON-NLS-1$ //$NON-NLS-2$
 
     StringBuffer buff = new StringBuffer();
-    buff.append( "CREATE TABLE " + colFamilyName ); //$NON-NLS-1$
+    buff.append( "CREATE TABLE " + ( m_cql3 ? CassandraUtils.cql3MixedCaseQuote( colFamilyName ) : colFamilyName ) ); //$NON-NLS-1$
     ValueMetaInterface kvm = rowMeta.getValueMeta( keyIndexes.get( 0 ) );
     buff.append( " (" ); //$NON-NLS-1$
 
     // apparently CQL2 can use the keyword KEY or an alias for the row key
 
     if ( !m_cql3 ) {
-      buff.append( quoteChar + kvm.getName() + quoteChar ).append(
-          " " + CassandraUtils.getCQLTypeForValueMeta( kvm ) ); //$NON-NLS-1$
+      buff.append( quoteChar + kvm.getName() + quoteChar ).append( " " + CassandraUtils.getCQLTypeForValueMeta( kvm ) ); //$NON-NLS-1$
 
       buff.append( " PRIMARY KEY" ); //$NON-NLS-1$
     }
@@ -323,6 +339,12 @@ public class LegacyKeyspace implements Keyspace {
           if ( vm.getStorageType() == ValueMetaInterface.STORAGE_TYPE_INDEXED ) {
             indexedVals.add( vm );
           }
+
+          if ( log != null ) {
+            log.logBasic( BaseMessages.getString( PKG, "LegacyKeyspace.Message.ValueMetaConversion", vm.getType(),
+                CassandraUtils.getCQLTypeForValueMeta( vm ) ) ); //$NON-NLS-1$
+          }
+
           String colName = vm.getName();
           String colType = CassandraUtils.getCQLTypeForValueMeta( vm );
           if ( !( i == 0 && m_cql3 ) ) {
@@ -345,8 +367,7 @@ public class LegacyKeyspace implements Keyspace {
       for ( int i = 0; i < keyIndexes.size(); i++ ) {
         int ki = keyIndexes.get( i );
         ValueMetaInterface vm = rowMeta.getValueMeta( ki );
-        buff.append( i == 0 ? "" : ", " ).append(
-            quoteChar + vm.getName() + quoteChar );
+        buff.append( i == 0 ? "" : ", " ).append( quoteChar + vm.getName() + quoteChar );
       }
       buff.append( ")" );
     }
@@ -402,10 +423,8 @@ public class LegacyKeyspace implements Keyspace {
     }
 
     if ( log != null ) {
-      log.logBasic( BaseMessages
-          .getString(
-              PKG,
-              "LegacyKeyspace.Message.CreatingColumnFamily", colFamilyName, buff.toString() ) ); //$NON-NLS-1$
+      log.logBasic( BaseMessages.getString( PKG,
+          "LegacyKeyspace.Message.CreatingColumnFamily", colFamilyName, buff.toString() ) ); //$NON-NLS-1$
     }
 
     executeCQL( buff.toString(), null, null, log );
@@ -413,24 +432,21 @@ public class LegacyKeyspace implements Keyspace {
     return true;
   }
 
-  protected void updateColumnFamilyCQL3( String colFamName,
-      RowMetaInterface rowMeta, List<Integer> keyIndexes,
+  protected void updateColumnFamilyCQL3( String colFamName, RowMetaInterface rowMeta, List<Integer> keyIndexes,
       LogChannelInterface log ) throws Exception {
 
     // we should have this column family in our meta data
     CassandraColumnMetaData cassandraMeta = (CassandraColumnMetaData) getColumnFamilyMetaData( colFamName );
 
     if ( cassandraMeta == null ) {
-      throw new Exception( BaseMessages.getString( PKG,
-          "LegacyKeyspace.Error.CantUpdateMetaData", colFamName ) ); //$NON-NLS-1$
+      throw new Exception( BaseMessages.getString( PKG, "LegacyKeyspace.Error.CantUpdateMetaData", colFamName ) ); //$NON-NLS-1$
     }
 
     String alter = "ALTER TABLE " + colFamName + " ADD "; //$NON-NLS-1$ //$NON-NLS-2$
 
     for ( int i = 0; i < rowMeta.size(); i++ ) {
       ValueMetaInterface vm = rowMeta.getValueMeta( i );
-      if ( !keyIndexes.contains( vm.getName() )
-          && !cassandraMeta.columnExistsInSchema( vm.getName() ) ) {
+      if ( !keyIndexes.contains( vm.getName() ) && !cassandraMeta.columnExistsInSchema( vm.getName() ) ) {
         String alter2 = alter + vm.getName() + " " //$NON-NLS-1$
             + CassandraUtils.getCQLTypeForValueMeta( vm ) + ";"; //$NON-NLS-1$
 
@@ -441,20 +457,23 @@ public class LegacyKeyspace implements Keyspace {
   }
 
   /**
-   * Update the named column family with any incoming fields that are not
-   * present in its schema already
+   * Update the named column family with any incoming fields that are not present in its schema already
    *
-   * @param colFamName the name of the column family to update
-   * @param rowMeta    the incoming row meta data
-   * @param keyIndexes the index(es) of the incoming field(s) that make up the
-   *                   key
-   * @param log        the log to write to (may be null)
-   * @throws UnsupportedOperationException if the underlying driver does not
-   *                                       support updating column family schema information
-   * @throws Exception                     if a problem occurs
+   * @param colFamilyName
+   *          the name of the column family to update
+   * @param rowMeta
+   *          the incoming row meta data
+   * @param keyIndexes
+   *          the index(es) of the incoming field(s) that make up the key
+   * @param log
+   *          the log to write to (may be null)
+   * @throws UnsupportedOperationException
+   *           if the underlying driver does not support updating column family schema information
+   * @throws Exception
+   *           if a problem occurs
    */
-  public void updateColumnFamily( String colFamilyName,
-      RowMetaInterface rowMeta, List<Integer> keyIndexes,
+  @Override
+  public void updateColumnFamily( String colFamilyName, RowMetaInterface rowMeta, List<Integer> keyIndexes,
       LogChannelInterface log ) throws UnsupportedOperationException, Exception {
 
     if ( m_cql3 ) {
@@ -463,8 +482,7 @@ public class LegacyKeyspace implements Keyspace {
     }
 
     if ( keyIndexes.size() > 1 || keyIndexes.size() == 0 ) {
-      throw new Exception( BaseMessages.getString( PKG,
-          "LegacyKeyspace.Error.OnlySingleColumnKeysAreSupported" ) ); //$NON-NLS-1$
+      throw new Exception( BaseMessages.getString( PKG, "LegacyKeyspace.Error.OnlySingleColumnKeysAreSupported" ) ); //$NON-NLS-1$
     }
 
     // column families
@@ -473,24 +491,16 @@ public class LegacyKeyspace implements Keyspace {
     if ( keySpace != null ) {
       colFams = keySpace.getCf_defs();
     } else {
-      throw new Exception(
-          BaseMessages
-              .getString(
-                  PKG,
-                  "LegacyKeyspace.Error.UnableToGetColumnFamilyMetaData", colFamilyName )
-      ); //$NON-NLS-1$
+      throw new Exception( BaseMessages.getString( PKG, "LegacyKeyspace.Error.UnableToGetColumnFamilyMetaData",
+          colFamilyName ) ); //$NON-NLS-1$
     }
 
     // we should have this column family in our meta data then
     CassandraColumnMetaData cassandraMeta = (CassandraColumnMetaData) getColumnFamilyMetaData( colFamilyName );
 
     if ( cassandraMeta == null ) {
-      throw new Exception(
-          BaseMessages
-              .getString(
-                  PKG,
-                  "LegacyKeyspace.Error.UnableToGetColumnFamilyMetaData", colFamilyName )
-      ); //$NON-NLS-1$
+      throw new Exception( BaseMessages.getString( PKG, "LegacyKeyspace.Error.UnableToGetColumnFamilyMetaData",
+          colFamilyName ) ); //$NON-NLS-1$
     }
 
     // look for the requested column family
@@ -505,8 +515,7 @@ public class LegacyKeyspace implements Keyspace {
     }
 
     if ( colFamDefToUpdate == null ) {
-      throw new Exception( BaseMessages.getString( PKG,
-          "LegacyKeyspace.Error.CantUpdateMetaData", colFamilyName ) ); //$NON-NLS-1$
+      throw new Exception( BaseMessages.getString( PKG, "LegacyKeyspace.Error.CantUpdateMetaData", colFamilyName ) ); //$NON-NLS-1$
     }
 
     String comment = colFamDefToUpdate.getComment();
@@ -520,11 +529,9 @@ public class LegacyKeyspace implements Keyspace {
         }
         String colName = colMeta.getName();
         if ( !cassandraMeta.columnExistsInSchema( colName ) ) {
-          String colType = CassandraColumnMetaData
-              .getCassandraTypeForValueMeta( colMeta );
+          String colType = CassandraColumnMetaData.getCassandraTypeForValueMeta( colMeta );
 
-          ColumnDef newCol = new ColumnDef( ByteBuffer.wrap( colName.getBytes() ),
-              colType );
+          ColumnDef newCol = new ColumnDef( ByteBuffer.wrap( colName.getBytes() ), colType );
           colFamDefToUpdate.addToColumn_metadata( newCol );
         }
       }
@@ -580,24 +587,28 @@ public class LegacyKeyspace implements Keyspace {
   /**
    * Truncate the named column family.
    *
-   * @param colFamName the name of the column family to truncate
-   * @param log        log to write to (may be null)
-   * @throws UnsupportedOperationException if the underlying driver does not
-   *                                       support truncating a column family
-   * @throws Exception                     if a problem occurs
+   * @param colFamName
+   *          the name of the column family to truncate
+   * @param log
+   *          log to write to (may be null)
+   * @throws UnsupportedOperationException
+   *           if the underlying driver does not support truncating a column family
+   * @throws Exception
+   *           if a problem occurs
    */
-  public void truncateColumnFamily( String colFamName, LogChannelInterface log )
-    throws UnsupportedOperationException, Exception {
+  @Override
+  public void truncateColumnFamily( String colFamName, LogChannelInterface log ) throws UnsupportedOperationException,
+    Exception {
 
     String cqlCommand = "TRUNCATE " + colFamName; //$NON-NLS-1$
     if ( log != null ) {
-      log.logBasic( BaseMessages.getString( PKG,
-          "LegacyKeyspace.Message.TruncateColumnFamily", colFamName ) ); //$NON-NLS-1$
+      log.logBasic( BaseMessages.getString( PKG, "LegacyKeyspace.Message.TruncateColumnFamily", colFamName ) ); //$NON-NLS-1$
     }
 
     executeCQL( cqlCommand, null, null, log );
   }
 
+  @Override
   public CQLRowHandler getCQLRowHandler() {
     LegacyCQLRowHandler rowHandler = new LegacyCQLRowHandler();
 
@@ -607,6 +618,7 @@ public class LegacyKeyspace implements Keyspace {
     return rowHandler;
   }
 
+  @Override
   public NonCQLRowHandler getNonCQLRowHandler() {
     LegacyNonCQLRowHandler rowHandler = new LegacyNonCQLRowHandler();
     rowHandler.setKeyspace( this );

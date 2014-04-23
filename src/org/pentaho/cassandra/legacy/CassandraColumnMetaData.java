@@ -2,7 +2,7 @@
  *
  * Pentaho Big Data
  *
- * Copyright (C) 2002-2013 by Pentaho : http://www.pentaho.com
+ * Copyright (C) 2002-2014 by Pentaho : http://www.pentaho.com
  *
  *******************************************************************************
  *
@@ -21,6 +21,18 @@
  ******************************************************************************/
 
 package org.pentaho.cassandra.legacy;
+
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
 import org.apache.cassandra.db.marshal.AbstractType;
 import org.apache.cassandra.db.marshal.AsciiType;
@@ -49,6 +61,7 @@ import org.apache.cassandra.thrift.CqlResult;
 import org.apache.cassandra.thrift.CqlRow;
 import org.apache.cassandra.thrift.KeySlice;
 import org.apache.cassandra.thrift.KsDef;
+import org.pentaho.cassandra.CassandraUtils;
 import org.pentaho.cassandra.spi.ColumnFamilyMetaData;
 import org.pentaho.cassandra.spi.Keyspace;
 import org.pentaho.di.core.Const;
@@ -56,18 +69,6 @@ import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.row.ValueMeta;
 import org.pentaho.di.core.row.ValueMetaInterface;
 import org.pentaho.di.i18n.BaseMessages;
-
-import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
 
 /**
  * Class encapsulating read-only schema information for a column family. Has utility routines for converting between
@@ -145,15 +146,19 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
   /**
    * Constructor
    *
-   * @param keyspace     the keypsace to use
-   * @param columnFamily the name of the column family (table)
-   * @param cql3         true if the table is a CQL 3 table
-   * @throws Exception if a problem occurs
+   * @param keyspace
+   *          the keypsace to use
+   * @param columnFamily
+   *          the name of the column family (table)
+   * @param cql3
+   *          true if the table is a CQL 3 table
+   * @throws Exception
+   *           if a problem occurs
    */
   public CassandraColumnMetaData( LegacyKeyspace keyspace, String columnFamily, boolean cql3 ) throws Exception {
     m_cql3 = cql3;
     m_keyspace = keyspace;
-    m_columnFamilyName = columnFamily;
+    m_columnFamilyName = m_cql3 ? CassandraUtils.removeQuotes( columnFamily ) : columnFamily;
 
     refresh( (CassandraConnection) m_keyspace.getConnection() );
   }
@@ -175,7 +180,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
    */
   @Override
   public void setColumnFamilyName( String colFamName ) {
-    m_columnFamilyName = colFamName;
+    m_columnFamilyName = m_cql3 ? CassandraUtils.removeQuotes( colFamName ) : colFamName;
   }
 
   /**
@@ -193,14 +198,12 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
   // "COMPACT STORAGE")
 
   protected static enum CFMetaDataElements {
-    COMPARATOR( "comparator" ), DEFAULT_VALIDATOR( "default_validator" ), COLUMN_ALIASES(
-        "column_aliases" ), KEY_ALIASES( //$NON-NLS-2$
+    COMPARATOR( "comparator" ), DEFAULT_VALIDATOR( "default_validator" ), COLUMN_ALIASES( "column_aliases" ), KEY_ALIASES(
         "key_aliases" ), KEY_VALIDATOR( "key_validator" ), BLOOM_FILTER_FP_CHANCE( "bloom_filter_fp_chance" ), CACHING(
         "caching" ), COMPACTION_STRATEGY_CLASS( "compaction_strategy_class" ), COMPACTION_STRATEGY_OPTIONS(
         "compaction_strategy_options" ), COMPRESSION_PARAMETERS( "compression_parameters" ), GC_GRACE_SECONDS(
         "gc_grace_seconds" ), LOCAL_READ_REPAIR_CHANCE( "local_read_repair_chance" ), MAX_COMPACTION_THRESHOLD(
-        "max_compaction_threshold" ), MIN_COMPACTION_THRESHOLD(
-        "min_compaction_threshold" ), POPULATE_IO_CACHE_ON_FLUSH(
+        "max_compaction_threshold" ), MIN_COMPACTION_THRESHOLD( "min_compaction_threshold" ), POPULATE_IO_CACHE_ON_FLUSH(
         "populate_io_cache_on_flush" ), READ_REPAIR_CHANCE( "read_repair_chance" ), REPLICATE_ON_WRITE(
         "replicate_on_write" ), TYPE( "type" ), VALUE_ALIAS( "value_alias" );
 
@@ -219,8 +222,10 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
   /**
    * Refresh the meta data for a CQL 3 table
    *
-   * @param conn the connection to use
-   * @throws Exception if a problem occurs
+   * @param conn
+   *          the connection to use
+   * @throws Exception
+   *           if a problem occurs
    */
   protected void refreshCQL3( CassandraConnection conn ) throws Exception {
     List<String> colFamNames = m_keyspace.getColumnFamilyNames();
@@ -267,10 +272,8 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
     List<CqlRow> rl = result.getRows();
 
     if ( rl.size() != 1 ) {
-      throw new Exception(
-          BaseMessages.getString( PKG, "CassandraColumnMetaData.Error.CQLQueryToObtainMetaData", //$NON-NLS-1$
-              m_columnFamilyName )
-      );
+      throw new Exception( BaseMessages.getString( PKG, "CassandraColumnMetaData.Error.CQLQueryToObtainMetaData", //$NON-NLS-1$
+          m_columnFamilyName ) );
     }
 
     // read the system.schema_columns table to get the rest of the columns
@@ -375,11 +378,8 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
 
       // add these additional key cols to our meta data map
       for ( int i = 0; i < colAliasParts.length; i++ ) {
-        String
-            colName =
-            colAliasParts[i].replace( "[", "" ).replace( "]",
-                "" ) //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
-                .replace( "\"", "" ).trim(); //$NON-NLS-1$ //$NON-NLS-2$
+        String colName = colAliasParts[i].replace( "[", "" ).replace( "]", "" ) //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+            .replace( "\"", "" ).trim(); //$NON-NLS-1$ //$NON-NLS-2$
         namesOfAdditionalCompoundKeyCols.add( colName );
         m_columnMeta.put( colName, decodersForAdditionalCompoundKeyCols.get( i ) );
       }
@@ -407,11 +407,8 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
             namesOfAdditionalCompoundKeyCols.add( "column1" ); //$NON-NLS-1$
             m_columnMeta.put( "column1", m_columnComparator ); //$NON-NLS-1$
           } else {
-            String
-                colName =
-                colAliasParts[0].replace( "[", "" ).replace( "]",
-                    "" ) //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
-                    .replace( "\"", "" ).trim(); //$NON-NLS-1$ //$NON-NLS-2$
+            String colName = colAliasParts[0].replace( "[", "" ).replace( "]", "" ) //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+                .replace( "\"", "" ).trim(); //$NON-NLS-1$ //$NON-NLS-2$
             namesOfAdditionalCompoundKeyCols.add( colName );
             m_columnMeta.put( colName, m_columnComparator );
           }
@@ -429,10 +426,8 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
           for ( int i = 0; i < decodersForAdditionalCompoundKeyCols.size(); i++ ) {
             String colName = ""; //$NON-NLS-1$
             if ( numColAliases != 0 ) {
-              colName =
-                  colAliasParts[i].replace( "[", "" ).replace( "]",
-                      "" ) //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
-                      .replace( "\"", "" ).trim(); //$NON-NLS-1$ //$NON-NLS-2$
+              colName = colAliasParts[i].replace( "[", "" ).replace( "]", "" ) //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+                  .replace( "\"", "" ).trim(); //$NON-NLS-1$ //$NON-NLS-2$
             } else {
               // the default column names that CQL 3 creates
               colName = "column" + ( i + 1 ); //$NON-NLS-1$
@@ -524,20 +519,16 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
         colAliasParts = aliasS.trim().split( "," ); //$NON-NLS-1$
 
         if ( decodersForPartitionKeyParts.size() == 0 ) {
-          keyName =
-              colAliasParts[0].replace( "[", "" ).replace( "]",
-                  "" ) //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
-                  .replace( "\"", "" ).trim(); //$NON-NLS-1$ //$NON-NLS-2$
+          keyName = colAliasParts[0].replace( "[", "" ).replace( "]", "" ) //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+              .replace( "\"", "" ).trim(); //$NON-NLS-1$ //$NON-NLS-2$
           tempColMeta.put( keyName, m_keyValidator );
           m_keyColumnNames.add( keyName );
           partitionKeyNames.add( keyName );
         } else {
           // number of decoders should equal the number of aliases defined
           for ( int i = 0; i < decodersForPartitionKeyParts.size(); i++ ) {
-            keyName =
-                colAliasParts[i].replace( "[", "" ).replace( "]",
-                    "" ) //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
-                    .replace( "\"", "" ).trim(); //$NON-NLS-1$ //$NON-NLS-2$
+            keyName = colAliasParts[i].replace( "[", "" ).replace( "]", "" ) //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+                .replace( "\"", "" ).trim(); //$NON-NLS-1$ //$NON-NLS-2$
             tempColMeta.put( keyName, decodersForPartitionKeyParts.get( i ) );
             m_keyColumnNames.add( keyName );
             partitionKeyNames.add( keyName );
@@ -553,8 +544,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
         + columnFamNameAdditionalInfo );
 
     String keyDescription = "\n\n\tKey" //$NON-NLS-1$
-        + ( compoundKey ? ( partitionKeyNames.size() > 1 ? " ((composite) compound): " : " (compound): " )
-        : " : " ); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+        + ( compoundKey ? ( partitionKeyNames.size() > 1 ? " ((composite) compound): " : " (compound): " ) : " : " ); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
     m_schemaDescription.append( keyDescription );
     if ( partitionKeyNames.size() == 1 ) {
       m_schemaDescription.append( partitionKeyNames.get( 0 ) );
@@ -711,13 +701,12 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
       Object decodedColValidator = deserializer.compose( colV.bufferForValue() );
 
       m_columnMeta.put( decodedColName.toString().replace( "\"", "" ).replace( "'", "" ).trim(),
-          //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+      //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
           decodedColValidator.toString().trim() );
 
       m_schemaDescription.append( "\n\tColumn name: " //$NON-NLS-1$
-          + decodedColName.toString().replace( "\"", "" ).replace( "'",
-          "" ) //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
-          .trim() );
+          + decodedColName.toString().replace( "\"", "" ).replace( "'", "" ) //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+              .trim() );
 
       m_schemaDescription.append( "\n\t\tColumn validator: " //$NON-NLS-1$
           + decodedColValidator.toString().trim() );
@@ -743,8 +732,10 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
   /**
    * Refreshes the encapsulated meta data for the column family.
    *
-   * @param conn the connection to cassandra to use for refreshing the meta data
-   * @throws Exception if a problem occurs during connection or when fetching meta data
+   * @param conn
+   *          the connection to cassandra to use for refreshing the meta data
+   * @throws Exception
+   *           if a problem occurs during connection or when fetching meta data
    */
   public void refresh( CassandraConnection conn ) throws Exception {
 
@@ -761,10 +752,8 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
     if ( keySpace != null ) {
       colFams = keySpace.getCf_defs();
     } else {
-      throw new Exception(
-          BaseMessages.getString( PKG, "CassandraColumnMetaData.Error.UnableToGetMetaDataForKeyspace", //$NON-NLS-1$
-              conn.m_keyspaceName )
-      );
+      throw new Exception( BaseMessages.getString( PKG, "CassandraColumnMetaData.Error.UnableToGetMetaDataForKeyspace", //$NON-NLS-1$
+          conn.m_keyspaceName ) );
     }
 
     // set up our meta data map
@@ -946,8 +935,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
   /**
    * Get a textual description of the named column family
    *
-   * @param keyspace
-   * @return
+   * @return textual description
    * @throws Exception
    */
   @Override
@@ -971,7 +959,8 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
    * Return the Cassandra column type (internal cassandra class name relative to org.apache.cassandra.db.marshal) for
    * the given Kettle column.
    *
-   * @param vm the ValueMetaInterface for the Kettle column
+   * @param vm
+   *          the ValueMetaInterface for the Kettle column
    * @return the corresponding internal cassandra type.
    */
   public static String getCassandraTypeForValueMeta( ValueMetaInterface vm ) {
@@ -1003,7 +992,8 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
    * org.apache.cassandra.db.marshal) class names can be used instead of CQL types - however, using these when defining
    * the key type always results in BytesType getting set for the key for some reason.
    *
-   * @param vm the ValueMetaInterface for the Kettle column
+   * @param vm
+   *          the ValueMetaInterface for the Kettle column
    * @return the corresponding CQL type
    */
   public static String getCQLTypeForValueMeta( ValueMetaInterface vm ) {
@@ -1031,10 +1021,13 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
   /**
    * Static utility to decompose a Kettle value to a ByteBuffer. Note - does not check if the kettle value is null.
    *
-   * @param vm    the ValueMeta for the Kettle value
-   * @param value the actual Kettle value
+   * @param vm
+   *          the ValueMeta for the Kettle value
+   * @param value
+   *          the actual Kettle value
    * @return a ByteBuffer encapsulating the bytes for the decomposed value
-   * @throws KettleException if a problem occurs
+   * @throws KettleException
+   *           if a problem occurs
    */
   public ByteBuffer kettleValueToByteBuffer( ValueMetaInterface vm, Object value, boolean isKey )
     throws KettleException {
@@ -1120,10 +1113,8 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
           throw new KettleException( e.getMessage(), e );
         }
       } else {
-        throw new KettleException(
-            BaseMessages.getString( PKG, "CassandraColumnMetaData.Error.CantConvertTypeThrift", //$NON-NLS-1$
-                vm.getTypeDesc(), fullTransCoder )
-        );
+        throw new KettleException( BaseMessages.getString( PKG, "CassandraColumnMetaData.Error.CantConvertTypeThrift", //$NON-NLS-1$
+            vm.getTypeDesc(), fullTransCoder ) );
       }
     } else if ( transCoder.indexOf( "CompositeType" ) > 0 ) { //$NON-NLS-1$
       AbstractType<?> serializer = null;
@@ -1135,10 +1126,8 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
           throw new KettleException( e.getMessage(), e );
         }
       } else {
-        throw new KettleException(
-            BaseMessages.getString( PKG, "CassandraColumnMetaData.Error.CantConvertTypeThrift", //$NON-NLS-1$
-                vm.getTypeDesc(), fullTransCoder )
-        );
+        throw new KettleException( BaseMessages.getString( PKG, "CassandraColumnMetaData.Error.CantConvertTypeThrift", //$NON-NLS-1$
+            vm.getTypeDesc(), fullTransCoder ) );
       }
     }
 
@@ -1153,9 +1142,11 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
   /**
    * Encode a string representation of a column name using the serializer for the default comparator.
    *
-   * @param colName the textual column name to serialze
+   * @param colName
+   *          the textual column name to serialze
    * @return a ByteBuffer encapsulating the serialized column name
-   * @throws KettleException if a problem occurs during serialization
+   * @throws KettleException
+   *           if a problem occurs during serialization
    */
   public ByteBuffer columnNameToByteBuffer( String colName ) throws KettleException {
 
@@ -1253,7 +1244,8 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
    * Removes an enclosing ReversedType if necessary. ReversedType is just a wrapper around a single base type. It simply
    * reverses the comparator of the base type, so for our purposes we just need the base type.
    *
-   * @param type type string to check
+   * @param type
+   *          type string to check
    * @return type string stripped of enclosing ReversedType (if necessary)
    */
   private static String stripReversedTypeIfNecessary( String type ) {
@@ -1304,7 +1296,8 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
   /**
    * Get the Kettle ValueMeta that corresponds to the type of the supplied cassandra column.
    *
-   * @param colName the name of the column to get a ValueMeta for
+   * @param colName
+   *          the name of the column to get a ValueMeta for
    * @return the ValueMeta that is appropriate for the type of the supplied column.
    */
   @Override
@@ -1366,7 +1359,8 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
   /**
    * Returns true if the supplied column name exists in this schema.
    *
-   * @param colName the name of the column to check.
+   * @param colName
+   *          the name of the column to check.
    * @return true if the column exists in the meta data for this column family.
    */
   @Override
@@ -1401,9 +1395,11 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
    * data represents!! Note that getting the key value from a CqlRow object only works for CQL 2; In CQL3
    * CqlRow.getKey() returns an array of length zero!
    *
-   * @param row a Cassandra row
+   * @param row
+   *          a Cassandra row
    * @return the decoded key value
-   * @throws KettleException if a deserializer can't be determined
+   * @throws KettleException
+   *           if a deserializer can't be determined
    */
   public Object getKeyValue( CqlRow row ) throws KettleException {
 
@@ -1421,9 +1417,11 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
    * Return the decoded key value of a row. Assumes that the supplied row comes from the column family that this meta
    * data represents!!
    *
-   * @param row a Cassandra row
+   * @param row
+   *          a Cassandra row
    * @return the decoded key value
-   * @throws KettleException if a deserializer can't be determined
+   * @throws KettleException
+   *           if a deserializer can't be determined
    */
   public Object getKeyValue( KeySlice row ) throws KettleException {
     ByteBuffer key = row.bufferForKey();

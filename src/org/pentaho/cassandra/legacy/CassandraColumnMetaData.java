@@ -22,6 +22,7 @@
 
 package org.pentaho.cassandra.legacy;
 
+import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -124,6 +125,12 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
    * True if CQL3 is in use, in which case meta data is gathered differently than for CQL 2 tables
    */
   protected boolean m_cql3;
+
+  /**
+   * Save an instance of the TimestampType to re-use (and avoid having to use reflection every time we need to
+   * serialize/deserialize)
+   */
+  protected static AbstractType<java.util.Date> s_cachedTimestampType;
 
   /**
    * Constructor
@@ -938,6 +945,46 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
   }
 
   /**
+   * Get an instance of the TimestampType Thrift type (if possible).
+   * 
+   * @return an instance of TimeStampType
+   */
+  @SuppressWarnings( "unchecked" )
+  protected static AbstractType<java.util.Date> getTimestampType() {
+    if ( s_cachedTimestampType != null ) {
+      return s_cachedTimestampType;
+    }
+
+    AbstractType<java.util.Date> result = null;
+    Class<?> timeType = null;
+    try {
+      timeType = Class.forName( "org.apache.cassandra.db.marshal.TimestampType" ); //$NON-NLS-1$
+    } catch ( ClassNotFoundException e ) {
+      // Don't make a fuss - just return null quietly
+    }
+
+    // get the instance
+    if ( timeType != null ) {
+      try {
+        Field instanceField = timeType.getDeclaredField( "instance" ); //$NON-NLS-1$
+        result = (AbstractType<java.util.Date>) instanceField.get( null );
+      } catch ( NoSuchFieldException e ) {
+        // no fuss
+      } catch ( SecurityException e ) {
+        // no fuss
+      } catch ( IllegalArgumentException e ) {
+        // no fuss
+      } catch ( IllegalAccessException e ) {
+        // no fuss
+      }
+
+      s_cachedTimestampType = result;
+    }
+
+    return result;
+  }
+
+  /**
    * Return the Cassandra column type (internal cassandra class name relative to org.apache.cassandra.db.marshal) for
    * the given Kettle column.
    * 
@@ -946,6 +993,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
    * @return the corresponding internal cassandra type.
    */
   public static String getCassandraTypeForValueMeta( ValueMetaInterface vm ) {
+
     switch ( vm.getType() ) {
       case ValueMetaInterface.TYPE_STRING:
         return "UTF8Type"; //$NON-NLS-1$
@@ -958,6 +1006,11 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
       case ValueMetaInterface.TYPE_NUMBER:
         return "DoubleType"; //$NON-NLS-1$
       case ValueMetaInterface.TYPE_DATE:
+
+        // TimestampType is only present in Cassandra 2.x
+        if ( getTimestampType() != null ) {
+          return "TimestampType";
+        }
         return "DateType"; //$NON-NLS-1$
       case ValueMetaInterface.TYPE_BINARY:
       case ValueMetaInterface.TYPE_SERIALIZABLE:
@@ -1058,6 +1111,13 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
     } else if ( transCoder.indexOf( "DateType" ) > 0 ) { //$NON-NLS-1$
       DateType dt = DateType.instance;
       decomposed = dt.decompose( vm.getDate( value ) );
+    } else if ( transCoder.indexOf( "TimestampType" ) > 0 ) {
+      AbstractType<java.util.Date> tt = getTimestampType();
+      if ( tt == null ) {
+        throw new KettleException( BaseMessages.getString( PKG,
+            "CassandraColumnMetaData.Error.Cassandra1ClientAgainstCassandra2Server" ) );
+      }
+      decomposed = tt.decompose( vm.getDate( value ) );
     } else if ( transCoder.indexOf( "IntegerType" ) > 0 ) { //$NON-NLS-1$
       IntegerType it = IntegerType.instance;
       decomposed = it.decompose( vm.getBigNumber( value ).toBigInteger() );
@@ -1155,6 +1215,12 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
       serializer = DoubleType.instance;
     } else if ( encoder.indexOf( "DateType" ) > 0 ) { //$NON-NLS-1$
       serializer = DateType.instance;
+    } else if ( encoder.indexOf( "TimestampType" ) > 0 ) {
+      serializer = getTimestampType();
+      if ( serializer == null ) {
+        throw new KettleException( BaseMessages.getString( PKG,
+            "CassandraColumnMetaData.Error.Cassandra1ClientAgainstCassandra2Server" ) );
+      }
     } else if ( encoder.indexOf( "IntegerType" ) > 0 ) { //$NON-NLS-1$
       serializer = IntegerType.instance;
     } else if ( encoder.indexOf( "FloatType" ) > 0 ) { //$NON-NLS-1$
@@ -1257,7 +1323,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
       kettleType = ValueMetaInterface.TYPE_INTEGER;
     } else if ( type.indexOf( "DoubleType" ) > 0 || type.indexOf( "FloatType" ) > 0 ) { //$NON-NLS-1$ //$NON-NLS-2$
       kettleType = ValueMetaInterface.TYPE_NUMBER;
-    } else if ( type.indexOf( "DateType" ) > 0 ) { //$NON-NLS-1$
+    } else if ( type.indexOf( "DateType" ) > 0 || type.indexOf( "TimestampType" ) > 0 ) { //$NON-NLS-1$  //$NON-NLS-2$
       kettleType = ValueMetaInterface.TYPE_DATE;
     } else if ( type.indexOf( "DecimalType" ) > 0 ) { //$NON-NLS-1$
       kettleType = ValueMetaInterface.TYPE_BIGNUMBER;
@@ -1454,6 +1520,12 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
       deserializer = DoubleType.instance;
     } else if ( decoder.indexOf( "DateType" ) > 0 ) { //$NON-NLS-1$
       deserializer = DateType.instance;
+    } else if ( decoder.indexOf( "TimestampType" ) > 0 ) {
+      deserializer = getTimestampType();
+      if ( deserializer == null ) {
+        throw new KettleException( BaseMessages.getString( PKG,
+            "CassandraColumnMetaData.Error.Cassandra1ClientAgainstCassandra2Server" ) );
+      }
     } else if ( decoder.indexOf( "IntegerType" ) > 0 ) { //$NON-NLS-1$
       deserializer = IntegerType.instance;
 

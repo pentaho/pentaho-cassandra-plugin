@@ -2,7 +2,7 @@
  *
  * Pentaho Big Data
  *
- * Copyright (C) 2002-2013 by Pentaho : http://www.pentaho.com
+ * Copyright (C) 2002-2014 by Pentaho : http://www.pentaho.com
  *
  *******************************************************************************
  *
@@ -61,6 +61,7 @@ import org.apache.cassandra.thrift.CqlResult;
 import org.apache.cassandra.thrift.CqlRow;
 import org.apache.cassandra.thrift.KeySlice;
 import org.apache.cassandra.thrift.KsDef;
+import org.pentaho.cassandra.CassandraUtils;
 import org.pentaho.cassandra.spi.ColumnFamilyMetaData;
 import org.pentaho.cassandra.spi.Keyspace;
 import org.pentaho.di.core.Const;
@@ -72,7 +73,7 @@ import org.pentaho.di.i18n.BaseMessages;
 /**
  * Class encapsulating read-only schema information for a column family. Has utility routines for converting between
  * Cassandra meta data and Kettle meta data, and for deserializing values.
- * 
+ *
  * @author Mark Hall (mhall{[at]}pentaho{[dot]}com)
  */
 public class CassandraColumnMetaData implements ColumnFamilyMetaData {
@@ -81,19 +82,29 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
 
   public static final String UTF8 = "UTF-8"; //$NON-NLS-1$
 
-  /** Name of the column family this meta data refers to */
+  /**
+   * Name of the column family this meta data refers to
+   */
   protected String m_columnFamilyName;
 
-  /** The name of the column(s) that make up the key */
+  /**
+   * The name of the column(s) that make up the key
+   */
   protected List<String> m_keyColumnNames;
 
-  /** Type of the partition (first element of a compound key) */
+  /**
+   * Type of the partition (first element of a compound key)
+   */
   protected String m_keyValidator;
 
-  /** Type of the column names (used for sorting columns) */
+  /**
+   * Type of the column names (used for sorting columns)
+   */
   protected String m_columnComparator;
 
-  /** m_columnComparator converted to Charset encoding string */
+  /**
+   * m_columnComparator converted to Charset encoding string
+   */
   protected String m_columnNameEncoding;
 
   /**
@@ -102,7 +113,9 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
    */
   protected String m_defaultValidationClass;
 
-  /** Map of column names + cassandra types (decoder classes) */
+  /**
+   * Map of column names + cassandra types (decoder classes)
+   */
   protected Map<String, String> m_columnMeta;
 
   /**
@@ -110,13 +123,19 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
    */
   protected Map<String, ValueMetaInterface> m_kettleColumnMeta;
 
-  /** Map of column names to indexed values (if any) */
+  /**
+   * Map of column names to indexed values (if any)
+   */
   protected Map<String, HashSet<Object>> m_indexedVals;
 
-  /** Holds the schema textual description */
+  /**
+   * Holds the schema textual description
+   */
   protected StringBuffer m_schemaDescription;
 
-  /** The keypsace that this column family (table) belongs to */
+  /**
+   * The keypsace that this column family (table) belongs to
+   */
   protected LegacyKeyspace m_keyspace;
 
   /**
@@ -126,7 +145,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
 
   /**
    * Constructor
-   * 
+   *
    * @param keyspace
    *          the keypsace to use
    * @param columnFamily
@@ -139,14 +158,14 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
   public CassandraColumnMetaData( LegacyKeyspace keyspace, String columnFamily, boolean cql3 ) throws Exception {
     m_cql3 = cql3;
     m_keyspace = keyspace;
-    m_columnFamilyName = columnFamily;
+    m_columnFamilyName = m_cql3 ? CassandraUtils.removeQuotes( columnFamily ) : columnFamily;
 
     refresh( (CassandraConnection) m_keyspace.getConnection() );
   }
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see org.pentaho.cassandra.spi.ColumnFamilyMetaData#setKeyspace(org.pentaho. cassandra.spi.Keyspace)
    */
   @Override
@@ -156,17 +175,17 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see org.pentaho.cassandra.spi.ColumnFamilyMetaData#setColumnFamilyName(java .lang.String)
    */
   @Override
   public void setColumnFamilyName( String colFamName ) {
-    m_columnFamilyName = colFamName;
+    m_columnFamilyName = m_cql3 ? CassandraUtils.removeQuotes( colFamName ) : colFamName;
   }
 
   /**
    * Get the default validator for this column family
-   * 
+   *
    * @return the default validator
    */
   public String getDefaultValidationClass() {
@@ -179,7 +198,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
   // "COMPACT STORAGE")
 
   protected static enum CFMetaDataElements {
-    COMPARATOR( "comparator" ), DEFAULT_VALIDATOR( "default_validator" ), COLUMN_ALIASES( "column_aliases" ), KEY_ALIASES( //$NON-NLS-2$
+    COMPARATOR( "comparator" ), DEFAULT_VALIDATOR( "default_validator" ), COLUMN_ALIASES( "column_aliases" ), KEY_ALIASES(
         "key_aliases" ), KEY_VALIDATOR( "key_validator" ), BLOOM_FILTER_FP_CHANCE( "bloom_filter_fp_chance" ), CACHING(
         "caching" ), COMPACTION_STRATEGY_CLASS( "compaction_strategy_class" ), COMPACTION_STRATEGY_OPTIONS(
         "compaction_strategy_options" ), COMPRESSION_PARAMETERS( "compression_parameters" ), GC_GRACE_SECONDS(
@@ -198,11 +217,11 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
     public String toString() {
       return m_name;
     }
-  };
+  }
 
   /**
    * Refresh the meta data for a CQL 3 table
-   * 
+   *
    * @param conn
    *          the connection to use
    * @throws Exception
@@ -306,7 +325,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
       // composite. We will get the names
       // of the columns that form the additional parts of the key later
       p = p.substring( p.indexOf( '(' ) + 1, p.length() - 1 ).trim(); // strip
-                                                                      // brackets
+      // brackets
       String[] parts = p.split( "," ); //$NON-NLS-1$
 
       // now - is it standard CQL 3 table or COMPACT STORAGE? The only way
@@ -681,7 +700,8 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
       Object decodedColName = deserializer.compose( colName.bufferForValue() );
       Object decodedColValidator = deserializer.compose( colV.bufferForValue() );
 
-      m_columnMeta.put( decodedColName.toString().replace( "\"", "" ).replace( "'", "" ).trim(), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+      m_columnMeta.put( decodedColName.toString().replace( "\"", "" ).replace( "'", "" ).trim(),
+      //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
           decodedColValidator.toString().trim() );
 
       m_schemaDescription.append( "\n\tColumn name: " //$NON-NLS-1$
@@ -711,7 +731,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
 
   /**
    * Refreshes the encapsulated meta data for the column family.
-   * 
+   *
    * @param conn
    *          the connection to cassandra to use for refreshing the meta data
    * @throws Exception
@@ -750,7 +770,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
         m_keyValidator = fam.getKey_validation_class(); // key type
 
         m_columnComparator = fam.getComparator_type(); // column names encoded
-                                                       // as
+        // as
 
         ByteBuffer b = fam.key_alias;
 
@@ -766,8 +786,8 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
         m_keyColumnNames.add( keyName );
 
         m_defaultValidationClass = fam.getDefault_validation_class(); // default
-                                                                      // column
-                                                                      // type
+        // column
+        // type
         m_schemaDescription.append( "\n\tKey validator: " + m_keyValidator ); //$NON-NLS-1$
         if ( m_keyValidator.contains( "CompositeType" ) ) { //$NON-NLS-1$
           m_schemaDescription.append( "\n\t\tWARNING: column family with composite key cannot" //$NON-NLS-1$
@@ -914,9 +934,8 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
 
   /**
    * Get a textual description of the named column family
-   * 
-   * @param keyspace
-   * @return
+   *
+   * @return textual description
    * @throws Exception
    */
   @Override
@@ -929,7 +948,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
 
   /**
    * Return the schema overview information
-   * 
+   *
    * @return the textual description of the schema
    */
   public String getSchemaDescription() {
@@ -939,7 +958,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
   /**
    * Return the Cassandra column type (internal cassandra class name relative to org.apache.cassandra.db.marshal) for
    * the given Kettle column.
-   * 
+   *
    * @param vm
    *          the ValueMetaInterface for the Kettle column
    * @return the corresponding internal cassandra type.
@@ -972,7 +991,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
    * for column definitions. The CQL reference guide states that fully qualified (or relative to
    * org.apache.cassandra.db.marshal) class names can be used instead of CQL types - however, using these when defining
    * the key type always results in BytesType getting set for the key for some reason.
-   * 
+   *
    * @param vm
    *          the ValueMetaInterface for the Kettle column
    * @return the corresponding CQL type
@@ -1001,7 +1020,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
 
   /**
    * Static utility to decompose a Kettle value to a ByteBuffer. Note - does not check if the kettle value is null.
-   * 
+   *
    * @param vm
    *          the ValueMeta for the Kettle value
    * @param value
@@ -1122,7 +1141,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
 
   /**
    * Encode a string representation of a column name using the serializer for the default comparator.
-   * 
+   *
    * @param colName
    *          the textual column name to serialze
    * @return a ByteBuffer encapsulating the serialized column name
@@ -1194,7 +1213,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
    * is always set to "KEY" as it is possible that the key may be a composite of several columns (this can be true under
    * access via CQL 2 as well as 3 if a table has been created via the cassandra-cli or Thrift and explicitly set to
    * have a composite key)
-   * 
+   *
    * @return the key's ValueMeta
    */
   @Override
@@ -1224,7 +1243,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
   /**
    * Removes an enclosing ReversedType if necessary. ReversedType is just a wrapper around a single base type. It simply
    * reverses the comparator of the base type, so for our purposes we just need the base type.
-   * 
+   *
    * @param type
    *          type string to check
    * @return type string stripped of enclosing ReversedType (if necessary)
@@ -1249,7 +1268,8 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
     type = stripReversedTypeIfNecessary( type );
 
     if ( type.indexOf( "UTF8Type" ) > 0 || type.indexOf( "AsciiType" ) > 0 //$NON-NLS-1$ //$NON-NLS-2$
-        || type.indexOf( "UUIDType" ) > 0 || type.indexOf( "CompositeType" ) > 0 || type.indexOf( "InetAddressType" ) > 0 ) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+        || type.indexOf( "UUIDType" ) > 0 || type.indexOf( "CompositeType" ) > 0
+        || type.indexOf( "InetAddressType" ) > 0 ) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
       kettleType = ValueMetaInterface.TYPE_STRING;
     } else if ( type.indexOf( "LongType" ) > 0 || type.indexOf( "IntegerType" ) > 0 //$NON-NLS-1$ //$NON-NLS-2$
         || type.indexOf( "Int32Type" ) > 0 ) { //$NON-NLS-1$
@@ -1275,7 +1295,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
 
   /**
    * Get the Kettle ValueMeta that corresponds to the type of the supplied cassandra column.
-   * 
+   *
    * @param colName
    *          the name of the column to get a ValueMeta for
    * @return the ValueMeta that is appropriate for the type of the supplied column.
@@ -1311,7 +1331,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
 
   /**
    * Get a list of ValueMetas corresponding to the columns in this schema
-   * 
+   *
    * @return a list of ValueMetas
    */
   @Override
@@ -1328,7 +1348,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
 
   /**
    * Get a Set of column names that are defined in the meta data for this schema
-   * 
+   *
    * @return a set of column names.
    */
   public Set<String> getColumnNames() {
@@ -1338,7 +1358,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
 
   /**
    * Returns true if the supplied column name exists in this schema.
-   * 
+   *
    * @param colName
    *          the name of the column to check.
    * @return true if the column exists in the meta data for this column family.
@@ -1352,7 +1372,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
   /**
    * Get the names of the columns that make up the key in this column family. If there is a single key column and it
    * does not have an explicit alias set then this will use the string "KEY".
-   * 
+   *
    * @return the name(s) of the columns that make up the key
    */
   @Override
@@ -1362,7 +1382,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
 
   /**
    * Return the name of this column family.
-   * 
+   *
    * @return the name of this column family.
    */
   @Override
@@ -1374,7 +1394,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
    * Return the decoded key value of a row. Assumes that the supplied row comes from the column family that this meta
    * data represents!! Note that getting the key value from a CqlRow object only works for CQL 2; In CQL3
    * CqlRow.getKey() returns an array of length zero!
-   * 
+   *
    * @param row
    *          a Cassandra row
    * @return the decoded key value
@@ -1396,7 +1416,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
   /**
    * Return the decoded key value of a row. Assumes that the supplied row comes from the column family that this meta
    * data represents!!
-   * 
+   *
    * @param row
    *          a Cassandra row
    * @return the decoded key value
@@ -1524,7 +1544,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
   /**
    * Decode the supplied column value. Uses the default validation class to decode the value if the column is not
    * explicitly defined in the schema.
-   * 
+   *
    * @param aCol
    * @return
    * @throws KettleException

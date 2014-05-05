@@ -2,7 +2,7 @@
  *
  * Pentaho Big Data
  *
- * Copyright (C) 2002-2012 by Pentaho : http://www.pentaho.com
+ * Copyright (C) 2002-2014 by Pentaho : http://www.pentaho.com
  *
  *******************************************************************************
  *
@@ -76,7 +76,7 @@ import org.pentaho.di.ui.trans.steps.tableinput.SQLValuesHighlight;
 
 /**
  * Dialog class for the CassandraInput step
- * 
+ *
  * @author Mark Hall (mhall{[at]}pentaho{[dot]}com)
  * @version $Revision$
  */
@@ -87,7 +87,9 @@ public class CassandraInputDialog extends BaseStepDialog implements StepDialogIn
   private final CassandraInputMeta m_currentMeta;
   private final CassandraInputMeta m_originalMeta;
 
-  /** various UI bits and pieces for the dialog */
+  /**
+   * various UI bits and pieces for the dialog
+   */
   private Label m_stepnameLabel;
   private Text m_stepnameText;
 
@@ -832,7 +834,8 @@ public class CassandraInputDialog extends BaseStepDialog implements StepDialogIn
       if ( !progressDialog.isCancelled() ) {
         if ( trans.getResult() != null && trans.getResult().getNrErrors() > 0 ) {
           EnterTextDialog etd =
-              new EnterTextDialog( shell, BaseMessages.getString( PKG, "System.Dialog.PreviewError.Title" ), //$NON-NLS-1$
+              new EnterTextDialog( shell, BaseMessages.getString( PKG, "System.Dialog.PreviewError.Title" ),
+              //$NON-NLS-1$
                   BaseMessages.getString( PKG, "System.Dialog.PreviewError.Message" ), //$NON-NLS-1$
                   loggingText, true );
           etd.setReadOnly();
@@ -894,8 +897,8 @@ public class CassandraInputDialog extends BaseStepDialog implements StepDialogIn
       }
 
       if ( !kSpace.columnFamilyExists( colFam ) ) {
-        throw new Exception( BaseMessages.getString( PKG,
-            "CassandraInput.Error.NonExistentColumnFamily", colFam, keyspaceS ) ); //$NON-NLS-1$
+        throw new Exception( BaseMessages.getString( PKG, "CassandraInput.Error.NonExistentColumnFamily",
+            m_useCQL3Check.getSelection() ? CassandraUtils.removeQuotes( colFam ) : colFam, keyspaceS ) ); //$NON-NLS-1$
       }
 
       CassandraColumnMetaData cassMeta = (CassandraColumnMetaData) kSpace.getColumnFamilyMetaData( colFam );

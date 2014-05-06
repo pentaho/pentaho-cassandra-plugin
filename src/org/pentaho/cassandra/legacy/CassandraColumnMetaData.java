@@ -40,6 +40,7 @@ import org.apache.cassandra.db.marshal.AsciiType;
 import org.apache.cassandra.db.marshal.BooleanType;
 import org.apache.cassandra.db.marshal.BytesType;
 import org.apache.cassandra.db.marshal.CompositeType;
+import org.apache.cassandra.db.marshal.CounterColumnType;
 import org.apache.cassandra.db.marshal.DateType;
 import org.apache.cassandra.db.marshal.DecimalType;
 import org.apache.cassandra.db.marshal.DoubleType;
@@ -187,14 +188,14 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
   // "COMPACT STORAGE")
 
   protected static enum CFMetaDataElements {
-    COMPARATOR( "comparator" ), DEFAULT_VALIDATOR( "default_validator" ), COLUMN_ALIASES( "column_aliases" ), KEY_ALIASES( //$NON-NLS-2$
-        "key_aliases" ), KEY_VALIDATOR( "key_validator" ), BLOOM_FILTER_FP_CHANCE( "bloom_filter_fp_chance" ), CACHING(
-        "caching" ), COMPACTION_STRATEGY_CLASS( "compaction_strategy_class" ), COMPACTION_STRATEGY_OPTIONS(
-        "compaction_strategy_options" ), COMPRESSION_PARAMETERS( "compression_parameters" ), GC_GRACE_SECONDS(
-        "gc_grace_seconds" ), LOCAL_READ_REPAIR_CHANCE( "local_read_repair_chance" ), MAX_COMPACTION_THRESHOLD(
-        "max_compaction_threshold" ), MIN_COMPACTION_THRESHOLD( "min_compaction_threshold" ), POPULATE_IO_CACHE_ON_FLUSH(
-        "populate_io_cache_on_flush" ), READ_REPAIR_CHANCE( "read_repair_chance" ), REPLICATE_ON_WRITE(
-        "replicate_on_write" ), TYPE( "type" ), VALUE_ALIAS( "value_alias" );
+    COMPARATOR( "comparator" ), DEFAULT_VALIDATOR( "default_validator" ), COLUMN_ALIASES( "column_aliases" ), KEY_ALIASES( //$NON-NLS-1$//$NON-NLS-2$ //$NON-NLS-3$
+        "key_aliases" ), KEY_VALIDATOR( "key_validator" ), BLOOM_FILTER_FP_CHANCE( "bloom_filter_fp_chance" ), CACHING( //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+        "caching" ), COMPACTION_STRATEGY_CLASS( "compaction_strategy_class" ), COMPACTION_STRATEGY_OPTIONS( //$NON-NLS-1$ //$NON-NLS-2$
+        "compaction_strategy_options" ), COMPRESSION_PARAMETERS( "compression_parameters" ), GC_GRACE_SECONDS( //$NON-NLS-1$ //$NON-NLS-2$
+        "gc_grace_seconds" ), LOCAL_READ_REPAIR_CHANCE( "local_read_repair_chance" ), MAX_COMPACTION_THRESHOLD( //$NON-NLS-1$ //$NON-NLS-2$
+        "max_compaction_threshold" ), MIN_COMPACTION_THRESHOLD( "min_compaction_threshold" ), POPULATE_IO_CACHE_ON_FLUSH( //$NON-NLS-1$ //$NON-NLS-2$
+        "populate_io_cache_on_flush" ), READ_REPAIR_CHANCE( "read_repair_chance" ), REPLICATE_ON_WRITE( //$NON-NLS-1$ //$NON-NLS-2$
+        "replicate_on_write" ), TYPE( "type" ), VALUE_ALIAS( "value_alias" ); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
     private final String m_name;
 
@@ -241,18 +242,17 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
     // key are, since these are not listed as normal columns), key validator,
     // default validator and comparator (full composite key type that
     // allows us to get the decoders for the additional part(s) of the key
-    String cqlQ =
-        "select " + CFMetaDataElements.COMPARATOR + ", " + CFMetaDataElements.DEFAULT_VALIDATOR + ","
-            + CFMetaDataElements.COLUMN_ALIASES + ", " + CFMetaDataElements.KEY_ALIASES + ", "
-            + CFMetaDataElements.KEY_VALIDATOR + ", " + CFMetaDataElements.BLOOM_FILTER_FP_CHANCE + ", "
-            + CFMetaDataElements.CACHING + ", " + CFMetaDataElements.COMPACTION_STRATEGY_CLASS + ", "
-            + CFMetaDataElements.COMPACTION_STRATEGY_OPTIONS + ", " + CFMetaDataElements.COMPRESSION_PARAMETERS + ", "
-            + CFMetaDataElements.GC_GRACE_SECONDS + ", " + CFMetaDataElements.LOCAL_READ_REPAIR_CHANCE + ", "
-            + CFMetaDataElements.MAX_COMPACTION_THRESHOLD + ", " + CFMetaDataElements.MIN_COMPACTION_THRESHOLD + ", "
-            + CFMetaDataElements.POPULATE_IO_CACHE_ON_FLUSH + ", " + CFMetaDataElements.READ_REPAIR_CHANCE + ", "
-            + CFMetaDataElements.REPLICATE_ON_WRITE + ", " + CFMetaDataElements.TYPE + ", "
-            + CFMetaDataElements.VALUE_ALIAS + " from system.schema_columnfamilies where keyspace_name='"
-            + conn.m_keyspaceName + "' and columnfamily_name='" + m_columnFamilyName + "';";
+    String cqlQ = "select " + CFMetaDataElements.COMPARATOR + ", " + CFMetaDataElements.DEFAULT_VALIDATOR + "," //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+        + CFMetaDataElements.COLUMN_ALIASES + ", " + CFMetaDataElements.KEY_ALIASES + ", " //$NON-NLS-1$ //$NON-NLS-2$
+        + CFMetaDataElements.KEY_VALIDATOR + ", " + CFMetaDataElements.BLOOM_FILTER_FP_CHANCE + ", " //$NON-NLS-1$ //$NON-NLS-2$
+        + CFMetaDataElements.CACHING + ", " + CFMetaDataElements.COMPACTION_STRATEGY_CLASS + ", " //$NON-NLS-1$ //$NON-NLS-2$
+        + CFMetaDataElements.COMPACTION_STRATEGY_OPTIONS + ", " + CFMetaDataElements.COMPRESSION_PARAMETERS + ", " //$NON-NLS-1$ //$NON-NLS-2$
+        + CFMetaDataElements.GC_GRACE_SECONDS + ", " + CFMetaDataElements.LOCAL_READ_REPAIR_CHANCE + ", " //$NON-NLS-1$ //$NON-NLS-2$
+        + CFMetaDataElements.MAX_COMPACTION_THRESHOLD + ", " + CFMetaDataElements.MIN_COMPACTION_THRESHOLD + ", " //$NON-NLS-1$ //$NON-NLS-2$
+        + CFMetaDataElements.POPULATE_IO_CACHE_ON_FLUSH + ", " + CFMetaDataElements.READ_REPAIR_CHANCE + ", " //$NON-NLS-1$ //$NON-NLS-2$
+        + CFMetaDataElements.REPLICATE_ON_WRITE + ", " + CFMetaDataElements.TYPE + ", " //$NON-NLS-1$ //$NON-NLS-2$
+        + CFMetaDataElements.VALUE_ALIAS + " from system.schema_columnfamilies where keyspace_name='" //$NON-NLS-1$
+        + conn.m_keyspaceName + "' and columnfamily_name='" + m_columnFamilyName + "';"; //$NON-NLS-1$ //$NON-NLS-2$
 
     byte[] data = cqlQ.getBytes( Charset.forName( "UTF-8" ) ); //$NON-NLS-1$
 
@@ -1009,7 +1009,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
 
         // TimestampType is only present in Cassandra 2.x
         if ( getTimestampType() != null ) {
-          return "TimestampType";
+          return "TimestampType"; //$NON-NLS-1$
         }
         return "DateType"; //$NON-NLS-1$
       case ValueMetaInterface.TYPE_BINARY:
@@ -1111,16 +1111,19 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
     } else if ( transCoder.indexOf( "DateType" ) > 0 ) { //$NON-NLS-1$
       DateType dt = DateType.instance;
       decomposed = dt.decompose( vm.getDate( value ) );
-    } else if ( transCoder.indexOf( "TimestampType" ) > 0 ) {
+    } else if ( transCoder.indexOf( "TimestampType" ) > 0 ) { //$NON-NLS-1$
       AbstractType<java.util.Date> tt = getTimestampType();
       if ( tt == null ) {
         throw new KettleException( BaseMessages.getString( PKG,
-            "CassandraColumnMetaData.Error.Cassandra1ClientAgainstCassandra2Server" ) );
+            "CassandraColumnMetaData.Error.Cassandra1ClientAgainstCassandra2Server" ) ); //$NON-NLS-1$
       }
       decomposed = tt.decompose( vm.getDate( value ) );
     } else if ( transCoder.indexOf( "IntegerType" ) > 0 ) { //$NON-NLS-1$
       IntegerType it = IntegerType.instance;
       decomposed = it.decompose( vm.getBigNumber( value ).toBigInteger() );
+    } else if ( transCoder.indexOf( "CounterColumnType" ) > 0 ) { //$NON-NLS-1$
+      CounterColumnType cct = CounterColumnType.instance;
+      decomposed = cct.decompose( vm.getInteger( value ) );
     } else if ( transCoder.indexOf( "FloatType" ) > 0 ) { //$NON-NLS-1$
       FloatType ft = FloatType.instance;
       decomposed = ft.decompose( vm.getNumber( value ).floatValue() );
@@ -1215,14 +1218,16 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
       serializer = DoubleType.instance;
     } else if ( encoder.indexOf( "DateType" ) > 0 ) { //$NON-NLS-1$
       serializer = DateType.instance;
-    } else if ( encoder.indexOf( "TimestampType" ) > 0 ) {
+    } else if ( encoder.indexOf( "TimestampType" ) > 0 ) { //$NON-NLS-1$
       serializer = getTimestampType();
       if ( serializer == null ) {
         throw new KettleException( BaseMessages.getString( PKG,
-            "CassandraColumnMetaData.Error.Cassandra1ClientAgainstCassandra2Server" ) );
+            "CassandraColumnMetaData.Error.Cassandra1ClientAgainstCassandra2Server" ) ); //$NON-NLS-1$
       }
     } else if ( encoder.indexOf( "IntegerType" ) > 0 ) { //$NON-NLS-1$
       serializer = IntegerType.instance;
+    } else if ( encoder.indexOf( "CounterColumnType" ) > 0 ) { //$NON-NLS-1$
+      serializer = CounterColumnType.instance;
     } else if ( encoder.indexOf( "FloatType" ) > 0 ) { //$NON-NLS-1$
       serializer = FloatType.instance;
     } else if ( encoder.indexOf( "LexicalUUIDType" ) > 0 ) { //$NON-NLS-1$
@@ -1311,15 +1316,28 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
     return type;
   }
 
+  private static String stripCollectionTypeIfNecessary( String type ) {
+    if ( type.indexOf( "SetType" ) > 0 || type.indexOf( "ListType" ) > 0 ) { //$NON-NLS-1$ //$NON-NLS-2$
+      String baseType = type.substring( type.indexOf( "(" ) + 1, type.lastIndexOf( ")" ) ); //$NON-NLS-1$ //$NON-NLS-2$
+      return baseType;
+    } else if ( type.indexOf( "MapType" ) > 0 ) { //$NON-NLS-1$
+      // force a String type because we will concatenate <key,value> pairs into key:value strings
+      return "org.apache.cassandra.db.marshal.UTF8Type"; //$NON-NLS-1$
+    }
+
+    return type;
+  }
+
   protected int cassandraTypeToKettleType( String type ) {
     int kettleType = 0;
     type = stripReversedTypeIfNecessary( type );
+    type = stripCollectionTypeIfNecessary( type );
 
     if ( type.indexOf( "UTF8Type" ) > 0 || type.indexOf( "AsciiType" ) > 0 //$NON-NLS-1$ //$NON-NLS-2$
         || type.indexOf( "UUIDType" ) > 0 || type.indexOf( "CompositeType" ) > 0 || type.indexOf( "InetAddressType" ) > 0 ) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
       kettleType = ValueMetaInterface.TYPE_STRING;
     } else if ( type.indexOf( "LongType" ) > 0 || type.indexOf( "IntegerType" ) > 0 //$NON-NLS-1$ //$NON-NLS-2$
-        || type.indexOf( "Int32Type" ) > 0 ) { //$NON-NLS-1$
+        || type.indexOf( "Int32Type" ) > 0 || type.indexOf( "CounterColumnType" ) > 0 ) { //$NON-NLS-1$ //$NON-NLS-2$
       kettleType = ValueMetaInterface.TYPE_INTEGER;
     } else if ( type.indexOf( "DoubleType" ) > 0 || type.indexOf( "FloatType" ) > 0 ) { //$NON-NLS-1$ //$NON-NLS-2$
       kettleType = ValueMetaInterface.TYPE_NUMBER;
@@ -1333,8 +1351,8 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
       kettleType = ValueMetaInterface.TYPE_BOOLEAN;
     } else {
       throw new IllegalArgumentException( BaseMessages.getString( PKG,
-          "CassandraColumnMetaData.Error.UnsupportedCassandraType" )
-          + " " + type );
+          "CassandraColumnMetaData.Error.UnsupportedCassandraType" ) //$NON-NLS-1$
+          + " " + type ); //$NON-NLS-1$
     }
 
     return kettleType;
@@ -1516,15 +1534,17 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
       return result;
     } else if ( decoder.indexOf( "LongType" ) > 0 ) { //$NON-NLS-1$
       deserializer = LongType.instance;
+    } else if ( decoder.indexOf( "CounterColumnType" ) > 0 ) { //$NON-NLS-1$
+      deserializer = CounterColumnType.instance;
     } else if ( decoder.indexOf( "DoubleType" ) > 0 ) { //$NON-NLS-1$
       deserializer = DoubleType.instance;
     } else if ( decoder.indexOf( "DateType" ) > 0 ) { //$NON-NLS-1$
       deserializer = DateType.instance;
-    } else if ( decoder.indexOf( "TimestampType" ) > 0 ) {
+    } else if ( decoder.indexOf( "TimestampType" ) > 0 ) { //$NON-NLS-1$
       deserializer = getTimestampType();
       if ( deserializer == null ) {
         throw new KettleException( BaseMessages.getString( PKG,
-            "CassandraColumnMetaData.Error.Cassandra1ClientAgainstCassandra2Server" ) );
+            "CassandraColumnMetaData.Error.Cassandra1ClientAgainstCassandra2Server" ) ); //$NON-NLS-1$
       }
     } else if ( decoder.indexOf( "IntegerType" ) > 0 ) { //$NON-NLS-1$
       deserializer = IntegerType.instance;
@@ -1580,6 +1600,12 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
         return result;
       } catch ( Exception e ) {
         throw new KettleException( e.getMessage(), e );
+      }
+    } else if ( decoder.indexOf( "SetType" ) > 0 || decoder.indexOf( "ListType" ) > 0 || decoder.indexOf( "MapType" ) > 0 ) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+      try {
+        deserializer = TypeParser.parse( fullDecoder );
+      } catch ( Exception e ) {
+        throw new KettleException( e );
       }
     }
 

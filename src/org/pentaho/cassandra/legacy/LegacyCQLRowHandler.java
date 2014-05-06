@@ -496,6 +496,7 @@ public class LegacyCQLRowHandler implements CQLRowHandler {
       String pair = e.getKey().toString() + ":" + e.getValue().toString(); //$NON-NLS-1$
       if ( first ) {
         b.append( pair );
+        first = false;
       } else {
         b.append( "," ).append( pair );
       }

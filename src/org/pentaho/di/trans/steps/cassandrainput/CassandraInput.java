@@ -218,7 +218,7 @@ public class CassandraInput extends BaseStep implements StepInterface {
         initQuery();
       }
 
-      Object[] outRowData = null;
+      Object[][] outRowData = new Object[1][];
       if ( !m_meta.getUseThriftIO() ) {
         try {
           outRowData = m_cqlHandler.getNextOutputRow( m_data.getOutputRowMeta(), m_outputFormatMap );
@@ -227,7 +227,10 @@ public class CassandraInput extends BaseStep implements StepInterface {
         }
 
         if ( outRowData != null ) {
-          putRow( m_data.getOutputRowMeta(), outRowData );
+
+          for ( Object[] r : outRowData ) {
+            putRow( m_data.getOutputRowMeta(), r );
+          }
 
           if ( log.isRowLevel() ) {
             log.logRowlevel( toString(), "Outputted row #" + getProcessed() //$NON-NLS-1$
@@ -243,13 +246,14 @@ public class CassandraInput extends BaseStep implements StepInterface {
         // we can prepare for handling an "execute for each row" new feature.
         outRowData = null;
         try {
-          outRowData = m_nonCqlHandler.getNextOutputRow( m_data.getOutputRowMeta() );
+          outRowData[0] = m_nonCqlHandler.getNextOutputRow( m_data.getOutputRowMeta() );
         } catch ( Exception e ) {
           throw new KettleException( e.getMessage(), e );
         }
 
-        if ( outRowData != null ) {
-          putRow( m_data.getOutputRowMeta(), outRowData );
+        if ( outRowData != null && outRowData.length > 0 ) {
+
+          putRow( m_data.getOutputRowMeta(), outRowData[0] );
 
           if ( log.isRowLevel() ) {
             log.logRowlevel( toString(), "Outputted row #" + getProcessed() //$NON-NLS-1$

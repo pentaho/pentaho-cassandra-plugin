@@ -442,7 +442,7 @@ public class CassandraInputDialog extends BaseStepDialog implements StepDialogIn
     // execute for each row
     Label executeForEachLab = new Label( shell, SWT.RIGHT );
     props.setLook( executeForEachLab );
-    executeForEachLab.setText( BaseMessages.getString( PKG, "CassandraInputDialog.ExecuteForEachRow.Label" ) );
+    executeForEachLab.setText( BaseMessages.getString( PKG, "CassandraInputDialog.ExecuteForEachRow.Label" ) ); //$NON-NLS-1$
     fd = new FormData();
     fd.right = new FormAttachment( middle, -margin );
     fd.left = new FormAttachment( 0, 0 );

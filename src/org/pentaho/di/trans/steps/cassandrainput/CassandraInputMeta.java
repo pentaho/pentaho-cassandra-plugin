@@ -73,10 +73,10 @@ public class CassandraInputMeta extends BaseStepMeta implements StepMetaInterfac
   protected static final Class<?> PKG = CassandraInputMeta.class;
 
   /** The host to contact */
-  protected String m_cassandraHost = "localhost";
+  protected String m_cassandraHost = "localhost"; //$NON-NLS-1$
 
   /** The port that cassandra is listening on */
-  protected String m_cassandraPort = "9160";
+  protected String m_cassandraPort = "9160"; //$NON-NLS-1$
 
   /** Username for authentication */
   protected String m_username;
@@ -91,7 +91,7 @@ public class CassandraInputMeta extends BaseStepMeta implements StepMetaInterfac
   protected boolean m_useCompression;
 
   /** The select query to execute */
-  protected String m_cqlSelectQuery = "SELECT <fields> FROM <column family> WHERE <condition>;";
+  protected String m_cqlSelectQuery = "SELECT <fields> FROM <column family> WHERE <condition>;"; //$NON-NLS-1$
 
   /** Output in tuple mode? */
   protected boolean m_outputKeyValueTimestampTuples;
@@ -108,7 +108,7 @@ public class CassandraInputMeta extends BaseStepMeta implements StepMetaInterfac
   /**
    * Timeout (milliseconds) to use for socket connections - blank means use cluster default
    */
-  protected String m_socketTimeout = "";
+  protected String m_socketTimeout = ""; //$NON-NLS-1$
 
   // set based on parsed CQL
   /**
@@ -365,42 +365,42 @@ public class CassandraInputMeta extends BaseStepMeta implements StepMetaInterfac
     StringBuffer retval = new StringBuffer();
 
     if ( !Const.isEmpty( m_cassandraHost ) ) {
-      retval.append( "\n    " ).append( XMLHandler.addTagValue( "cassandra_host", m_cassandraHost ) );
+      retval.append( "\n    " ).append( XMLHandler.addTagValue( "cassandra_host", m_cassandraHost ) ); //$NON-NLS-1$ //$NON-NLS-2$
     }
 
     if ( !Const.isEmpty( m_cassandraPort ) ) {
-      retval.append( "\n    " ).append( XMLHandler.addTagValue( "cassandra_port", m_cassandraPort ) );
+      retval.append( "\n    " ).append( XMLHandler.addTagValue( "cassandra_port", m_cassandraPort ) ); //$NON-NLS-1$ //$NON-NLS-2$
     }
 
     if ( !Const.isEmpty( m_username ) ) {
-      retval.append( "\n    " ).append( XMLHandler.addTagValue( "username", m_username ) );
+      retval.append( "\n    " ).append( XMLHandler.addTagValue( "username", m_username ) ); //$NON-NLS-1$ //$NON-NLS-2$
     }
 
     if ( !Const.isEmpty( m_password ) ) {
-      retval.append( "\n    " ).append(
-          XMLHandler.addTagValue( "password", Encr.encryptPasswordIfNotUsingVariables( m_password ) ) );
+      retval.append( "\n    " ).append( //$NON-NLS-1$
+          XMLHandler.addTagValue( "password", Encr.encryptPasswordIfNotUsingVariables( m_password ) ) ); //$NON-NLS-1$
     }
 
     if ( !Const.isEmpty( m_cassandraKeyspace ) ) {
-      retval.append( "\n    " ).append( XMLHandler.addTagValue( "cassandra_keyspace", m_cassandraKeyspace ) );
+      retval.append( "\n    " ).append( XMLHandler.addTagValue( "cassandra_keyspace", m_cassandraKeyspace ) ); //$NON-NLS-1$ //$NON-NLS-2$
     }
 
-    retval.append( "\n    " ).append( XMLHandler.addTagValue( "use_compression", m_useCompression ) );
+    retval.append( "\n    " ).append( XMLHandler.addTagValue( "use_compression", m_useCompression ) ); //$NON-NLS-1$ //$NON-NLS-2$
 
     if ( !Const.isEmpty( m_cqlSelectQuery ) ) {
-      retval.append( "\n    " ).append( XMLHandler.addTagValue( "cql_select_query", m_cqlSelectQuery ) );
+      retval.append( "\n    " ).append( XMLHandler.addTagValue( "cql_select_query", m_cqlSelectQuery ) ); //$NON-NLS-1$ //$NON-NLS-2$
     }
 
-    retval.append( "\n    " ).append(
-        XMLHandler.addTagValue( "output_key_value_timestamp_tuples", m_outputKeyValueTimestampTuples ) );
+    retval.append( "\n    " ).append( //$NON-NLS-1$
+        XMLHandler.addTagValue( "output_key_value_timestamp_tuples", m_outputKeyValueTimestampTuples ) ); //$NON-NLS-1$
 
-    retval.append( "\n    " ).append( XMLHandler.addTagValue( "use_thrift_io", m_useThriftIO ) );
+    retval.append( "\n    " ).append( XMLHandler.addTagValue( "use_thrift_io", m_useThriftIO ) ); //$NON-NLS-1$ //$NON-NLS-2$
 
     if ( !Const.isEmpty( m_socketTimeout ) ) {
-      retval.append( "\n    " ).append( XMLHandler.addTagValue( "socket_timeout", m_socketTimeout ) );
+      retval.append( "\n    " ).append( XMLHandler.addTagValue( "socket_timeout", m_socketTimeout ) ); //$NON-NLS-1$ //$NON-NLS-2$
     }
 
-    retval.append( "\n    " ).append( XMLHandler.addTagValue( "use_cql3", m_useCQL3 ) );
+    retval.append( "\n    " ).append( XMLHandler.addTagValue( "use_cql3", m_useCQL3 ) ); //$NON-NLS-1$ //$NON-NLS-2$
 
     retval.append( "    " ).append( //$NON-NLS-1$
         XMLHandler.addTagValue( "execute_for_each_row", m_executeForEachIncomingRow ) ); //$NON-NLS-1$
@@ -411,105 +411,105 @@ public class CassandraInputMeta extends BaseStepMeta implements StepMetaInterfac
   @Override
   public void loadXML( Node stepnode, List<DatabaseMeta> databases, Map<String, Counter> counters )
     throws KettleXMLException {
-    m_cassandraHost = XMLHandler.getTagValue( stepnode, "cassandra_host" );
-    m_cassandraPort = XMLHandler.getTagValue( stepnode, "cassandra_port" );
-    m_username = XMLHandler.getTagValue( stepnode, "username" );
-    m_password = XMLHandler.getTagValue( stepnode, "password" );
+    m_cassandraHost = XMLHandler.getTagValue( stepnode, "cassandra_host" ); //$NON-NLS-1$
+    m_cassandraPort = XMLHandler.getTagValue( stepnode, "cassandra_port" ); //$NON-NLS-1$
+    m_username = XMLHandler.getTagValue( stepnode, "username" ); //$NON-NLS-1$
+    m_password = XMLHandler.getTagValue( stepnode, "password" ); //$NON-NLS-1$
     if ( !Const.isEmpty( m_password ) ) {
       m_password = Encr.decryptPasswordOptionallyEncrypted( m_password );
     }
-    m_cassandraKeyspace = XMLHandler.getTagValue( stepnode, "cassandra_keyspace" );
-    m_cqlSelectQuery = XMLHandler.getTagValue( stepnode, "cql_select_query" );
-    m_useCompression = XMLHandler.getTagValue( stepnode, "use_compression" ).equalsIgnoreCase( "Y" );
+    m_cassandraKeyspace = XMLHandler.getTagValue( stepnode, "cassandra_keyspace" ); //$NON-NLS-1$
+    m_cqlSelectQuery = XMLHandler.getTagValue( stepnode, "cql_select_query" ); //$NON-NLS-1$
+    m_useCompression = XMLHandler.getTagValue( stepnode, "use_compression" ).equalsIgnoreCase( "Y" ); //$NON-NLS-1$ //$NON-NLS-2$
 
-    String kV = XMLHandler.getTagValue( stepnode, "output_key_value_timestamp_tuples" );
+    String kV = XMLHandler.getTagValue( stepnode, "output_key_value_timestamp_tuples" ); //$NON-NLS-1$
 
     if ( kV != null ) {
-      m_outputKeyValueTimestampTuples = kV.equalsIgnoreCase( "Y" );
+      m_outputKeyValueTimestampTuples = kV.equalsIgnoreCase( "Y" ); //$NON-NLS-1$
     }
 
-    String thrift = XMLHandler.getTagValue( stepnode, "use_thrift_io" );
+    String thrift = XMLHandler.getTagValue( stepnode, "use_thrift_io" ); //$NON-NLS-1$
     if ( thrift != null ) {
-      m_useThriftIO = thrift.equalsIgnoreCase( "Y" );
+      m_useThriftIO = thrift.equalsIgnoreCase( "Y" ); //$NON-NLS-1$
     }
 
-    String useCQL3 = XMLHandler.getTagValue( stepnode, "use_cql3" );
+    String useCQL3 = XMLHandler.getTagValue( stepnode, "use_cql3" ); //$NON-NLS-1$
     if ( !Const.isEmpty( useCQL3 ) ) {
-      m_useCQL3 = useCQL3.equalsIgnoreCase( "Y" );
+      m_useCQL3 = useCQL3.equalsIgnoreCase( "Y" ); //$NON-NLS-1$
     }
 
-    String executeForEachR = XMLHandler.getTagValue( stepnode, "execute_for_each_row" );
+    String executeForEachR = XMLHandler.getTagValue( stepnode, "execute_for_each_row" ); //$NON-NLS-1$
     if ( !Const.isEmpty( executeForEachR ) ) {
-      m_executeForEachIncomingRow = executeForEachR.equalsIgnoreCase( "Y" );
+      m_executeForEachIncomingRow = executeForEachR.equalsIgnoreCase( "Y" ); //$NON-NLS-1$
     }
 
-    m_socketTimeout = XMLHandler.getTagValue( stepnode, "socket_timeout" );
+    m_socketTimeout = XMLHandler.getTagValue( stepnode, "socket_timeout" ); //$NON-NLS-1$
   }
 
   @Override
   public void readRep( Repository rep, ObjectId id_step, List<DatabaseMeta> databases, Map<String, Counter> counters )
     throws KettleException {
-    m_cassandraHost = rep.getStepAttributeString( id_step, 0, "cassandra_host" );
-    m_cassandraPort = rep.getStepAttributeString( id_step, 0, "cassandra_port" );
-    m_username = rep.getStepAttributeString( id_step, 0, "username" );
-    m_password = rep.getStepAttributeString( id_step, 0, "password" );
+    m_cassandraHost = rep.getStepAttributeString( id_step, 0, "cassandra_host" ); //$NON-NLS-1$
+    m_cassandraPort = rep.getStepAttributeString( id_step, 0, "cassandra_port" ); //$NON-NLS-1$
+    m_username = rep.getStepAttributeString( id_step, 0, "username" ); //$NON-NLS-1$
+    m_password = rep.getStepAttributeString( id_step, 0, "password" ); //$NON-NLS-1$
     if ( !Const.isEmpty( m_password ) ) {
       m_password = Encr.decryptPasswordOptionallyEncrypted( m_password );
     }
-    m_cassandraKeyspace = rep.getStepAttributeString( id_step, 0, "cassandra_keyspace" );
-    m_cqlSelectQuery = rep.getStepAttributeString( id_step, 0, "cql_select_query" );
-    m_useCompression = rep.getStepAttributeBoolean( id_step, 0, "use_compression" );
+    m_cassandraKeyspace = rep.getStepAttributeString( id_step, 0, "cassandra_keyspace" ); //$NON-NLS-1$
+    m_cqlSelectQuery = rep.getStepAttributeString( id_step, 0, "cql_select_query" ); //$NON-NLS-1$
+    m_useCompression = rep.getStepAttributeBoolean( id_step, 0, "use_compression" ); //$NON-NLS-1$
 
-    m_outputKeyValueTimestampTuples = rep.getStepAttributeBoolean( id_step, 0, "output_key_value_timestamp_tuples" );
-    m_useThriftIO = rep.getStepAttributeBoolean( id_step, 0, "use_thrift_io" );
-    m_useCQL3 = rep.getStepAttributeBoolean( id_step, 0, "use_cql3" );
+    m_outputKeyValueTimestampTuples = rep.getStepAttributeBoolean( id_step, 0, "output_key_value_timestamp_tuples" ); //$NON-NLS-1$
+    m_useThriftIO = rep.getStepAttributeBoolean( id_step, 0, "use_thrift_io" ); //$NON-NLS-1$
+    m_useCQL3 = rep.getStepAttributeBoolean( id_step, 0, "use_cql3" ); //$NON-NLS-1$
 
     m_executeForEachIncomingRow = rep.getStepAttributeBoolean( id_step, "execute_for_each_row" ); //$NON-NLS-1$        
 
-    m_socketTimeout = rep.getStepAttributeString( id_step, 0, "socket_timeout" );
+    m_socketTimeout = rep.getStepAttributeString( id_step, 0, "socket_timeout" ); //$NON-NLS-1$
   }
 
   @Override
   public void saveRep( Repository rep, ObjectId id_transformation, ObjectId id_step ) throws KettleException {
     if ( !Const.isEmpty( m_cassandraHost ) ) {
-      rep.saveStepAttribute( id_transformation, id_step, 0, "cassandra_host", m_cassandraHost );
+      rep.saveStepAttribute( id_transformation, id_step, 0, "cassandra_host", m_cassandraHost ); //$NON-NLS-1$
     }
 
     if ( !Const.isEmpty( m_cassandraPort ) ) {
-      rep.saveStepAttribute( id_transformation, id_step, 0, "cassandra_port", m_cassandraPort );
+      rep.saveStepAttribute( id_transformation, id_step, 0, "cassandra_port", m_cassandraPort ); //$NON-NLS-1$
     }
 
     if ( !Const.isEmpty( m_username ) ) {
-      rep.saveStepAttribute( id_transformation, id_step, 0, "username", m_username );
+      rep.saveStepAttribute( id_transformation, id_step, 0, "username", m_username ); //$NON-NLS-1$
     }
 
     if ( !Const.isEmpty( m_password ) ) {
-      rep.saveStepAttribute( id_transformation, id_step, 0, "password", Encr
+      rep.saveStepAttribute( id_transformation, id_step, 0, "password", Encr //$NON-NLS-1$
           .encryptPasswordIfNotUsingVariables( m_password ) );
     }
 
     if ( !Const.isEmpty( m_cassandraKeyspace ) ) {
-      rep.saveStepAttribute( id_transformation, id_step, 0, "cassandra_keyspace", m_cassandraKeyspace );
+      rep.saveStepAttribute( id_transformation, id_step, 0, "cassandra_keyspace", m_cassandraKeyspace ); //$NON-NLS-1$
     }
 
-    rep.saveStepAttribute( id_transformation, id_step, 0, "use_compression", m_useCompression );
+    rep.saveStepAttribute( id_transformation, id_step, 0, "use_compression", m_useCompression ); //$NON-NLS-1$
 
     if ( !Const.isEmpty( m_cqlSelectQuery ) ) {
-      rep.saveStepAttribute( id_transformation, id_step, 0, "cql_select_query", m_cqlSelectQuery );
+      rep.saveStepAttribute( id_transformation, id_step, 0, "cql_select_query", m_cqlSelectQuery ); //$NON-NLS-1$
     }
 
-    rep.saveStepAttribute( id_transformation, id_step, 0, "output_key_value_timestamp_tuples",
+    rep.saveStepAttribute( id_transformation, id_step, 0, "output_key_value_timestamp_tuples", //$NON-NLS-1$
         m_outputKeyValueTimestampTuples );
 
-    rep.saveStepAttribute( id_transformation, id_step, 0, "use_thrift_io", m_useThriftIO );
+    rep.saveStepAttribute( id_transformation, id_step, 0, "use_thrift_io", m_useThriftIO ); //$NON-NLS-1$
 
-    rep.saveStepAttribute( id_transformation, id_step, 0, "use_cql3", m_useCQL3 );
+    rep.saveStepAttribute( id_transformation, id_step, 0, "use_cql3", m_useCQL3 ); //$NON-NLS-1$
 
     rep.saveStepAttribute( id_transformation, id_step, 0, "execute_for_each_row", //$NON-NLS-1$
         m_executeForEachIncomingRow );
 
     if ( !Const.isEmpty( m_socketTimeout ) ) {
-      rep.saveStepAttribute( id_transformation, id_step, 0, "socket_timeout", m_socketTimeout );
+      rep.saveStepAttribute( id_transformation, id_step, 0, "socket_timeout", m_socketTimeout ); //$NON-NLS-1$
     }
   }
 
@@ -534,11 +534,11 @@ public class CassandraInputMeta extends BaseStepMeta implements StepMetaInterfac
 
   @Override
   public void setDefault() {
-    m_cassandraHost = "localhost";
-    m_cassandraPort = "9160";
-    m_cqlSelectQuery = "SELECT <fields> FROM <column family> WHERE <condition>;";
+    m_cassandraHost = "localhost"; //$NON-NLS-1$
+    m_cassandraPort = "9160"; //$NON-NLS-1$
+    m_cqlSelectQuery = "SELECT <fields> FROM <column family> WHERE <condition>;"; //$NON-NLS-1$
     m_useCompression = false;
-    m_socketTimeout = "";
+    m_socketTimeout = ""; //$NON-NLS-1$
   }
 
   @Override
@@ -560,50 +560,50 @@ public class CassandraInputMeta extends BaseStepMeta implements StepMetaInterfac
     if ( !Const.isEmpty( m_cqlSelectQuery ) ) {
       String subQ = space.environmentSubstitute( m_cqlSelectQuery );
 
-      if ( !subQ.toLowerCase().startsWith( "select" ) ) {
+      if ( !subQ.toLowerCase().startsWith( "select" ) ) { //$NON-NLS-1$
         // not a select statement!
-        logError( BaseMessages.getString( PKG, "CassandraInput.Error.NoSelectInQuery" ) );
+        logError( BaseMessages.getString( PKG, "CassandraInput.Error.NoSelectInQuery" ) ); //$NON-NLS-1$
         return;
       }
 
       if ( subQ.indexOf( ';' ) < 0 ) {
         // query must end with a ';' or it will wait for more!
-        logError( BaseMessages.getString( PKG, "CassandraInput.Error.QueryTermination" ) );
+        logError( BaseMessages.getString( PKG, "CassandraInput.Error.QueryTermination" ) ); //$NON-NLS-1$
         return;
       }
 
       // is there a LIMIT clause?
-      if ( subQ.toLowerCase().indexOf( "limit" ) > 0 ) {
-        String limitS = subQ.toLowerCase().substring( subQ.toLowerCase().indexOf( "limit" ) + 5, subQ.length() ).trim();
-        limitS = limitS.replaceAll( ";", "" );
+      if ( subQ.toLowerCase().indexOf( "limit" ) > 0 ) { //$NON-NLS-1$
+        String limitS = subQ.toLowerCase().substring( subQ.toLowerCase().indexOf( "limit" ) + 5, subQ.length() ).trim(); //$NON-NLS-1$
+        limitS = limitS.replaceAll( ";", "" ); //$NON-NLS-1$ //$NON-NLS-2$
         try {
           m_rowLimit = Integer.parseInt( limitS );
         } catch ( NumberFormatException ex ) {
-          logError( BaseMessages.getString( PKG, "CassandraInput.Error.UnableToParseLimitClause", m_cqlSelectQuery ) );
+          logError( BaseMessages.getString( PKG, "CassandraInput.Error.UnableToParseLimitClause", m_cqlSelectQuery ) ); //$NON-NLS-1$
           m_rowLimit = 10000;
         }
       }
 
       // strip off where clause (if any)
-      if ( subQ.toLowerCase().lastIndexOf( "where" ) > 0 ) {
-        subQ = subQ.substring( 0, subQ.toLowerCase().lastIndexOf( "where" ) );
+      if ( subQ.toLowerCase().lastIndexOf( "where" ) > 0 ) { //$NON-NLS-1$
+        subQ = subQ.substring( 0, subQ.toLowerCase().lastIndexOf( "where" ) ); //$NON-NLS-1$
       }
 
       // first determine the source column family
       // look for a FROM that is surrounded by space
-      int fromIndex = subQ.toLowerCase().indexOf( "from" );
+      int fromIndex = subQ.toLowerCase().indexOf( "from" ); //$NON-NLS-1$
       String tempS = subQ.toLowerCase();
       int offset = fromIndex;
       while ( fromIndex > 0 && tempS.charAt( fromIndex - 1 ) != ' ' && ( fromIndex + 4 < tempS.length() )
           && tempS.charAt( fromIndex + 4 ) != ' ' ) {
         tempS = tempS.substring( fromIndex + 4, tempS.length() );
-        fromIndex = tempS.indexOf( "from" );
+        fromIndex = tempS.indexOf( "from" ); //$NON-NLS-1$
         offset += ( 4 + fromIndex );
       }
 
       fromIndex = offset;
       if ( fromIndex < 0 ) {
-        logError( BaseMessages.getString( PKG, "CassandraInput.Error.MustSpecifyAColumnFamily" ) );
+        logError( BaseMessages.getString( PKG, "CassandraInput.Error.MustSpecifyAColumnFamily" ) ); //$NON-NLS-1$
         return; // no from clause
       }
 
@@ -611,7 +611,7 @@ public class CassandraInputMeta extends BaseStepMeta implements StepMetaInterfac
       if ( colFamName.indexOf( ' ' ) > 0 ) {
         colFamName = colFamName.substring( 0, colFamName.indexOf( ' ' ) );
       } else {
-        colFamName = colFamName.replace( ";", "" );
+        colFamName = colFamName.replace( ";", "" ); //$NON-NLS-1$ //$NON-NLS-2$
       }
 
       if ( colFamName.length() == 0 ) {
@@ -619,8 +619,8 @@ public class CassandraInputMeta extends BaseStepMeta implements StepMetaInterfac
       }
 
       // is there a FIRST clause?
-      if ( subQ.toLowerCase().indexOf( "first" ) > 0 ) {
-        String firstS = subQ.substring( subQ.toLowerCase().indexOf( "first" ) + 5, subQ.length() ).trim();
+      if ( subQ.toLowerCase().indexOf( "first " ) > 0 ) { //$NON-NLS-1$
+        String firstS = subQ.substring( subQ.toLowerCase().indexOf( "first" ) + 5, subQ.length() ).trim(); //$NON-NLS-1$
 
         // Strip FIRST part from query
         subQ = firstS.substring( firstS.indexOf( ' ' ) + 1, firstS.length() );
@@ -629,26 +629,26 @@ public class CassandraInputMeta extends BaseStepMeta implements StepMetaInterfac
         try {
           m_colLimit = Integer.parseInt( firstS );
         } catch ( NumberFormatException ex ) {
-          logError( BaseMessages.getString( PKG, "CassandraInput.Error.UnableToParseFirstClause", m_cqlSelectQuery ) );
+          logError( BaseMessages.getString( PKG, "CassandraInput.Error.UnableToParseFirstClause", m_cqlSelectQuery ) ); //$NON-NLS-1$
           return;
         }
       } else {
-        subQ = subQ.substring( subQ.toLowerCase().indexOf( "select" ) + 6, subQ.length() );
+        subQ = subQ.substring( subQ.toLowerCase().indexOf( "select" ) + 6, subQ.length() ); //$NON-NLS-1$
       }
 
       // Reset FROM index
-      fromIndex = subQ.toLowerCase().indexOf( "from" );
+      fromIndex = subQ.toLowerCase().indexOf( "from" ); //$NON-NLS-1$
 
       // now determine if its a select */FIRST or specific set of columns
       String[] cols = null;
-      if ( subQ.indexOf( "*" ) >= 0 ) {
+      if ( subQ.indexOf( "*" ) >= 0 ) { //$NON-NLS-1$
         // nothing special to do here
         m_isSelectStarQuery = true;
       } else {
         m_isSelectStarQuery = false;
         // String colsS = subQ.substring(subQ.indexOf('\''), fromIndex);
         String colsS = subQ.substring( 0, fromIndex );
-        cols = colsS.split( "," );
+        cols = colsS.split( "," ); //$NON-NLS-1$
       }
 
       // try and connect to get meta data
@@ -698,9 +698,9 @@ public class CassandraInputMeta extends BaseStepMeta implements StepMetaInterfac
 
           // special case where user has asked for all row keys, columns and
           // timestamps output as separate rows.
-          ValueMetaInterface vm = new ValueMeta( "ColumnName", ValueMetaInterface.TYPE_STRING );
+          ValueMetaInterface vm = new ValueMeta( "ColumnName", ValueMetaInterface.TYPE_STRING ); //$NON-NLS-1$
           rowMeta.addValueMeta( vm );
-          vm = new ValueMeta( "ColumnValue", ValueMeta.TYPE_STRING );
+          vm = new ValueMeta( "ColumnValue", ValueMeta.TYPE_STRING ); //$NON-NLS-1$
 
           // ValueMetaInterface tvm = colMeta.getValueMetaForDefaultValidator();
           // if (tvm != null) {
@@ -721,7 +721,7 @@ public class CassandraInputMeta extends BaseStepMeta implements StepMetaInterfac
           // vm = new ValueMeta("ColumnValue", ValueMetaInterface.TYPE_STRING);
           // }
           rowMeta.addValueMeta( vm );
-          vm = new ValueMeta( "Timestamp", ValueMetaInterface.TYPE_INTEGER );
+          vm = new ValueMeta( "Timestamp", ValueMetaInterface.TYPE_INTEGER ); //$NON-NLS-1$
           rowMeta.addValueMeta( vm );
 
           conn.closeConnection();
@@ -752,14 +752,14 @@ public class CassandraInputMeta extends BaseStepMeta implements StepMetaInterfac
               // this one isn't known about in about in the schema - we can
               // output it
               // as long as its values satisfy the default validator...
-              logBasic( BaseMessages.getString( PKG, "CassandraInput.Info.DefaultColumnValidator", col ) );
+              logBasic( BaseMessages.getString( PKG, "CassandraInput.Info.DefaultColumnValidator", col ) ); //$NON-NLS-1$
             }
             ValueMetaInterface vm = colMeta.getValueMetaForColumn( col );
             rowMeta.addValueMeta( vm );
           }
         }
       } catch ( Exception ex ) {
-        logBasic( BaseMessages.getString( PKG, "CassandraInput.Info.UnableToRetrieveColumnMetaData", colFamName ), ex );
+        logBasic( BaseMessages.getString( PKG, "CassandraInput.Info.UnableToRetrieveColumnMetaData", colFamName ), ex ); //$NON-NLS-1$
         return;
       } finally {
         if ( conn != null ) {
@@ -779,8 +779,8 @@ public class CassandraInputMeta extends BaseStepMeta implements StepMetaInterfac
     if ( cql3 ) {
       col = CassandraUtils.removeQuotes( col );
     } else {
-      col = col.replace( "'", "" );
-      col = col.replace( "\"", "" );
+      col = col.replace( "'", "" ); //$NON-NLS-1$ //$NON-NLS-2$
+      col = col.replace( "\"", "" ); //$NON-NLS-1$ //$NON-NLS-2$
     }
 
     return col;

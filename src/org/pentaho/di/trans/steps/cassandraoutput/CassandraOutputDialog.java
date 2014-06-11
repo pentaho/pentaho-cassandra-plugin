@@ -1288,10 +1288,8 @@ public class CassandraOutputDialog extends BaseStepDialog implements StepDialogI
     m_currentMeta.setCreateTableClause( m_withClauseText.getText() );
     m_currentMeta.setDontComplainAboutAprioriCQLFailing( m_dontComplain );
 
-    if ( !Const.isEmpty( m_ttlValueText.getText() ) ) {
-      m_currentMeta.setTTL( m_ttlValueText.getText() );
-      m_currentMeta.setTTLUnit( m_ttlUnitsCombo.getText() );
-    }
+    m_currentMeta.setTTL( m_ttlValueText.getText() );
+    m_currentMeta.setTTLUnit( m_ttlUnitsCombo.getText() );
 
     if ( !m_originalMeta.equals( m_currentMeta ) ) {
       m_currentMeta.setChanged();

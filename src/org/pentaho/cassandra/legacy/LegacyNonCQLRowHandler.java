@@ -97,6 +97,8 @@ public class LegacyNonCQLRowHandler implements NonCQLRowHandler {
 
   protected int m_currentBatchCounter = -1;
 
+  protected int m_ttl = -1;
+
   @Override
   public void setOptions( Map<String, String> options ) {
     m_options = options;
@@ -107,6 +109,13 @@ public class LegacyNonCQLRowHandler implements NonCQLRowHandler {
           try {
             m_timeout = Integer.parseInt( e.getValue() );
           } catch ( NumberFormatException ex ) {
+            // don't complain
+          }
+        } else if ( e.getKey().equalsIgnoreCase( "ttl" ) ) {
+          try {
+            m_ttl = Integer.parseInt( e.getValue() );
+          } catch ( NumberFormatException ex ) {
+            // don't complain
           }
         }
       }
@@ -545,6 +554,9 @@ public class LegacyNonCQLRowHandler implements NonCQLRowHandler {
           Column col = new Column( famMeta.columnNameToByteBuffer( colName ) );
           col = col.setValue( famMeta.kettleValueToByteBuffer( colMeta, row[i], false ) );
           col = col.setTimestamp( System.currentTimeMillis() );
+          if ( m_ttl > 0 ) {
+            col.setTtl( m_ttl );
+          }
           ColumnOrSuperColumn cosc = new ColumnOrSuperColumn();
           cosc.setColumn( col );
           Mutation mut = new Mutation();

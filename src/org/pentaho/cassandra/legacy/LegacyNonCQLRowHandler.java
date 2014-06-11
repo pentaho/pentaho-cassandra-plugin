@@ -328,6 +328,10 @@ public class LegacyNonCQLRowHandler implements NonCQLRowHandler {
           // determine what we need to get next - more columns from current
           // row, or start next row
           // or get next row batch or done
+          if ( m_cassandraRows == null ) {
+            // we're done
+            return false;
+          }
 
           if ( m_rowCount == m_sliceRowsMax ) {
             // hit our LIMIT of rows - done

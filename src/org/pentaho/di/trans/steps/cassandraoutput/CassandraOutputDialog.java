@@ -1285,6 +1285,7 @@ public class CassandraOutputDialog extends BaseStepDialog implements StepDialogI
     m_currentMeta.setUseCQL3( m_useCQL3Check.getSelection() );
     m_currentMeta.setCreateTableClause( m_withClauseText.getText() );
     m_currentMeta.setDontComplainAboutAprioriCQLFailing( m_dontComplain );
+    m_currentMeta.setUseUnloggedBatches( m_unloggedBatchBut.getSelection() );
 
     if ( !Const.isEmpty( m_ttlValueText.getText() ) ) {
       m_currentMeta.setTTL( m_ttlValueText.getText() );
@@ -1468,6 +1469,7 @@ public class CassandraOutputDialog extends BaseStepDialog implements StepDialogI
     m_useCompressionBut.setSelection( m_currentMeta.getUseCompression() );
     m_useThriftIOCheck.setSelection( m_currentMeta.getUseThriftIO() );
     m_useCQL3Check.setSelection( m_currentMeta.getUseCQL3() );
+    m_unloggedBatchBut.setSelection( m_currentMeta.getUseUnloggedBatch() );
 
     m_dontComplain = m_currentMeta.getDontComplainAboutAprioriCQLFailing();
 
@@ -1484,7 +1486,10 @@ public class CassandraOutputDialog extends BaseStepDialog implements StepDialogI
       m_getFieldsBut.setText( " " //$NON-NLS-1$
           + BaseMessages.getString( PKG, "CassandraOutputDialog.GetFields.Button" ) + " " ); //$NON-NLS-1$ //$NON-NLS-2$
       m_keyFieldLab.setText( BaseMessages.getString( PKG, "CassandraOutputDialog.KeyField.Label" ) ); //$NON-NLS-1$
+
+      // unlogged batches is CQL 3 only
       m_unloggedBatchBut.setSelection( false );
+      m_unloggedBatchBut.setEnabled( false );
     }
 
     if ( !Const.isEmpty( m_currentMeta.getTTL() ) ) {

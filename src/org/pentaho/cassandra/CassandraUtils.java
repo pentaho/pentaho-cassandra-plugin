@@ -55,7 +55,7 @@ import org.pentaho.di.i18n.BaseMessages;
 
 /**
  * Static utility routines for various stuff
- * 
+ *
  * @author Mark Hall (mhall{[at]}pentaho{[dot]}com)
  */
 public class CassandraUtils {
@@ -87,9 +87,8 @@ public class CassandraUtils {
    * for column definitions. The CQL reference guide states that fully qualified (or relative to
    * org.apache.cassandra.db.marshal) class names can be used instead of CQL types - however, using these when defining
    * the key type always results in BytesType getting set for the key for some reason.
-   * 
-   * @param vm
-   *          the ValueMetaInterface for the Kettle column
+   *
+   * @param vm the ValueMetaInterface for the Kettle column
    * @return the corresponding CQL type
    */
   public static String getCQLTypeForValueMeta( ValueMetaInterface vm ) {
@@ -117,9 +116,8 @@ public class CassandraUtils {
 
   /**
    * Split a script containing one or more CQL statements (terminated by ;'s) into a list of individual statements.
-   * 
-   * @param source
-   *          the source script
+   *
+   * @param source the source script
    * @return a list of individual CQL statements
    */
   public static List<String> splitCQLStatements( String source ) {
@@ -142,11 +140,9 @@ public class CassandraUtils {
 
   /**
    * Compress a CQL query
-   * 
-   * @param queryStr
-   *          the CQL query
-   * @param compression
-   *          compression option (GZIP is the only option - so far)
+   *
+   * @param queryStr    the CQL query
+   * @param compression compression option (GZIP is the only option - so far)
    * @return an array of bytes containing the compressed query
    */
   public static byte[] compressCQLQuery( String queryStr, Compression compression ) {
@@ -174,9 +170,8 @@ public class CassandraUtils {
   /**
    * Extract the column family name (table name) from a CQL SELECT query. Assumes that any kettle variables have been
    * already substituted in the query
-   * 
-   * @param subQ
-   *          the query with vars substituted
+   *
+   * @param subQ the query with vars substituted
    * @return the column family name or null if the query is malformed
    */
   public static String getColumnFamilyNameFromCQLSelectQuery( String subQ ) {
@@ -238,9 +233,8 @@ public class CassandraUtils {
 
   /**
    * Return a string representation of a Kettle row
-   * 
-   * @param row
-   *          the row to return as a string
+   *
+   * @param row the row to return as a string
    * @return a string representation of the row
    */
   public static String rowToStringRepresentation( RowMetaInterface inputMeta, Object[] row ) {
@@ -260,18 +254,13 @@ public class CassandraUtils {
 
   /**
    * Checks for null row key and rows with no non-null values
-   * 
-   * @param inputMeta
-   *          the input row meta
-   * @param keyColNames
-   *          the names of column(s) that are part of the row key
-   * @param row
-   *          the row to check
-   * @param log
-   *          logging
+   *
+   * @param inputMeta   the input row meta
+   * @param keyColNames the names of column(s) that are part of the row key
+   * @param row         the row to check
+   * @param log         logging
    * @return true if the row is OK
-   * @throws KettleException
-   *           if a problem occurs
+   * @throws KettleException if a problem occurs
    */
   protected static boolean preAddChecks( RowMetaInterface inputMeta, List<String> keyColNames, Object[] row,
       LogChannelInterface log ) throws KettleException {
@@ -321,9 +310,8 @@ public class CassandraUtils {
 
   /**
    * Creates a new batch for non-CQL based write operations
-   * 
-   * @param numRows
-   *          the size of the batch in rows
+   *
+   * @param numRows the size of the batch in rows
    * @return the new batch
    */
   public static List<Object[]> newNonCQLBatch( int numRows ) {
@@ -335,24 +323,17 @@ public class CassandraUtils {
   /**
    * Adds a row to the current non-CQL batch. Might not add a row if the row does not contain at least one non-null
    * value appart from the key.
-   * 
-   * @param batch
-   *          the batch to add to
-   * @param row
-   *          the row to add to the batch
-   * @param inputMeta
-   *          the row format
-   * @param familyMeta
-   *          meta data on the columns in the cassandra column family (table)
-   * @param insertFieldsNotInMetaData
-   *          true if any Kettle fields that are not in the Cassandra column family (table) meta data are to be
-   *          inserted. This is irrelevant if the user has opted to have the step initially update the Cassandra meta
-   *          data for incoming fields that are not known about.
-   * @param log
-   *          for logging
+   *
+   * @param batch                     the batch to add to
+   * @param row                       the row to add to the batch
+   * @param inputMeta                 the row format
+   * @param familyMeta                meta data on the columns in the cassandra column family (table)
+   * @param insertFieldsNotInMetaData true if any Kettle fields that are not in the Cassandra column family (table) meta data are to be
+   *                                  inserted. This is irrelevant if the user has opted to have the step initially update the Cassandra meta
+   *                                  data for incoming fields that are not known about.
+   * @param log                       for logging
    * @return true if the row was added to the batch
-   * @throws Exception
-   *           if a problem occurs
+   * @throws Exception if a problem occurs
    */
   public static boolean addRowToNonCQLBatch( List<Object[]> batch, Object[] row, RowMetaInterface inputMeta,
       ColumnFamilyMetaData familyMeta, boolean insertFieldsNotInMetaData, LogChannelInterface log ) throws Exception {
@@ -380,17 +361,12 @@ public class CassandraUtils {
 
   /**
    * Begin a new batch cql statement
-   * 
-   * @param numRows
-   *          the number of rows to be inserted in this batch
-   * @param consistency
-   *          the consistency (e.g. ONE, QUORUM etc.) to use, or null to use the default.
-   * @param cql3
-   *          true if this is a CQL 3 batch (CQL 3 does not use "WITH CONSISTENCY", and this is now set programatically
-   *          at the driver level)
-   * @param unloggedBatch
-   *          true if this is to be an unlogged batch (CQL 3 only)
-   * 
+   *
+   * @param numRows       the number of rows to be inserted in this batch
+   * @param consistency   the consistency (e.g. ONE, QUORUM etc.) to use, or null to use the default.
+   * @param cql3          true if this is a CQL 3 batch (CQL 3 does not use "WITH CONSISTENCY", and this is now set programatically
+   *                      at the driver level)
+   * @param unloggedBatch true if this is to be an unlogged batch (CQL 3 only)
    * @return a StringBuilder initialized for the batch.
    */
   public static StringBuilder newCQLBatch( int numRows, String consistency, boolean cql3, boolean unloggedBatch ) {
@@ -414,9 +390,8 @@ public class CassandraUtils {
 
   /**
    * Append the "APPLY BATCH" statement to complete the batch
-   * 
-   * @param batch
-   *          the StringBuilder batch to complete
+   *
+   * @param batch the StringBuilder batch to complete
    */
   public static void completeCQLBatch( StringBuilder batch ) {
     batch.append( "APPLY BATCH" ); //$NON-NLS-1$
@@ -424,9 +399,8 @@ public class CassandraUtils {
 
   /**
    * Returns the quote character to use with a given major version of CQL
-   * 
-   * @param cqlMajVersion
-   *          the major version of the CQL in use
+   *
+   * @param cqlMajVersion the major version of the CQL in use
    * @return the quote character that can be used to surround identifiers (e.g. column names).
    */
   public static String identifierQuoteChar( int cqlMajVersion ) {
@@ -439,32 +413,20 @@ public class CassandraUtils {
 
   /**
    * converts a kettle row to CQL insert statement and adds it to the batch
-   * 
-   * @param batch
-   *          StringBuilder for collecting the batch CQL
-   * @param colFamilyName
-   *          the name of the column family (table) to insert into
-   * @param inputMeta
-   *          Kettle input row meta data inserting
-   * @param row
-   *          the Kettle row
-   * @param familyMeta
-   *          meta data on the columns in the cassandra column family (table)
-   * @param insertFieldsNotInMetaData
-   *          true if any Kettle fields that are not in the Cassandra column family (table) meta data are to be
-   *          inserted. This is irrelevant if the user has opted to have the step initially update the Cassandra meta
-   *          data for incoming fields that are not known about.
-   * @param cqlMajVersion
-   *          the major version number of the cql version to use
-   * @param additionalOpts
-   *          additional options for the insert statement
-   * @param log
-   *          for logging
-   * 
+   *
+   * @param batch                     StringBuilder for collecting the batch CQL
+   * @param colFamilyName             the name of the column family (table) to insert into
+   * @param inputMeta                 Kettle input row meta data inserting
+   * @param row                       the Kettle row
+   * @param familyMeta                meta data on the columns in the cassandra column family (table)
+   * @param insertFieldsNotInMetaData true if any Kettle fields that are not in the Cassandra column family (table) meta data are to be
+   *                                  inserted. This is irrelevant if the user has opted to have the step initially update the Cassandra meta
+   *                                  data for incoming fields that are not known about.
+   * @param cqlMajVersion             the major version number of the cql version to use
+   * @param additionalOpts            additional options for the insert statement
+   * @param log                       for logging
    * @return true if the row was added to the batch
-   * 
-   * @throws Exception
-   *           if a problem occurs
+   * @throws Exception if a problem occurs
    */
   public static boolean addRowToCQLBatch( StringBuilder batch, String colFamilyName, RowMetaInterface inputMeta,
       Object[] row, ColumnFamilyMetaData familyMeta, boolean insertFieldsNotInMetaData, int cqlMajVersion,
@@ -572,9 +534,8 @@ public class CassandraUtils {
   /**
    * Remove enclosing quotes from a string. Useful for quoted mixed case CQL 3 identifiers where we want to remove the
    * quotes in order to match successfully against entries in various system tables
-   * 
-   * @param source
-   *          the source string
+   *
+   * @param source the source string
    * @return the dequoted string
    */
   public static String removeQuotes( String source ) {
@@ -593,9 +554,8 @@ public class CassandraUtils {
 
   /**
    * Quotes an identifier (for CQL 3) if it contains mixed case
-   * 
-   * @param source
-   *          the source string
+   *
+   * @param source the source string
    * @return the quoted string
    */
   public static String cql3MixedCaseQuote( String source ) {
@@ -610,19 +570,15 @@ public class CassandraUtils {
   /**
    * Static utility method that converts a Kettle value into an appropriately encoded CQL string. Does not handle
    * collection types yet.
-   * 
-   * @param vm
-   *          the ValueMeta for the Kettle value
-   * @param value
-   *          the actual Kettle value
-   * @param cqlMajVersion
-   *          the major version number of the CQL to use
+   *
+   * @param vm            the ValueMeta for the Kettle value
+   * @param value         the actual Kettle value
+   * @param cqlMajVersion the major version number of the CQL to use
    * @return an appropriately encoded CQL string representation of the value, suitable for using in an CQL query.
-   * @throws KettleValueException
-   *           if there is an error converting.
+   * @throws KettleValueException if there is an error converting.
    */
   public static String kettleValueToCQL( ValueMetaInterface vm, Object value, int cqlMajVersion )
-    throws KettleValueException {
+      throws KettleValueException {
 
     String quote = cqlMajVersion == 2 ? "'" : ""; //$NON-NLS-1$ //$NON-NLS-2$
     switch ( vm.getType() ) {
@@ -695,9 +651,8 @@ public class CassandraUtils {
 
   /**
    * Return a one line string representation of an options map
-   * 
-   * @param opts
-   *          the options to return as a string
+   *
+   * @param opts the options to return as a string
    * @return a one line string representation of a map of options
    */
   public static String optionsToString( Map<String, String> opts ) {
@@ -716,15 +671,11 @@ public class CassandraUtils {
 
   /**
    * Returns how many fields (including the key) will be written given the incoming Kettle row format
-   * 
-   * @param inputMeta
-   *          the incoming Kettle row format
-   * @param keyIndex
-   *          the index(es) of the key field in the incoming row format
-   * @param cassandraMeta
-   *          column family meta data
-   * @param insertFieldsNotInMetaData
-   *          true if incoming fields not explicitly defined in the column family schema are to be inserted
+   *
+   * @param inputMeta                 the incoming Kettle row format
+   * @param keyIndex                  the index(es) of the key field in the incoming row format
+   * @param cassandraMeta             column family meta data
+   * @param insertFieldsNotInMetaData true if incoming fields not explicitly defined in the column family schema are to be inserted
    * @return
    */
   public static int numFieldsToBeWritten( RowMetaInterface inputMeta, List<Integer> keyIndex,
@@ -752,22 +703,15 @@ public class CassandraUtils {
 
   /**
    * Get a connection to cassandra
-   * 
-   * @param host
-   *          the hostname of a cassandra node
-   * @param port
-   *          the port that cassandra is listening on
-   * @param username
-   *          the username for (optional) authentication
-   * @param password
-   *          the password for (optional) authentication
-   * @param driver
-   *          the driver to use
-   * @param opts
-   *          the additional options to the driver
+   *
+   * @param host     the hostname of a cassandra node
+   * @param port     the port that cassandra is listening on
+   * @param username the username for (optional) authentication
+   * @param password the password for (optional) authentication
+   * @param driver   the driver to use
+   * @param opts     the additional options to the driver
    * @return a connection to cassandra
-   * @throws Exception
-   *           if a problem occurs during connection
+   * @throws Exception if a problem occurs during connection
    */
   public static Connection getCassandraConnection( String host, int port, String username, String password,
       ConnectionFactory.Driver driver, Map<String, String> opts ) throws Exception {

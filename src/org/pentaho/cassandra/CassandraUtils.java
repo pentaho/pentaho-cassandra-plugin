@@ -27,11 +27,15 @@ import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.zip.Deflater;
 
+import com.google.common.base.Joiner;
 import org.apache.cassandra.db.marshal.BooleanType;
 import org.apache.cassandra.db.marshal.DateType;
 import org.apache.cassandra.db.marshal.DecimalType;
@@ -433,130 +437,62 @@ public class CassandraUtils {
     }
 
     // ValueMetaInterface keyMeta = inputMeta.getValueMeta(keyIndex);
-    String quoteChar = identifierQuoteChar( cqlMajVersion );
+    final String quoteChar = identifierQuoteChar( cqlMajVersion );
     List<String> keyColNames = familyMeta.getKeyColumnNames();
 
-    // key column has to be listed first for CQL 2
-    batch
-        .append( "INSERT INTO " ).append( cqlMajVersion >= 3 ? cql3MixedCaseQuote( colFamilyName ) : colFamilyName ).append( " (" ); //$NON-NLS-1$ //$NON-NLS-2$
-    if ( cqlMajVersion < 3 ) {
-      boolean first = true;
-      for ( int i = 0; i < keyColNames.size(); i++ ) {
-        String kName = keyColNames.get( i );
-        ValueMetaInterface keyMeta = inputMeta.searchValueMeta( kName );
-        int index = inputMeta.indexOfValue( kName );
-
-        if ( !familyMeta.columnExistsInSchema( kName ) && !insertFieldsNotInMetaData ) {
-          continue;
-        }
-
-        // don't insert if null!
-        if ( keyMeta.isNull( row[index] ) ) {
-          continue;
-        }
-
-        if ( first ) {
-          batch.append( quoteChar ).append( kName ).append( quoteChar );
-          first = false;
-        } else {
-          batch.append( ", " ).append( quoteChar ).append( kName ).append( quoteChar ); //$NON-NLS-1$
-        }
-      }
-    }
-
-    boolean firstWasValid = true;
+    Map<String, String> columnValues = new HashMap<String, String>();
     for ( int i = 0; i < inputMeta.size(); i++ ) {
-      // if (i != keyIndex) {
       ValueMetaInterface colMeta = inputMeta.getValueMeta( i );
       String colName = colMeta.getName();
-      if ( cqlMajVersion < 3 && keyColNames.contains( colName ) ) {
-        continue;
-      }
-
       if ( !familyMeta.columnExistsInSchema( colName ) && !insertFieldsNotInMetaData ) {
-        if ( i == 0 ) {
-          firstWasValid = false;
-        }
         continue;
       }
-
       // don't insert if null!
       if ( colMeta.isNull( row[i] ) ) {
-        if ( i == 0 ) {
-          firstWasValid = false;
-        }
         continue;
       }
 
-      batch
-          .append( ( cqlMajVersion >= 3 && i == 0 ) || ( cqlMajVersion >= 3 && i == 1 && !firstWasValid ) ? "" : ", " ).append( quoteChar ) //$NON-NLS-1$  //$NON-NLS-2$
-          .append( colName ).append( quoteChar );
-      // }
+      columnValues.put( colName, kettleValueToCQL( colMeta, row[i], cqlMajVersion ) );
     }
 
+    Collection<String> columnOrder;
+    if ( cqlMajVersion >= 3 ) {
+      // Quote column family name if version >=3 to enforce case sensitivity
+      // http://www.datastax.com/documentation/cql/3.0/cql/cql_reference/ucase-lcase_r.html
+      colFamilyName = cql3MixedCaseQuote( colFamilyName );
+      // Column order does not matter
+      columnOrder = columnValues.keySet();
+    } else {
+      // Key column has to be listed first for CQL 2
+      columnOrder = new LinkedHashSet();
+      for ( String keyColName : keyColNames ) {
+        // Add keys in given order
+        if ( columnValues.containsKey( keyColName ) ) {
+          columnOrder.add( keyColName );
+        }
+      }
+      // Add remaining values
+      columnOrder.addAll( columnValues.keySet() );
+    }
+
+    List<String> columns = new ArrayList<String>( columnOrder.size() );
+    List<String> values = new ArrayList<String>( columnOrder.size() );
+    for ( String column : columnOrder ) {
+      columns.add( quoteChar + column + quoteChar );
+      values.add( columnValues.get( column ) );
+    }
+
+    Joiner joiner = Joiner.on( ',' ).skipNulls();
+    batch.append( "INSERT INTO " ).append( colFamilyName ).append( " (" );
+    joiner.appendTo( batch, columns );
     batch.append( ") VALUES (" ); //$NON-NLS-1$
-
-    boolean first = true;
-    if ( cqlMajVersion < 3 ) {
-      for ( int i = 0; i < keyColNames.size(); i++ ) {
-        String kName = keyColNames.get( i );
-        ValueMetaInterface keyMeta = inputMeta.searchValueMeta( kName );
-        int index = inputMeta.indexOfValue( kName );
-
-        if ( !familyMeta.columnExistsInSchema( kName ) && !insertFieldsNotInMetaData ) {
-          continue;
-        }
-
-        // don't insert if null!
-        if ( keyMeta.isNull( row[index] ) ) {
-          continue;
-        }
-
-        if ( first ) {
-          batch.append( kettleValueToCQL( keyMeta, row[index], cqlMajVersion ) );
-          first = false;
-        } else {
-          batch.append( ", " ).append( //$NON-NLS-1$
-              kettleValueToCQL( keyMeta, row[index], cqlMajVersion ) );
-        }
-      }
-    }
-
-    firstWasValid = true;
-    for ( int i = 0; i < inputMeta.size(); i++ ) {
-      ValueMetaInterface colMeta = inputMeta.getValueMeta( i );
-      String colName = colMeta.getName();
-
-      if ( cqlMajVersion < 3 && keyColNames.contains( colName ) ) {
-        continue;
-      }
-
-      if ( !familyMeta.columnExistsInSchema( colName ) && !insertFieldsNotInMetaData ) {
-        if ( i == 0 ) {
-          firstWasValid = false;
-        }
-        continue;
-      }
-
-      // don't insert if null!
-      if ( colMeta.isNull( row[i] ) ) {
-        if ( i == 0 ) {
-          firstWasValid = false;
-        }
-        continue;
-      }
-
-      batch
-          .append( ( cqlMajVersion >= 3 && i == 0 ) || ( cqlMajVersion >= 3 && i == 1 && !firstWasValid ) ? "" : ", " ).append( //$NON-NLS-1$ //$NON-NLS-2$
-          kettleValueToCQL( colMeta, row[i], cqlMajVersion ) );
-    }
-
+    joiner.appendTo( batch, values );
     batch.append( ")" ); //$NON-NLS-1$
 
     if ( containsInsertOptions( additionalOpts ) ) {
       batch.append( " USING " ); //$NON-NLS-1$
 
-      first = true;
+      boolean first = true;
       for ( Map.Entry<String, String> o : additionalOpts.entrySet() ) {
         if ( validInsertOption( o.getKey() ) ) {
           if ( first ) {

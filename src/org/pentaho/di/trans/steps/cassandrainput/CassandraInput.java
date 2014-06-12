@@ -51,7 +51,7 @@ import org.pentaho.di.trans.step.StepMetaInterface;
 /**
  * Class providing an input step for reading data from a table (column family) in Cassandra. Accesses the schema
  * information stored in Cassandra for type information.
- * 
+ *
  * @author Mark Hall (mhall{[at]}pentaho{[dot]}com)
  * @version $Revision$
  */
@@ -66,22 +66,34 @@ public class CassandraInput extends BaseStep implements StepInterface {
     super( stepMeta, stepDataInterface, copyNr, transMeta, trans );
   }
 
-  /** Connection to cassandra */
+  /**
+   * Connection to cassandra
+   */
   protected Connection m_connection;
 
-  /** Keyspace */
+  /**
+   * Keyspace
+   */
   protected Keyspace m_keyspace;
 
-  /** Column meta data and schema information */
+  /**
+   * Column meta data and schema information
+   */
   protected ColumnFamilyMetaData m_cassandraMeta;
 
-  /** Handler for CQL-based row fetching */
+  /**
+   * Handler for CQL-based row fetching
+   */
   protected CQLRowHandler m_cqlHandler;
 
-  /** Handler for non-CQL (i.e. slice type) row fetching */
+  /**
+   * Handler for non-CQL (i.e. slice type) row fetching
+   */
   protected NonCQLRowHandler m_nonCqlHandler;
 
-  /** For iterating over a result set */
+  /**
+   * For iterating over a result set
+   */
   protected Iterator<CqlRow> m_resultIterator;
 
   /**
@@ -89,10 +101,14 @@ public class CassandraInput extends BaseStep implements StepInterface {
    */
   protected Map<String, Integer> m_outputFormatMap = new HashMap<String, Integer>();
 
-  /** Current input row being processed (if executing for each row) */
+  /**
+   * Current input row being processed (if executing for each row)
+   */
   protected Object[] m_currentInputRowDrivingQuery = null;
 
-  /** Column family name */
+  /**
+   * Column family name
+   */
   protected String m_colFamName;
 
   @Override

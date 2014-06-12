@@ -51,7 +51,7 @@ import org.pentaho.di.trans.step.StepMetaInterface;
 /**
  * Class providing an input step for reading data from a table (column family) in Cassandra. Accesses the schema
  * information stored in Cassandra for type information.
- * 
+ *
  * @author Mark Hall (mhall{[at]}pentaho{[dot]}com)
  * @version $Revision$
  */
@@ -66,22 +66,34 @@ public class CassandraInput extends BaseStep implements StepInterface {
     super( stepMeta, stepDataInterface, copyNr, transMeta, trans );
   }
 
-  /** Connection to cassandra */
+  /**
+   * Connection to cassandra
+   */
   protected Connection m_connection;
 
-  /** Keyspace */
+  /**
+   * Keyspace
+   */
   protected Keyspace m_keyspace;
 
-  /** Column meta data and schema information */
+  /**
+   * Column meta data and schema information
+   */
   protected ColumnFamilyMetaData m_cassandraMeta;
 
-  /** Handler for CQL-based row fetching */
+  /**
+   * Handler for CQL-based row fetching
+   */
   protected CQLRowHandler m_cqlHandler;
 
-  /** Handler for non-CQL (i.e. slice type) row fetching */
+  /**
+   * Handler for non-CQL (i.e. slice type) row fetching
+   */
   protected NonCQLRowHandler m_nonCqlHandler;
 
-  /** For iterating over a result set */
+  /**
+   * For iterating over a result set
+   */
   protected Iterator<CqlRow> m_resultIterator;
 
   /**
@@ -89,10 +101,14 @@ public class CassandraInput extends BaseStep implements StepInterface {
    */
   protected Map<String, Integer> m_outputFormatMap = new HashMap<String, Integer>();
 
-  /** Current input row being processed (if executing for each row) */
+  /**
+   * Current input row being processed (if executing for each row)
+   */
   protected Object[] m_currentInputRowDrivingQuery = null;
 
-  /** Column family name */
+  /**
+   * Column family name
+   */
   protected String m_colFamName;
 
   @Override
@@ -242,16 +258,16 @@ public class CassandraInput extends BaseStep implements StepInterface {
           }
         }
       } else if ( m_meta.getOutputKeyValueTimestampTuples() ) {
-        // TODO move code from the first block down to here for this. This is so
-        // we can prepare for handling an "execute for each row" new feature.
-        outRowData = null;
+        // Execute for each row does not make sense for thrift mode since
+        // a where clause can't be used.
+        outRowData = new Object[1][];
         try {
           outRowData[0] = m_nonCqlHandler.getNextOutputRow( m_data.getOutputRowMeta() );
         } catch ( Exception e ) {
           throw new KettleException( e.getMessage(), e );
         }
 
-        if ( outRowData != null && outRowData.length > 0 ) {
+        if ( outRowData[0] != null && outRowData[0].length > 0 ) {
 
           putRow( m_data.getOutputRowMeta(), outRowData[0] );
 
@@ -263,6 +279,8 @@ public class CassandraInput extends BaseStep implements StepInterface {
           if ( checkFeedback( getProcessed() ) ) {
             logBasic( "Read " + getProcessed() + " rows from Cassandra" ); //$NON-NLS-1$ //$NON-NLS-2$
           }
+        } else {
+          outRowData = null;
         }
       } else {
         throw new KettleException( BaseMessages.getString( CassandraInputMeta.PKG,

@@ -74,7 +74,7 @@ import org.pentaho.di.ui.trans.step.BaseStepDialog;
 
 /**
  * Dialog class for the CassandraOutput step
- * 
+ *
  * @author Mark Hall (mhall{[at]}pentaho{[dot]}com)
  */
 public class CassandraOutputDialog extends BaseStepDialog implements StepDialogInterface {
@@ -84,7 +84,9 @@ public class CassandraOutputDialog extends BaseStepDialog implements StepDialogI
   private final CassandraOutputMeta m_currentMeta;
   private final CassandraOutputMeta m_originalMeta;
 
-  /** various UI bits and pieces for the dialog */
+  /**
+   * various UI bits and pieces for the dialog
+   */
   private Label m_stepnameLabel;
   private Text m_stepnameText;
 
@@ -1167,7 +1169,7 @@ public class CassandraOutputDialog extends BaseStepDialog implements StepDialogI
 
         if ( row.size() == 0 ) {
           MessageDialog.openError( shell, BaseMessages.getString( PKG,
-              "CassandraOutputData.Message.NoIncomingFields.Title" ), //$NON-NLS-1$
+                  "CassandraOutputData.Message.NoIncomingFields.Title" ), //$NON-NLS-1$
               BaseMessages.getString( PKG, "CassandraOutputData.Message.NoIncomingFields" ) ); //$NON-NLS-1$
 
           return;
@@ -1235,7 +1237,7 @@ public class CassandraOutputDialog extends BaseStepDialog implements StepDialogI
 
         if ( row.size() == 0 ) {
           MessageDialog.openError( shell, BaseMessages.getString( PKG,
-              "CassandraOutputData.Message.NoIncomingFields.Title" ), //$NON-NLS-1$
+                  "CassandraOutputData.Message.NoIncomingFields.Title" ), //$NON-NLS-1$
               BaseMessages.getString( PKG, "CassandraOutputData.Message.NoIncomingFields" ) ); //$NON-NLS-1$
 
           return;
@@ -1286,10 +1288,8 @@ public class CassandraOutputDialog extends BaseStepDialog implements StepDialogI
     m_currentMeta.setCreateTableClause( m_withClauseText.getText() );
     m_currentMeta.setDontComplainAboutAprioriCQLFailing( m_dontComplain );
 
-    if ( !Const.isEmpty( m_ttlValueText.getText() ) ) {
-      m_currentMeta.setTTL( m_ttlValueText.getText() );
-      m_currentMeta.setTTLUnit( m_ttlUnitsCombo.getText() );
-    }
+    m_currentMeta.setTTL( m_ttlValueText.getText() );
+    m_currentMeta.setTTLUnit( m_ttlUnitsCombo.getText() );
 
     if ( !m_originalMeta.equals( m_currentMeta ) ) {
       m_currentMeta.setChanged();

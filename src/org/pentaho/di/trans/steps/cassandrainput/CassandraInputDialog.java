@@ -76,7 +76,7 @@ import org.pentaho.di.ui.trans.steps.tableinput.SQLValuesHighlight;
 
 /**
  * Dialog class for the CassandraInput step
- * 
+ *
  * @author Mark Hall (mhall{[at]}pentaho{[dot]}com)
  * @version $Revision$
  */
@@ -87,7 +87,9 @@ public class CassandraInputDialog extends BaseStepDialog implements StepDialogIn
   private final CassandraInputMeta m_currentMeta;
   private final CassandraInputMeta m_originalMeta;
 
-  /** various UI bits and pieces for the dialog */
+  /**
+   * various UI bits and pieces for the dialog
+   */
   private Label m_stepnameLabel;
   private Text m_stepnameText;
 
@@ -641,8 +643,12 @@ public class CassandraInputDialog extends BaseStepDialog implements StepDialogIn
     if ( m_useThriftCheck.getSelection() ) {
       m_useCQL3Check.setSelection( false );
       m_useCQL3Check.setEnabled( false );
+
+      m_executeForEachRowBut.setSelection( false );
+      m_executeForEachRowBut.setEnabled( false );
     } else {
       m_useCQL3Check.setEnabled( true );
+      m_executeForEachRowBut.setEnabled( true );
     }
 
     checkWidgetsWithRespectToDriver( ConnectionFactory.Driver.LEGACY_THRIFT );

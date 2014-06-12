@@ -641,8 +641,12 @@ public class CassandraInputDialog extends BaseStepDialog implements StepDialogIn
     if ( m_useThriftCheck.getSelection() ) {
       m_useCQL3Check.setSelection( false );
       m_useCQL3Check.setEnabled( false );
+
+      m_executeForEachRowBut.setSelection( false );
+      m_executeForEachRowBut.setEnabled( false );
     } else {
       m_useCQL3Check.setEnabled( true );
+      m_executeForEachRowBut.setEnabled( true );
     }
 
     checkWidgetsWithRespectToDriver( ConnectionFactory.Driver.LEGACY_THRIFT );

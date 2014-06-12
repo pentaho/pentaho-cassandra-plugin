@@ -53,8 +53,7 @@ import org.pentaho.di.i18n.BaseMessages;
 import org.pentaho.di.trans.step.StepInterface;
 
 /**
- * Implementation of NonCQLRowHandler that wraps the legacy Thrift-based
- * implementation
+ * Implementation of NonCQLRowHandler that wraps the legacy Thrift-based implementation
  *
  * @author Mark Hall (mhall{[at]}pentaho{[dot]}com)
  */
@@ -98,13 +97,13 @@ public class LegacyNonCQLRowHandler implements NonCQLRowHandler {
 
   protected int m_currentBatchCounter = -1;
 
+  @Override
   public void setOptions( Map<String, String> options ) {
     m_options = options;
 
     if ( m_options != null ) {
       for ( Map.Entry<String, String> e : m_options.entrySet() ) {
-        if ( e.getKey().equalsIgnoreCase(
-            CassandraUtils.BatchOptions.BATCH_TIMEOUT ) ) {
+        if ( e.getKey().equalsIgnoreCase( CassandraUtils.BatchOptions.BATCH_TIMEOUT ) ) {
           try {
             m_timeout = Integer.parseInt( e.getValue() );
           } catch ( NumberFormatException ex ) {
@@ -114,22 +113,21 @@ public class LegacyNonCQLRowHandler implements NonCQLRowHandler {
     }
   }
 
+  @Override
   public void setKeyspace( Keyspace keyspace ) {
     m_keyspace = (LegacyKeyspace) keyspace;
   }
 
-  public void newRowQuery( StepInterface requestingStep, String colFamilyName,
-      List<String> colNames, int rowLimit, int colLimit, int rowBatchSize,
-      int colBatchSize, String consistencyLevel, LogChannelInterface log )
+  @Override
+  public void newRowQuery( StepInterface requestingStep, String colFamilyName, List<String> colNames, int rowLimit,
+      int colLimit, int rowBatchSize, int colBatchSize, String consistencyLevel, LogChannelInterface log )
       throws Exception {
 
     if ( m_keyspace == null ) {
-      throw new Exception( BaseMessages.getString( PKG,
-          "LegacyNonCQLRowHandler.Error.NoKeyspaceSpecified" ) ); //$NON-NLS-1$
+      throw new Exception( BaseMessages.getString( PKG, "LegacyNonCQLRowHandler.Error.NoKeyspaceSpecified" ) ); //$NON-NLS-1$
     }
 
-    m_metaData = (CassandraColumnMetaData) m_keyspace
-        .getColumnFamilyMetaData( colFamilyName );
+    m_metaData = (CassandraColumnMetaData) m_keyspace.getColumnFamilyMetaData( colFamilyName );
 
     m_requestingStep = requestingStep;
 
@@ -171,8 +169,8 @@ public class LegacyNonCQLRowHandler implements NonCQLRowHandler {
     m_slicePredicate = new SlicePredicate();
 
     if ( specificCols == null ) {
-      m_sliceRange = new SliceRange( ByteBuffer.wrap( new byte[0] ),
-          ByteBuffer.wrap( new byte[0] ), false, m_sliceColsBatchSize );
+      m_sliceRange =
+          new SliceRange( ByteBuffer.wrap( new byte[0] ), ByteBuffer.wrap( new byte[0] ), false, m_sliceColsBatchSize );
       m_slicePredicate.setSlice_range( m_sliceRange );
     } else {
       m_slicePredicate.setColumn_names( specificCols );
@@ -190,8 +188,7 @@ public class LegacyNonCQLRowHandler implements NonCQLRowHandler {
     m_currentCols = row.getColumns();
 
     int skipSize = 0;
-    while ( m_currentCols.size() == skipSize
-        && m_rowIndex < m_cassandraRows.size() - 1 ) {
+    while ( m_currentCols.size() == skipSize && m_rowIndex < m_cassandraRows.size() - 1 ) {
       m_rowIndex++;
       row = m_cassandraRows.get( m_rowIndex );
       m_currentCols = row.getColumns();
@@ -220,11 +217,10 @@ public class LegacyNonCQLRowHandler implements NonCQLRowHandler {
     }
 
     // set the key range start to the last key from the last batch of rows
-    m_keyRange.setStart_key( m_cassandraRows.get( m_cassandraRows.size() - 1 )
-        .getKey() );
-    m_cassandraRows = ( (CassandraConnection) m_keyspace.getConnection() )
-        .getClient().get_range_slices( m_colParent, m_slicePredicate,
-            m_keyRange, m_consistencyLevel );
+    m_keyRange.setStart_key( m_cassandraRows.get( m_cassandraRows.size() - 1 ).getKey() );
+    m_cassandraRows =
+        ( (CassandraConnection) m_keyspace.getConnection() ).getClient().get_range_slices( m_colParent,
+            m_slicePredicate, m_keyRange, m_consistencyLevel );
 
     m_colCount = 0;
 
@@ -232,8 +228,7 @@ public class LegacyNonCQLRowHandler implements NonCQLRowHandler {
     // processed the first
     // row in the last batch. Hence start at index 1 of this batch
     m_rowIndex = 1;
-    if ( m_cassandraRows == null || m_cassandraRows.size() <= 1
-        || m_rowCount == m_sliceRowsMax ) {
+    if ( m_cassandraRows == null || m_cassandraRows.size() <= 1 || m_rowCount == m_sliceRowsMax ) {
       // indicate done
       m_currentCols = null;
       m_cassandraRows = null;
@@ -248,14 +243,13 @@ public class LegacyNonCQLRowHandler implements NonCQLRowHandler {
       return; // don't do anything if we're paused or stopped
     }
 
-    m_sliceRange = m_sliceRange.setStart( m_currentCols
-        .get( m_currentCols.size() - 1 ).getColumn().bufferForName() );
+    m_sliceRange = m_sliceRange.setStart( m_currentCols.get( m_currentCols.size() - 1 ).getColumn().bufferForName() );
     m_slicePredicate.setSlice_range( m_sliceRange );
 
     // fetch the next bunch of columns for the current row
-    m_currentCols = ( (CassandraConnection) m_keyspace.getConnection() )
-        .getClient().get_slice( m_cassandraRows.get( m_rowIndex ).bufferForKey(),
-            m_colParent, m_slicePredicate, ConsistencyLevel.ONE );
+    m_currentCols =
+        ( (CassandraConnection) m_keyspace.getConnection() ).getClient().get_slice(
+            m_cassandraRows.get( m_rowIndex ).bufferForKey(), m_colParent, m_slicePredicate, ConsistencyLevel.ONE );
 
     // as far as I understand it - these things are always inclusive of the
     // start element,
@@ -301,9 +295,9 @@ public class LegacyNonCQLRowHandler implements NonCQLRowHandler {
     while ( timeouts < 5 ) {
       try {
         if ( m_newSliceQuery ) {
-          m_cassandraRows = ( (CassandraConnection) m_keyspace.getConnection() )
-              .getClient().get_range_slices( m_colParent, m_slicePredicate,
-                  m_keyRange, ConsistencyLevel.ONE );
+          m_cassandraRows =
+              ( (CassandraConnection) m_keyspace.getConnection() ).getClient().get_range_slices( m_colParent,
+                  m_slicePredicate, m_keyRange, ConsistencyLevel.ONE );
           if ( m_cassandraRows == null || m_cassandraRows.size() == 0 ) {
             // done
             return false;
@@ -373,18 +367,15 @@ public class LegacyNonCQLRowHandler implements NonCQLRowHandler {
     }
 
     if ( timeouts == 5 ) {
-      throw new Exception(
-          BaseMessages
-              .getString( PKG,
-                  "LegacyNonCQLRowHandler.Error.MaximumNumberOfConsecutiveTimeoutsExceeded" ) ); //$NON-NLS-1$
+      throw new Exception( BaseMessages.getString( PKG,
+          "LegacyNonCQLRowHandler.Error.MaximumNumberOfConsecutiveTimeoutsExceeded" ) ); //$NON-NLS-1$
     }
 
     m_currentBatchCounter = 0;
     KeySlice row = m_cassandraRows.get( m_rowIndex );
     m_currentRowKeyValue = m_metaData.getKeyValue( row );
     if ( m_currentRowKeyValue == null ) {
-      throw new Exception( BaseMessages.getString( PKG,
-          "LegacyNonCQLRowHandler.Error.UnableToObtainAKeyValueForRow" ) ); //$NON-NLS-1$
+      throw new Exception( BaseMessages.getString( PKG, "LegacyNonCQLRowHandler.Error.UnableToObtainAKeyValueForRow" ) ); //$NON-NLS-1$
     }
 
     return true;
@@ -419,8 +410,8 @@ public class LegacyNonCQLRowHandler implements NonCQLRowHandler {
 
   protected Object m_currentRowKeyValue = null;
 
-  public Object[] getNextOutputRow( RowMetaInterface outputRowMeta )
-      throws Exception {
+  @Override
+  public Object[] getNextOutputRow( RowMetaInterface outputRowMeta ) throws Exception {
 
     if ( m_currentBatchCounter < 0 ) {
       if ( !getMoreData() ) {
@@ -477,8 +468,7 @@ public class LegacyNonCQLRowHandler implements NonCQLRowHandler {
       // break; // don't process any more
     }
 
-    if ( m_requestedCols != null
-        && m_currentBatchCounter == m_currentCols.size() ) {
+    if ( m_requestedCols != null && m_currentBatchCounter == m_currentCols.size() ) {
       // assume that we don't need to page columns when the user has
       // explicitly named the ones that they want
       m_colCount = -1;
@@ -493,10 +483,9 @@ public class LegacyNonCQLRowHandler implements NonCQLRowHandler {
     return outputRowData;
   }
 
-  private static Map<ByteBuffer, Map<String, List<Mutation>>> createThriftBatch(
-      List<Object[]> rowBatch ) {
-    Map<ByteBuffer, Map<String, List<Mutation>>> thriftBatch = new HashMap<ByteBuffer, Map<String, List<Mutation>>>(
-        rowBatch.size() );
+  private static Map<ByteBuffer, Map<String, List<Mutation>>> createThriftBatch( List<Object[]> rowBatch ) {
+    Map<ByteBuffer, Map<String, List<Mutation>>> thriftBatch =
+        new HashMap<ByteBuffer, Map<String, List<Mutation>>>( rowBatch.size() );
 
     return thriftBatch;
   }
@@ -504,9 +493,8 @@ public class LegacyNonCQLRowHandler implements NonCQLRowHandler {
   /**
    * Commit a batch.
    *
-   * @param requestingStep   the step that is requesting the rows - clients can
-   *                         use this primarily to check whether the running transformation has
-   *                         been paused or stopped (via isPaused() and isStopped())
+   * @param requestingStep   the step that is requesting the rows - clients can use this primarily to check whether the running
+   *                         transformation has been paused or stopped (via isPaused() and isStopped())
    * @param batch            the batch to commit
    * @param rowMeta          the structure of the rows being written
    * @param keyIndex         the index of the key in the rows
@@ -515,25 +503,22 @@ public class LegacyNonCQLRowHandler implements NonCQLRowHandler {
    * @param log              the log to use
    * @throws Exception if a problem occurs
    */
+  @Override
   @SuppressWarnings( "deprecation" )
-  public void commitNonCQLBatch( StepInterface requestingStep,
-      List<Object[]> batch, RowMetaInterface rowMeta, int keyIndex,
-      String colFamName, String consistencyLevel, LogChannelInterface log )
-      throws Exception {
+  public void commitNonCQLBatch( StepInterface requestingStep, List<Object[]> batch, RowMetaInterface rowMeta,
+      int keyIndex, String colFamName, String consistencyLevel, LogChannelInterface log ) throws Exception {
 
     m_requestingStep = requestingStep;
 
     // Convert the row list over to a Map of mutations
 
-    CassandraColumnMetaData famMeta = (CassandraColumnMetaData) m_keyspace
-        .getColumnFamilyMetaData( colFamName );
+    CassandraColumnMetaData famMeta = (CassandraColumnMetaData) m_keyspace.getColumnFamilyMetaData( colFamName );
 
     ValueMetaInterface keyMeta = rowMeta.getValueMeta( keyIndex );
     Map<ByteBuffer, Map<String, List<Mutation>>> thriftBatch = createThriftBatch( batch );
 
     for ( Object[] row : batch ) {
-      ByteBuffer keyBuff = famMeta.kettleValueToByteBuffer( keyMeta,
-          row[keyIndex], true );
+      ByteBuffer keyBuff = famMeta.kettleValueToByteBuffer( keyMeta, row[keyIndex], true );
 
       Map<String, List<Mutation>> mapCF = thriftBatch.get( keyBuff );
       List<Mutation> mutList = null;
@@ -558,8 +543,7 @@ public class LegacyNonCQLRowHandler implements NonCQLRowHandler {
           }
 
           Column col = new Column( famMeta.columnNameToByteBuffer( colName ) );
-          col = col.setValue( famMeta.kettleValueToByteBuffer( colMeta, row[i],
-              false ) );
+          col = col.setValue( famMeta.kettleValueToByteBuffer( colMeta, row[i], false ) );
           col = col.setTimestamp( System.currentTimeMillis() );
           ColumnOrSuperColumn cosc = new ColumnOrSuperColumn();
           cosc.setColumn( col );
@@ -593,10 +577,10 @@ public class LegacyNonCQLRowHandler implements NonCQLRowHandler {
     final Exception[] e = new Exception[1];
     final AtomicBoolean done = new AtomicBoolean( false );
     Thread t = new Thread( new Runnable() {
+      @Override
       public void run() {
         try {
-          ( (CassandraConnection) m_keyspace.getConnection() ).getClient()
-              .batch_mutate( fThriftBatch, fLevelToUse );
+          ( (CassandraConnection) m_keyspace.getConnection() ).getClient().batch_mutate( fThriftBatch, fLevelToUse );
         } catch ( Exception ex ) {
           e[0] = ex;
         } finally {
@@ -620,8 +604,7 @@ public class LegacyNonCQLRowHandler implements NonCQLRowHandler {
           } catch ( Exception ex ) {
           }
 
-          throw new Exception( BaseMessages.getString( PKG,
-              "LegacyNonCQLRowHandler.Error.TimeoutReached" ) ); //$NON-NLS-1$
+          throw new Exception( BaseMessages.getString( PKG, "LegacyNonCQLRowHandler.Error.TimeoutReached" ) ); //$NON-NLS-1$
         }
         // wait
         Thread.sleep( 100 );

@@ -530,8 +530,24 @@ public class LegacyCQLRowHandler implements CQLRowHandler {
 
     // do the columns
     List<Column> rowColumns = cassandraRow.getColumns();
+    boolean first = true;
     for ( Column aCol : rowColumns ) {
       String colName = m_metaData.getColumnName( aCol );
+
+      // the key is always first in a CQL2 result
+      if ( !m_cql3 && first ) {
+        // for CQL 2 'key' is a reserved word, so even if we create a
+        // table with a properly quoted primary key called 'key' (and,
+        // in this case, CfDef.key_alias even returns 'key' in lower case),
+        // Column will have upper cased it to KEY when we get results back
+        // from Cassandra!
+
+        if ( colName.equals( "KEY" ) ) {
+          colName = "key";
+        }
+      }
+
+      first = false;
 
       Integer outputIndex = outputFormatMap.get( colName );
       if ( outputIndex != null ) {

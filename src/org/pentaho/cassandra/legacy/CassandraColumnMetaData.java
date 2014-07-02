@@ -75,7 +75,7 @@ import org.pentaho.di.i18n.BaseMessages;
 /**
  * Class encapsulating read-only schema information for a column family. Has utility routines for converting between
  * Cassandra meta data and Kettle meta data, and for deserializing values.
- * 
+ *
  * @author Mark Hall (mhall{[at]}pentaho{[dot]}com)
  */
 public class CassandraColumnMetaData implements ColumnFamilyMetaData {
@@ -135,7 +135,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
 
   /**
    * Constructor
-   * 
+   *
    * @param keyspace
    *          the keypsace to use
    * @param columnFamily
@@ -155,7 +155,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see org.pentaho.cassandra.spi.ColumnFamilyMetaData#setKeyspace(org.pentaho. cassandra.spi.Keyspace)
    */
   @Override
@@ -165,7 +165,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see org.pentaho.cassandra.spi.ColumnFamilyMetaData#setColumnFamilyName(java .lang.String)
    */
   @Override
@@ -175,7 +175,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
 
   /**
    * Get the default validator for this column family
-   * 
+   *
    * @return the default validator
    */
   public String getDefaultValidationClass() {
@@ -211,7 +211,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
 
   /**
    * Refresh the meta data for a CQL 3 table
-   * 
+   *
    * @param conn
    *          the connection to use
    * @throws Exception
@@ -672,12 +672,6 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
 
     m_schemaDescription.append( "\n\n\tColumn metadata:" ); //$NON-NLS-1$
 
-    // dump what we have in the map so far into the schema description
-    for ( Map.Entry<String, String> e : m_columnMeta.entrySet() ) {
-      m_schemaDescription.append( "\n\tColumn name: " + e.getKey() ); //$NON-NLS-1$
-      m_schemaDescription.append( "\n\t\tColumn validator: " + e.getValue() ); //$NON-NLS-1$
-    }
-
     // additional columns
     for ( CqlRow r : rl2 ) {
       cols = r.getColumns();
@@ -719,7 +713,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
 
   /**
    * Refreshes the encapsulated meta data for the column family.
-   * 
+   *
    * @param conn
    *          the connection to cassandra to use for refreshing the meta data
    * @throws Exception
@@ -922,7 +916,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
 
   /**
    * Get a textual description of the named column family
-   * 
+   *
    * @param keyspace
    * @return
    * @throws Exception
@@ -937,7 +931,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
 
   /**
    * Return the schema overview information
-   * 
+   *
    * @return the textual description of the schema
    */
   public String getSchemaDescription() {
@@ -946,7 +940,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
 
   /**
    * Get an instance of the TimestampType Thrift type (if possible).
-   * 
+   *
    * @return an instance of TimeStampType
    */
   @SuppressWarnings( "unchecked" )
@@ -987,7 +981,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
   /**
    * Return the Cassandra column type (internal cassandra class name relative to org.apache.cassandra.db.marshal) for
    * the given Kettle column.
-   * 
+   *
    * @param vm
    *          the ValueMetaInterface for the Kettle column
    * @return the corresponding internal cassandra type.
@@ -1026,7 +1020,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
    * for column definitions. The CQL reference guide states that fully qualified (or relative to
    * org.apache.cassandra.db.marshal) class names can be used instead of CQL types - however, using these when defining
    * the key type always results in BytesType getting set for the key for some reason.
-   * 
+   *
    * @param vm
    *          the ValueMetaInterface for the Kettle column
    * @return the corresponding CQL type
@@ -1055,7 +1049,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
 
   /**
    * Static utility to decompose a Kettle value to a ByteBuffer. Note - does not check if the kettle value is null.
-   * 
+   *
    * @param vm
    *          the ValueMeta for the Kettle value
    * @param value
@@ -1186,7 +1180,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
 
   /**
    * Encode a string representation of a column name using the serializer for the default comparator.
-   * 
+   *
    * @param colName
    *          the textual column name to serialze
    * @return a ByteBuffer encapsulating the serialized column name
@@ -1266,7 +1260,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
    * is always set to "KEY" as it is possible that the key may be a composite of several columns (this can be true under
    * access via CQL 2 as well as 3 if a table has been created via the cassandra-cli or Thrift and explicitly set to
    * have a composite key)
-   * 
+   *
    * @return the key's ValueMeta
    */
   @Override
@@ -1296,7 +1290,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
   /**
    * Removes an enclosing ReversedType if necessary. ReversedType is just a wrapper around a single base type. It simply
    * reverses the comparator of the base type, so for our purposes we just need the base type.
-   * 
+   *
    * @param type
    *          type string to check
    * @return type string stripped of enclosing ReversedType (if necessary)
@@ -1360,7 +1354,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
 
   /**
    * Get the Kettle ValueMeta that corresponds to the type of the supplied cassandra column.
-   * 
+   *
    * @param colName
    *          the name of the column to get a ValueMeta for
    * @return the ValueMeta that is appropriate for the type of the supplied column.
@@ -1396,7 +1390,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
 
   /**
    * Get a list of ValueMetas corresponding to the columns in this schema
-   * 
+   *
    * @return a list of ValueMetas
    */
   @Override
@@ -1413,7 +1407,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
 
   /**
    * Get a Set of column names that are defined in the meta data for this schema
-   * 
+   *
    * @return a set of column names.
    */
   public Set<String> getColumnNames() {
@@ -1423,7 +1417,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
 
   /**
    * Returns true if the supplied column name exists in this schema.
-   * 
+   *
    * @param colName
    *          the name of the column to check.
    * @return true if the column exists in the meta data for this column family.
@@ -1437,7 +1431,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
   /**
    * Get the names of the columns that make up the key in this column family. If there is a single key column and it
    * does not have an explicit alias set then this will use the string "KEY".
-   * 
+   *
    * @return the name(s) of the columns that make up the key
    */
   @Override
@@ -1447,7 +1441,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
 
   /**
    * Return the name of this column family.
-   * 
+   *
    * @return the name of this column family.
    */
   @Override
@@ -1459,7 +1453,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
    * Return the decoded key value of a row. Assumes that the supplied row comes from the column family that this meta
    * data represents!! Note that getting the key value from a CqlRow object only works for CQL 2; In CQL3
    * CqlRow.getKey() returns an array of length zero!
-   * 
+   *
    * @param row
    *          a Cassandra row
    * @return the decoded key value
@@ -1481,7 +1475,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
   /**
    * Return the decoded key value of a row. Assumes that the supplied row comes from the column family that this meta
    * data represents!!
-   * 
+   *
    * @param row
    *          a Cassandra row
    * @return the decoded key value
@@ -1623,7 +1617,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
   /**
    * Decode the supplied column value. Uses the default validation class to decode the value if the column is not
    * explicitly defined in the schema.
-   * 
+   *
    * @param aCol
    * @return
    * @throws KettleException

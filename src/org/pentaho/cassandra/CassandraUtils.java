@@ -65,6 +65,7 @@ public class CassandraUtils {
 
   public static class ConnectionOptions {
     public static final String SOCKET_TIMEOUT = "socketTimeout"; //$NON-NLS-1$
+    public static final String MAX_LENGTH = "maxLength"; //$NON-NLS-1$
   }
 
   public static class CQLOptions {

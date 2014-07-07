@@ -121,6 +121,7 @@ public class CassandraInput extends BaseStep implements StepInterface {
         String hostS = environmentSubstitute( m_meta.getCassandraHost() );
         String portS = environmentSubstitute( m_meta.getCassandraPort() );
         String timeoutS = environmentSubstitute( m_meta.getSocketTimeout() );
+        String maxLength = environmentSubstitute( m_meta.getMaxLength() );
         String userS = m_meta.getUsername();
         String passS = m_meta.getPassword();
         if ( !Const.isEmpty( userS ) && !Const.isEmpty( passS ) ) {
@@ -140,6 +141,10 @@ public class CassandraInput extends BaseStep implements StepInterface {
 
         if ( !Const.isEmpty( timeoutS ) ) {
           opts.put( CassandraUtils.ConnectionOptions.SOCKET_TIMEOUT, timeoutS );
+        }
+
+        if ( !Const.isEmpty( maxLength ) ) {
+          opts.put( CassandraUtils.ConnectionOptions.MAX_LENGTH, maxLength );
         }
 
         if ( m_meta.getUseCQL3() ) {

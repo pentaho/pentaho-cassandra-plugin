@@ -51,12 +51,13 @@ import org.pentaho.di.trans.TransMeta;
 import org.pentaho.di.trans.step.BaseStepMeta;
 import org.pentaho.di.trans.step.StepDialogInterface;
 import org.pentaho.di.trans.step.StepMeta;
+import org.pentaho.di.ui.core.dialog.EnterSelectionDialog;
 import org.pentaho.di.ui.core.widget.TextVar;
 import org.pentaho.di.ui.trans.step.BaseStepDialog;
 
 /**
  * Dialog class for the SSTableOutput step
- * 
+ *
  * @author Rob Turner (robert{[at]}robertturner{[dot]}com{[dot]}au)
  * @author Mark Hall (mhall{[at]}pentaho{[dot]}com)
  */
@@ -92,6 +93,9 @@ public class SSTableOutputDialog extends BaseStepDialog implements StepDialogInt
   private TextVar m_bufferSizeText;
 
   private Button m_getFieldsBut;
+
+  private Label m_useCQL3Lab;
+  private Button m_useCQL3Check;
 
   public SSTableOutputDialog( Shell parent, Object in, TransMeta tr, String name ) {
 
@@ -331,7 +335,11 @@ public class SSTableOutputDialog extends BaseStepDialog implements StepDialogInt
     m_getFieldsBut.addSelectionListener( new SelectionAdapter() {
       @Override
       public void widgetSelected( SelectionEvent e ) {
-        setupFieldsCombo();
+        if ( m_useCQL3Check.getSelection() ) {
+          showEnterSelectionDialog();
+        } else {
+          setupFieldsCombo();
+        }
       }
     } );
 
@@ -348,13 +356,44 @@ public class SSTableOutputDialog extends BaseStepDialog implements StepDialogInt
     fd.left = new FormAttachment( middle, 0 );
     m_keyFieldCombo.setLayoutData( fd );
 
+    m_useCQL3Lab = new Label( shell, SWT.RIGHT );
+    props.setLook( m_useCQL3Lab );
+    m_useCQL3Lab.setText( BaseMessages.getString( PKG, "SSTableOutputDialog.UseCQL3.Label" ) ); //$NON-NLS-1$
+    fd = new FormData();
+    fd.left = new FormAttachment( 0, 0 );
+    fd.top = new FormAttachment( m_keyFieldCombo, margin );
+    fd.right = new FormAttachment( middle, -margin );
+    m_useCQL3Lab.setLayoutData( fd );
+
+    m_useCQL3Check = new Button( shell, SWT.CHECK );
+    props.setLook( m_useCQL3Check );
+    fd = new FormData();
+    fd.right = new FormAttachment( 100, 0 );
+    fd.top = new FormAttachment( m_keyFieldCombo, margin );
+    fd.left = new FormAttachment( middle, 0 );
+    m_useCQL3Check.setLayoutData( fd );
+
+    m_useCQL3Check.addSelectionListener( new SelectionAdapter() {
+      @Override
+      public void widgetSelected( SelectionEvent e ) {
+        if ( m_useCQL3Check.getSelection() ) {
+          m_getFieldsBut.setText( BaseMessages.getString( PKG, "SSTableOutputDialog.SelectFields.Button" ) ); //$NON-NLS-1$
+          m_keyFieldLab.setText( BaseMessages.getString( PKG, "SSTableOutputDialog.KeyFields.Label" ) ); //$NON-NLS-1$
+        } else {
+          m_getFieldsBut.setText( " " //$NON-NLS-1$
+              + BaseMessages.getString( PKG, "SSTableOutputDialog.GetFields.Button" ) + " " ); //$NON-NLS-1$ //$NON-NLS-2$
+          m_keyFieldLab.setText( BaseMessages.getString( PKG, "SSTableOutputDialog.KeyField.Label" ) ); //$NON-NLS-1$
+        }
+      }
+    } );
+
     // buffer size
     m_bufferSizeLab = new Label( shell, SWT.RIGHT );
     props.setLook( m_bufferSizeLab );
     m_bufferSizeLab.setText( BaseMessages.getString( PKG, "SSTableOutputDialog.BufferSize.Label" ) );
     fd = new FormData();
     fd.left = new FormAttachment( 0, 0 );
-    fd.top = new FormAttachment( m_keyFieldCombo, margin );
+    fd.top = new FormAttachment( m_useCQL3Check, margin );
     fd.right = new FormAttachment( middle, -margin );
     m_bufferSizeLab.setLayoutData( fd );
 
@@ -368,7 +407,7 @@ public class SSTableOutputDialog extends BaseStepDialog implements StepDialogInt
     m_bufferSizeText.addModifyListener( lsMod );
     fd = new FormData();
     fd.right = new FormAttachment( 100, 0 );
-    fd.top = new FormAttachment( m_keyFieldCombo, margin );
+    fd.top = new FormAttachment( m_useCQL3Check, margin );
     fd.left = new FormAttachment( middle, 0 );
     m_bufferSizeText.setLayoutData( fd );
 
@@ -470,6 +509,7 @@ public class SSTableOutputDialog extends BaseStepDialog implements StepDialogInt
     m_currentMeta.setColumnFamilyName( m_columnFamilyText.getText() );
     m_currentMeta.setKeyField( m_keyFieldCombo.getText() );
     m_currentMeta.setBufferSize( m_bufferSizeText.getText() );
+    m_currentMeta.setUseCQL3( m_useCQL3Check.getSelection() );
 
     if ( !m_originalMeta.equals( m_currentMeta ) ) {
       m_currentMeta.setChanged();
@@ -510,6 +550,83 @@ public class SSTableOutputDialog extends BaseStepDialog implements StepDialogInt
 
     if ( !Const.isEmpty( m_currentMeta.getBufferSize() ) ) {
       m_bufferSizeText.setText( m_currentMeta.getBufferSize() );
+    }
+
+    m_useCQL3Check.setSelection( m_currentMeta.getUseCQL3()   );
+
+    if ( m_useCQL3Check.getSelection() ) {
+      m_keyFieldLab.setText( BaseMessages.getString( PKG, "SSTableOutputDialog.KeyFields.Label" ) ); //$NON-NLS-1$
+      m_getFieldsBut.setText( BaseMessages.getString( PKG, "SSTableOutputDialog.GetFields.Button" ) ); //$NON-NLS-1$
+    } else {
+      m_keyFieldLab.setText( BaseMessages.getString( PKG, "SSTableOutputDialog.KeyField.Label" ) ); //$NON-NLS-1$
+      m_getFieldsBut.setText( BaseMessages.getString( PKG, "SSTableOutputDialog.GetFields.Button" ) ); //$NON-NLS-1$
+    }
+  }
+
+  protected void showEnterSelectionDialog() {
+    StepMeta stepMeta = transMeta.findStep( stepname );
+
+    String[] choices = null;
+    if ( stepMeta != null ) {
+      try {
+        RowMetaInterface row = transMeta.getPrevStepFields( stepMeta );
+
+        if ( row.size() == 0 ) {
+          MessageDialog.openError( shell, BaseMessages.getString( PKG,
+              "CassandraOutputData.Message.NoIncomingFields.Title" ), //$NON-NLS-1$
+              BaseMessages.getString( PKG, "CassandraOutputData.Message.NoIncomingFields" ) ); //$NON-NLS-1$
+
+          return;
+        }
+
+        choices = new String[row.size()];
+        for ( int i = 0; i < row.size(); i++ ) {
+          ValueMetaInterface vm = row.getValueMeta( i );
+          choices[i] = vm.getName();
+        }
+
+        EnterSelectionDialog dialog =
+            new EnterSelectionDialog( shell, choices, BaseMessages.getString( PKG,
+                "CassandraOutputDialog.SelectKeyFieldsDialog.Title" ), //$NON-NLS-1$
+                BaseMessages.getString( PKG, "CassandraOutputDialog.SelectKeyFieldsDialog.Message" ) ); //$NON-NLS-1$
+        dialog.setMulti( true );
+        if ( !Const.isEmpty( m_keyFieldCombo.getText() ) ) {
+          String current = m_keyFieldCombo.getText();
+          String[] parts = current.split( "," ); //$NON-NLS-1$
+          int[] currentSelection = new int[parts.length];
+          int count = 0;
+          for ( String s : parts ) {
+            int index = row.indexOfValue( s.trim() );
+            if ( index >= 0 ) {
+              currentSelection[count++] = index;
+            }
+          }
+
+          dialog.setSelectedNrs( currentSelection );
+        }
+
+        dialog.open();
+
+        int[] selected = dialog.getSelectionIndeces(); // SIC
+        if ( selected != null && selected.length > 0 ) {
+          StringBuilder newSelection = new StringBuilder();
+          boolean first = true;
+          for ( int i : selected ) {
+            if ( first ) {
+              newSelection.append( choices[i] );
+              first = false;
+            } else {
+              newSelection.append( "," ).append( choices[i] ); //$NON-NLS-1$
+            }
+          }
+
+          m_keyFieldCombo.setText( newSelection.toString() );
+        }
+      } catch ( KettleException ex ) {
+        MessageDialog.openError( shell, BaseMessages.getString( PKG,
+            "CassandraOutputData.Message.NoIncomingFields.Title" ), BaseMessages //$NON-NLS-1$
+            .getString( PKG, "CassandraOutputData.Message.NoIncomingFields" ) ); //$NON-NLS-1$
+      }
     }
   }
 }

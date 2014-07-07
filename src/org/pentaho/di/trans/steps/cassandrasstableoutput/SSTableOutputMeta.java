@@ -48,7 +48,7 @@ import org.w3c.dom.Node;
 
 /**
  * Provides metadata for the Cassandra SSTable output step.
- * 
+ *
  * @author Rob Turner (robert{[at]}robertturner{[dot]}com{[dot]}au)
  * @author Mark Hall (mhall{[at]}pentaho{[dot]}com)
  */
@@ -76,9 +76,12 @@ public class SSTableOutputMeta extends BaseStepMeta implements
   /** Size (MB) of write buffer */
   protected String bufferSize = "16";
 
+  /** Whether to use CQL version 3 */
+  protected boolean m_useCQL3 = false;
+
   /**
    * Get the path the the yaml file
-   * 
+   *
    * @return the path to the yaml file
    */
   public String getYamlPath() {
@@ -87,7 +90,7 @@ public class SSTableOutputMeta extends BaseStepMeta implements
 
   /**
    * Set the path the the yaml file
-   * 
+   *
    * @param path the path to the yaml file
    */
   public void setYamlPath(String path) {
@@ -96,7 +99,7 @@ public class SSTableOutputMeta extends BaseStepMeta implements
 
   /**
    * Where the SSTables are written to
-   * 
+   *
    * @return String directory
    */
   public String getDirectory() {
@@ -105,7 +108,7 @@ public class SSTableOutputMeta extends BaseStepMeta implements
 
   /**
    * Where the SSTables are written to
-   * 
+   *
    * @param directory String
    */
   public void setDirectory(String directory) {
@@ -114,7 +117,7 @@ public class SSTableOutputMeta extends BaseStepMeta implements
 
   /**
    * Set the keyspace (db) to use
-   * 
+   *
    * @param keyspace the keyspace to use
    */
   public void setCassandraKeyspace(String keyspace) {
@@ -123,7 +126,7 @@ public class SSTableOutputMeta extends BaseStepMeta implements
 
   /**
    * Get the keyspace (db) to use
-   * 
+   *
    * @return the keyspace (db) to use
    */
   public String getCassandraKeyspace() {
@@ -132,7 +135,7 @@ public class SSTableOutputMeta extends BaseStepMeta implements
 
   /**
    * Set the column family (table) to write to
-   * 
+   *
    * @param colFam the name of the column family to write to
    */
   public void setColumnFamilyName(String colFam) {
@@ -141,7 +144,7 @@ public class SSTableOutputMeta extends BaseStepMeta implements
 
   /**
    * Get the name of the column family to write to
-   * 
+   *
    * @return the name of the columm family to write to
    */
   public String getColumnFamilyName() {
@@ -150,7 +153,7 @@ public class SSTableOutputMeta extends BaseStepMeta implements
 
   /**
    * Set the incoming field to use as the key for inserts
-   * 
+   *
    * @param keyField the name of the incoming field to use as the key
    */
   public void setKeyField(String keyField) {
@@ -159,7 +162,7 @@ public class SSTableOutputMeta extends BaseStepMeta implements
 
   /**
    * Get the name of the incoming field to use as the key for inserts
-   * 
+   *
    * @return the name of the incoming field to use as the key for inserts
    */
   public String getKeyField() {
@@ -168,7 +171,7 @@ public class SSTableOutputMeta extends BaseStepMeta implements
 
   /**
    * Size (MB) of write buffer
-   * 
+   *
    * @return String
    */
   public String getBufferSize() {
@@ -177,11 +180,29 @@ public class SSTableOutputMeta extends BaseStepMeta implements
 
   /**
    * Size (MB) of write buffer
-   * 
+   *
    * @param bufferSize String
    */
   public void setBufferSize(String bufferSize) {
     this.bufferSize = bufferSize;
+  }
+
+  /**
+   * Set whether to use CQL version 3 is to be used for CQL IO mode
+   *
+   * @param cql3 true if CQL version 3 is to be used
+   */
+  public void setUseCQL3(boolean cql3) {
+    m_useCQL3 = cql3;
+  }
+
+  /**
+   * Get whether to use CQL version 3 is to be used for CQL IO mode
+   *
+   * @return true if CQL version 3 is to be used
+   */
+  public boolean getUseCQL3() {
+    return m_useCQL3;
   }
 
   @Override
@@ -229,6 +250,9 @@ public class SSTableOutputMeta extends BaseStepMeta implements
           XMLHandler.addTagValue("buffer_size_mb", bufferSize));
     }
 
+    retval.append("\n    ").append( //$NON-NLS-1$
+        XMLHandler.addTagValue("use_cql3", m_useCQL3)); //$NON-NLS-1$
+
     return retval.toString();
   }
 
@@ -240,6 +264,11 @@ public class SSTableOutputMeta extends BaseStepMeta implements
     columnFamily = XMLHandler.getTagValue(stepnode, "column_family");
     keyField = XMLHandler.getTagValue(stepnode, "key_field");
     bufferSize = XMLHandler.getTagValue(stepnode, "buffer_size_mb");
+
+    String useCQL3 = XMLHandler.getTagValue(stepnode, "use_cql3"); //$NON-NLS-1$
+    if (!Const.isEmpty(useCQL3)) {
+      m_useCQL3 = useCQL3.equalsIgnoreCase("Y"); //$NON-NLS-1$
+    }
   }
 
   public void readRep(Repository rep, ObjectId id_step,
@@ -252,6 +281,7 @@ public class SSTableOutputMeta extends BaseStepMeta implements
     columnFamily = rep.getStepAttributeString(id_step, 0, "column_family");
     keyField = rep.getStepAttributeString(id_step, 0, "key_field");
     bufferSize = rep.getStepAttributeString(id_step, 0, "buffer_size_mb");
+    m_useCQL3 = rep.getStepAttributeBoolean(id_step, 0, "use_cql3"); //$NON-NLS-1$
   }
 
   public void saveRep(Repository rep, ObjectId id_transformation,
@@ -285,6 +315,7 @@ public class SSTableOutputMeta extends BaseStepMeta implements
           bufferSize);
     }
 
+    rep.saveStepAttribute(id_transformation, id_step, 0, "use_cql3", m_useCQL3); //$NON-NLS-1$
   }
 
   public void check(List<CheckResultInterface> remarks, TransMeta transMeta,
@@ -336,7 +367,7 @@ public class SSTableOutputMeta extends BaseStepMeta implements
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see org.pentaho.di.trans.step.BaseStepMeta#getDialogClassName()
    */
   @Override

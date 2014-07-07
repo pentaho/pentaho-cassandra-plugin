@@ -15,31 +15,17 @@
   </publications>
 
   <dependencies defaultconf="default->default">
-
     <dependency org="org.eclipse.swt.win32.win32" name="x86" rev="3.3.0-v3346" transitive="false" />
     <dependency org="org.eclipse" name="jface" rev="3.3.0-I20070606-0010" transitive="false" />
-
-    <dependency org="pentaho-kettle" name="kettle-engine" rev="${dependency.kettle.revision}" transitive="false" conf="default->default"
-      changing="true" />
-    <dependency org="pentaho-kettle" name="kettle-core" rev="${dependency.kettle.revision}" transitive="false" conf="default->default"
-      changing="true" />
-    <dependency org="pentaho-kettle" name="kettle-ui-swt" rev="${dependency.kettle.revision}" transitive="false" conf="default->default"
-      changing="true" />
-
-    <dependency org="pentaho"             name="metastore"           rev="${dependency.pentaho-metastore.revision}"   changing="true" />
-
+    <dependency org="pentaho-kettle" name="kettle-engine" rev="${dependency.kettle.revision}" transitive="false" conf="default->default" changing="true" />
+    <dependency org="pentaho-kettle" name="kettle-core" rev="${dependency.kettle.revision}" transitive="false" conf="default->default" changing="true" />
+    <dependency org="pentaho-kettle" name="kettle-ui-swt" rev="${dependency.kettle.revision}" transitive="false" conf="default->default" changing="true" />
+    <dependency org="pentaho" name="metastore" rev="${dependency.pentaho-metastore.revision}"   changing="true" />
     <dependency org="com.google.guava" name="guava" rev="${dependency.guava.revision}" transitive="false" conf="default->default"  changing="false"/>
-    <dependency org="org.apache.thrift" name="libthrift" rev="${dependency.libthrift.revision}" transitive="false" conf="default->default"
-      changing="false"/>
-    <dependency org="org.apache.cassandra" name="cassandra-all" rev="${dependency.apache-cassandra.revision}" transitive="false" conf="default->default" changing="false"/>
+    <dependency org="org.apache.thrift" name="libthrift" rev="${dependency.libthrift.revision}" transitive="false" conf="default->default" changing="false"/>
+    <dependency org="org.apache.cassandra" name="cassandra-all" rev="${dependency.apache-cassandra.revision}" conf="default->default" changing="false"/>
     <dependency org="org.apache.cassandra" name="cassandra-thrift" rev="${dependency.apache-cassandra-thrift.revision}" transitive="false" conf="default->default"  changing="false"/>
-    <dependency org="org.yaml" name="snakeyaml" rev="${dependency.snakeyaml.revision}" transitive="false" conf="default->default"  changing="false"/>
-    <dependency org="org.slf4j" name="slf4j-api" rev="1.5.8" transitive="false" conf="default->default"  changing="false"/>
-    <dependency org="org.slf4j" name="slf4j-log4j12" rev="1.5.8" transitive="false" conf="default->default"  changing="false"/>
-
-    <dependency org="log4j"                    name="log4j"           rev="1.2.14" />
-
+    <dependency org="log4j" name="log4j" rev="1.2.14" />
     <dependency org="junit" name="junit" rev="4.5" conf="test->default" />
-
   </dependencies>
 </ivy-module>

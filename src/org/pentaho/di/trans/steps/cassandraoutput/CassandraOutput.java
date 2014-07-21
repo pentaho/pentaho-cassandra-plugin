@@ -441,7 +441,7 @@ public class CassandraOutput extends BaseStep implements StepInterface {
         m_nonCqlHandler.commitNonCQLBatch( this, m_nonCQLBatch, getInputRowMeta(), m_keyIndexes.get( 0 ),
             m_columnFamilyName, m_consistency, log );
       } else {
-        String compress = m_meta.getUseCompression() ? "gzip" : ""; //$NON-NLS-1$ //$NON-NLS-2$
+        String compress = m_meta.getUseCompression() ? "GZIP" : ""; //$NON-NLS-1$ //$NON-NLS-2$
         m_cqlHandler.commitCQLBatch( this, m_batchInsertCQL, compress, m_consistencyLevel, log );
       }
     } catch ( Exception e ) {

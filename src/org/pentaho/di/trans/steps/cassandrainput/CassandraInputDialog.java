@@ -76,7 +76,7 @@ import org.pentaho.di.ui.trans.steps.tableinput.SQLValuesHighlight;
 
 /**
  * Dialog class for the CassandraInput step
- * 
+ *
  * @author Mark Hall (mhall{[at]}pentaho{[dot]}com)
  * @version $Revision$
  */
@@ -87,7 +87,9 @@ public class CassandraInputDialog extends BaseStepDialog implements StepDialogIn
   private final CassandraInputMeta m_currentMeta;
   private final CassandraInputMeta m_originalMeta;
 
-  /** various UI bits and pieces for the dialog */
+  /**
+   * various UI bits and pieces for the dialog
+   */
   private Label m_stepnameLabel;
   private Text m_stepnameText;
 
@@ -118,6 +120,9 @@ public class CassandraInputDialog extends BaseStepDialog implements StepDialogIn
 
   private Label m_timeoutLab;
   private TextVar m_timeoutText;
+
+  private Label m_maxLengthLab;
+  private TextVar m_maxLengthText;
 
   private Label m_positionLab;
 
@@ -263,13 +268,39 @@ public class CassandraInputDialog extends BaseStepDialog implements StepDialogIn
     fd.left = new FormAttachment( middle, 0 );
     m_timeoutText.setLayoutData( fd );
 
+    // max length line
+    m_maxLengthLab = new Label( shell, SWT.RIGHT );
+    props.setLook( m_maxLengthLab );
+    m_maxLengthLab
+      .setText( BaseMessages.getString( PKG, "CassandraInputDialog.TransportMaxLength.Label" ) ); //$NON-NLS-1$
+    fd = new FormData();
+    fd.left = new FormAttachment( 0, 0 );
+    fd.top = new FormAttachment( m_timeoutText, margin );
+    fd.right = new FormAttachment( middle, -margin );
+    m_maxLengthLab.setLayoutData( fd );
+
+    m_maxLengthText = new TextVar( transMeta, shell, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
+    props.setLook( m_maxLengthText );
+    m_maxLengthText.addModifyListener( new ModifyListener() {
+      @Override
+      public void modifyText( ModifyEvent e ) {
+        m_maxLengthText.setToolTipText( transMeta.environmentSubstitute( m_maxLengthText.getText() ) );
+      }
+    } );
+    m_maxLengthText.addModifyListener( lsMod );
+    fd = new FormData();
+    fd.right = new FormAttachment( 100, 0 );
+    fd.top = new FormAttachment( m_timeoutText, margin );
+    fd.left = new FormAttachment( middle, 0 );
+    m_maxLengthText.setLayoutData( fd );
+
     // username line
     m_userLab = new Label( shell, SWT.RIGHT );
     props.setLook( m_userLab );
     m_userLab.setText( BaseMessages.getString( PKG, "CassandraInputDialog.User.Label" ) ); //$NON-NLS-1$
     fd = new FormData();
     fd.left = new FormAttachment( 0, 0 );
-    fd.top = new FormAttachment( m_timeoutText, margin );
+    fd.top = new FormAttachment( m_maxLengthText, margin );
     fd.right = new FormAttachment( middle, -margin );
     m_userLab.setLayoutData( fd );
 
@@ -284,7 +315,7 @@ public class CassandraInputDialog extends BaseStepDialog implements StepDialogIn
     m_userText.addModifyListener( lsMod );
     fd = new FormData();
     fd.right = new FormAttachment( 100, 0 );
-    fd.top = new FormAttachment( m_timeoutText, margin );
+    fd.top = new FormAttachment( m_maxLengthText, margin );
     fd.left = new FormAttachment( middle, 0 );
     m_userText.setLayoutData( fd );
 
@@ -418,7 +449,8 @@ public class CassandraInputDialog extends BaseStepDialog implements StepDialogIn
     // compression check box
     m_compressionLab = new Label( shell, SWT.RIGHT );
     props.setLook( m_compressionLab );
-    m_compressionLab.setText( BaseMessages.getString( PKG, "CassandraInputDialog.UseCompression.Label" ) ); //$NON-NLS-1$
+    m_compressionLab
+      .setText( BaseMessages.getString( PKG, "CassandraInputDialog.UseCompression.Label" ) ); //$NON-NLS-1$
     fd = new FormData();
     fd.left = new FormAttachment( 0, 0 );
     fd.top = new FormAttachment( m_useThriftCheck, margin );
@@ -442,7 +474,8 @@ public class CassandraInputDialog extends BaseStepDialog implements StepDialogIn
     // execute for each row
     Label executeForEachLab = new Label( shell, SWT.RIGHT );
     props.setLook( executeForEachLab );
-    executeForEachLab.setText( BaseMessages.getString( PKG, "CassandraInputDialog.ExecuteForEachRow.Label" ) ); //$NON-NLS-1$
+    executeForEachLab
+      .setText( BaseMessages.getString( PKG, "CassandraInputDialog.ExecuteForEachRow.Label" ) ); //$NON-NLS-1$
     fd = new FormData();
     fd.right = new FormAttachment( middle, -margin );
     fd.left = new FormAttachment( 0, 0 );
@@ -503,7 +536,8 @@ public class CassandraInputDialog extends BaseStepDialog implements StepDialogIn
     m_cqlLab.setLayoutData( fd );
 
     m_cqlText =
-        new StyledTextComp( transMeta, shell, SWT.MULTI | SWT.LEFT | SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL, "" ); //$NON-NLS-1$
+      new StyledTextComp( transMeta, shell, SWT.MULTI | SWT.LEFT | SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL,
+        "" ); //$NON-NLS-1$
     props.setLook( m_cqlText, props.WIDGET_STYLE_FIXED );
     m_cqlText.addModifyListener( lsMod );
     fd = new FormData();
@@ -676,7 +710,8 @@ public class CassandraInputDialog extends BaseStepDialog implements StepDialogIn
       m_outputTuplesBut.setSelection( false );
       m_outputTuplesBut.setEnabled( false );
 
-      m_outputTuplesLab.setToolTipText( BaseMessages.getString( PKG, "CassandraInputDialog.OutputTuples.TipText" ) ); //$NON-NLS-1$
+      m_outputTuplesLab
+        .setToolTipText( BaseMessages.getString( PKG, "CassandraInputDialog.OutputTuples.TipText" ) ); //$NON-NLS-1$
     } else {
       m_outputTuplesBut.setEnabled( true );
       m_outputTuplesLab.setToolTipText( "" ); //$NON-NLS-1$
@@ -687,6 +722,7 @@ public class CassandraInputDialog extends BaseStepDialog implements StepDialogIn
     meta.setCassandraHost( m_hostText.getText() );
     meta.setCassandraPort( m_portText.getText() );
     meta.setSocketTimeout( m_timeoutText.getText() );
+    meta.setMaxLength( m_maxLengthText.getText() );
     meta.setUsername( m_userText.getText() );
     meta.setPassword( m_passText.getText() );
     meta.setCassandraKeyspace( m_keyspaceText.getText() );
@@ -734,6 +770,10 @@ public class CassandraInputDialog extends BaseStepDialog implements StepDialogIn
       m_timeoutText.setText( m_currentMeta.getSocketTimeout() );
     }
 
+    if ( !Const.isEmpty( m_currentMeta.getMaxLength() ) ) {
+      m_maxLengthText.setText( m_currentMeta.getMaxLength() );
+    }
+
     if ( !Const.isEmpty( m_currentMeta.getUsername() ) ) {
       m_userText.setText( m_currentMeta.getUsername() );
     }
@@ -772,7 +812,8 @@ public class CassandraInputDialog extends BaseStepDialog implements StepDialogIn
       colnr++;
     }
     m_positionLab
-        .setText( BaseMessages.getString( PKG, "CassandraInputDialog.Position.Label", "" + linenr, "" + colnr ) ); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+      .setText( BaseMessages.getString( PKG, "CassandraInputDialog.Position.Label", "" + linenr,
+        "" + colnr ) ); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
   }
 
   private void checkPasswordVisible() {
@@ -793,8 +834,8 @@ public class CassandraInputDialog extends BaseStepDialog implements StepDialogIn
 
     if ( notOk ) {
       ShowMessageDialog smd =
-          new ShowMessageDialog( shell, SWT.ICON_WARNING | SWT.OK, title, BaseMessages.getString( PKG,
-              "CassandraInputDialog.Warning.Message.CassandraQueryContainsUnresolvedVarsFieldSubs" ) ); //$NON-NLS-1$
+        new ShowMessageDialog( shell, SWT.ICON_WARNING | SWT.OK, title, BaseMessages.getString( PKG,
+          "CassandraInputDialog.Warning.Message.CassandraQueryContainsUnresolvedVarsFieldSubs" ) ); //$NON-NLS-1$
       smd.open();
     }
 
@@ -811,23 +852,24 @@ public class CassandraInputDialog extends BaseStepDialog implements StepDialogIn
     oneMeta.setExecuteForEachIncomingRow( false );
 
     if ( !checkForUnresolved( oneMeta, BaseMessages.getString( PKG,
-        "CassandraInputDialog.Warning.Message.CassandraQueryContainsUnresolvedVarsFieldSubs.PreviewTitle" ) ) ) { //$NON-NLS-1$
+      "CassandraInputDialog.Warning.Message.CassandraQueryContainsUnresolvedVarsFieldSubs.PreviewTitle" ) ) ) {
+      //$NON-NLS-1$
       return;
     }
 
     TransMeta previewMeta =
-        TransPreviewFactory.generatePreviewTransformation( transMeta, oneMeta, m_stepnameText.getText() );
+      TransPreviewFactory.generatePreviewTransformation( transMeta, oneMeta, m_stepnameText.getText() );
 
     EnterNumberDialog numberDialog =
-        new EnterNumberDialog( shell, props.getDefaultPreviewSize(), BaseMessages.getString( PKG,
-            "CassandraInputDialog.PreviewSize.DialogTitle" ), //$NON-NLS-1$
-            BaseMessages.getString( PKG, "CassandraInputDialog.PreviewSize.DialogMessage" ) ); //$NON-NLS-1$
+      new EnterNumberDialog( shell, props.getDefaultPreviewSize(), BaseMessages.getString( PKG,
+        "CassandraInputDialog.PreviewSize.DialogTitle" ), //$NON-NLS-1$
+        BaseMessages.getString( PKG, "CassandraInputDialog.PreviewSize.DialogMessage" ) ); //$NON-NLS-1$
 
     int previewSize = numberDialog.open();
     if ( previewSize > 0 ) {
       TransPreviewProgressDialog progressDialog =
-          new TransPreviewProgressDialog( shell, previewMeta, new String[] { m_stepnameText.getText() },
-              new int[] { previewSize } );
+        new TransPreviewProgressDialog( shell, previewMeta, new String[] { m_stepnameText.getText() },
+          new int[] { previewSize } );
       progressDialog.open();
 
       Trans trans = progressDialog.getTrans();
@@ -836,17 +878,17 @@ public class CassandraInputDialog extends BaseStepDialog implements StepDialogIn
       if ( !progressDialog.isCancelled() ) {
         if ( trans.getResult() != null && trans.getResult().getNrErrors() > 0 ) {
           EnterTextDialog etd =
-              new EnterTextDialog( shell, BaseMessages.getString( PKG, "System.Dialog.PreviewError.Title" ), //$NON-NLS-1$
-                  BaseMessages.getString( PKG, "System.Dialog.PreviewError.Message" ), //$NON-NLS-1$
-                  loggingText, true );
+            new EnterTextDialog( shell, BaseMessages.getString( PKG, "System.Dialog.PreviewError.Title" ), //$NON-NLS-1$
+              BaseMessages.getString( PKG, "System.Dialog.PreviewError.Message" ), //$NON-NLS-1$
+              loggingText, true );
           etd.setReadOnly();
           etd.open();
         }
       }
       PreviewRowsDialog prd =
-          new PreviewRowsDialog( shell, transMeta, SWT.NONE, m_stepnameText.getText(), progressDialog
-              .getPreviewRowsMeta( m_stepnameText.getText() ),
-              progressDialog.getPreviewRows( m_stepnameText.getText() ), loggingText );
+        new PreviewRowsDialog( shell, transMeta, SWT.NONE, m_stepnameText.getText(), progressDialog
+          .getPreviewRowsMeta( m_stepnameText.getText() ),
+          progressDialog.getPreviewRows( m_stepnameText.getText() ), loggingText );
       prd.open();
     }
   }
@@ -874,8 +916,8 @@ public class CassandraInputDialog extends BaseStepDialog implements StepDialogIn
         }
 
         conn =
-            CassandraUtils.getCassandraConnection( hostS, Integer.parseInt( portS ), userS, passS,
-                ConnectionFactory.Driver.LEGACY_THRIFT, opts );
+          CassandraUtils.getCassandraConnection( hostS, Integer.parseInt( portS ), userS, passS,
+            ConnectionFactory.Driver.LEGACY_THRIFT, opts );
 
         conn.setHosts( hostS );
         conn.setDefaultPort( Integer.parseInt( portS ) );
@@ -883,12 +925,13 @@ public class CassandraInputDialog extends BaseStepDialog implements StepDialogIn
         conn.setPassword( passS );
         kSpace = conn.getKeyspace( keyspaceS );
       } catch ( InvalidRequestException ire ) {
-        logError( BaseMessages.getString( PKG, "CassandraInputDialog.Error.ProblemGettingSchemaInfo.Message" ) //$NON-NLS-1$
+        logError(
+          BaseMessages.getString( PKG, "CassandraInputDialog.Error.ProblemGettingSchemaInfo.Message" ) //$NON-NLS-1$
             + ":\n\n" + ire.why, ire ); //$NON-NLS-1$
         new ErrorDialog( shell, BaseMessages.getString( PKG,
-            "CassandraInputDialog.Error.ProblemGettingSchemaInfo.Title" ), //$NON-NLS-1$
-            BaseMessages.getString( PKG, "CassandraInputDialog.Error.ProblemGettingSchemaInfo.Message" ) //$NON-NLS-1$
-                + ":\n\n" + ire.why, ire ); //$NON-NLS-1$
+          "CassandraInputDialog.Error.ProblemGettingSchemaInfo.Title" ), //$NON-NLS-1$
+          BaseMessages.getString( PKG, "CassandraInputDialog.Error.ProblemGettingSchemaInfo.Message" ) //$NON-NLS-1$
+            + ":\n\n" + ire.why, ire ); //$NON-NLS-1$
         return;
       }
 
@@ -899,25 +942,29 @@ public class CassandraInputDialog extends BaseStepDialog implements StepDialogIn
 
       if ( !kSpace.columnFamilyExists( colFam ) ) {
         throw new Exception(
-            BaseMessages
-                .getString(
-                    PKG,
-                    "CassandraInput.Error.NonExistentColumnFamily", m_useCQL3Check.getSelection() ? CassandraUtils.removeQuotes( colFam ) : colFam, keyspaceS ) ); //$NON-NLS-1$
+          BaseMessages
+            .getString(
+              PKG,
+              "CassandraInput.Error.NonExistentColumnFamily",
+              m_useCQL3Check.getSelection() ? CassandraUtils.removeQuotes( colFam ) : colFam,
+              keyspaceS ) ); //$NON-NLS-1$
       }
 
       CassandraColumnMetaData cassMeta = (CassandraColumnMetaData) kSpace.getColumnFamilyMetaData( colFam );
 
       String schemaDescription = cassMeta.getSchemaDescription();
       ShowMessageDialog smd =
-          new ShowMessageDialog( shell, SWT.ICON_INFORMATION | SWT.OK, "Schema info", schemaDescription, true ); //$NON-NLS-1$
+        new ShowMessageDialog( shell, SWT.ICON_INFORMATION | SWT.OK, "Schema info", schemaDescription,
+          true ); //$NON-NLS-1$
       smd.open();
     } catch ( Exception e1 ) {
-      logError( BaseMessages.getString( PKG, "CassandraInputDialog.Error.ProblemGettingSchemaInfo.Message" ) //$NON-NLS-1$
+      logError(
+        BaseMessages.getString( PKG, "CassandraInputDialog.Error.ProblemGettingSchemaInfo.Message" ) //$NON-NLS-1$
           + ":\n\n" + e1.getMessage(), e1 ); //$NON-NLS-1$
       new ErrorDialog( shell,
-          BaseMessages.getString( PKG, "CassandraInputDialog.Error.ProblemGettingSchemaInfo.Title" ), //$NON-NLS-1$
-          BaseMessages.getString( PKG, "CassandraInputDialog.Error.ProblemGettingSchemaInfo.Message" ) //$NON-NLS-1$
-              + ":\n\n" + e1.getMessage(), e1 ); //$NON-NLS-1$
+        BaseMessages.getString( PKG, "CassandraInputDialog.Error.ProblemGettingSchemaInfo.Title" ), //$NON-NLS-1$
+        BaseMessages.getString( PKG, "CassandraInputDialog.Error.ProblemGettingSchemaInfo.Message" ) //$NON-NLS-1$
+          + ":\n\n" + e1.getMessage(), e1 ); //$NON-NLS-1$
     } finally {
       if ( conn != null ) {
         try {

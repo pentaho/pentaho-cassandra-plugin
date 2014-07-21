@@ -449,7 +449,7 @@ public class LegacyKeyspace implements Keyspace {
     for ( int i = 0; i < rowMeta.size(); i++ ) {
       ValueMetaInterface vm = rowMeta.getValueMeta( i );
       if ( !keyIndexes.contains( vm.getName() ) && !cassandraMeta.columnExistsInSchema( vm.getName() ) ) {
-        String alter2 = alter + vm.getName() + " " //$NON-NLS-1$
+        String alter2 = alter + CassandraUtils.cql3MixedCaseQuote( vm.getName() ) + " " //$NON-NLS-1$
             + CassandraUtils.getCQLTypeForValueMeta( vm ) + ";"; //$NON-NLS-1$
 
         log.logBasic( "Exeucting: " + alter2 ); //$NON-NLS-1$

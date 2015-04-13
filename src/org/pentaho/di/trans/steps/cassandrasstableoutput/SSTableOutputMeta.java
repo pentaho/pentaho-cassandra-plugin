@@ -52,7 +52,7 @@ import org.w3c.dom.Node;
  * @author Rob Turner (robert{[at]}robertturner{[dot]}com{[dot]}au)
  * @author Mark Hall (mhall{[at]}pentaho{[dot]}com)
  */
-@Step(id = "SSTableOutput", image = "Cassandra.png", name = "SSTable Output", description = "Writes to a filesystem directory as a Cassandra SSTable", categoryDescription = "Big Data")
+@Step(id = "SSTableOutput", image = "Cassandra.svg", name = "SSTable Output", description = "Writes to a filesystem directory as a Cassandra SSTable", categoryDescription = "Big Data")
 public class SSTableOutputMeta extends BaseStepMeta implements
     StepMetaInterface {
 

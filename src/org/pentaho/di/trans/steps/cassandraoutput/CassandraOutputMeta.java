@@ -55,7 +55,7 @@ import org.w3c.dom.Node;
  * 
  * @author Mark Hall (mhall{[at]}pentaho{[dot]}com)
  */
-@Step(id = "CassandraOutput", image = "Cassandra.png", name = "Cassandra Output", description = "Writes to a Cassandra table", categoryDescription = "Big Data")
+@Step(id = "CassandraOutput", image = "Cassandraout.svg", name = "Cassandra Output", description = "Writes to a Cassandra table", categoryDescription = "Big Data")
 public class CassandraOutputMeta extends BaseStepMeta implements
     StepMetaInterface {
 

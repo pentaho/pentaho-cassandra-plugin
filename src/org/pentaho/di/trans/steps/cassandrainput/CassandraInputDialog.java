@@ -22,7 +22,6 @@
 
 package org.pentaho.di.trans.steps.cassandrainput;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -56,18 +55,19 @@ import org.pentaho.cassandra.legacy.CassandraColumnMetaData;
 import org.pentaho.cassandra.spi.Connection;
 import org.pentaho.cassandra.spi.Keyspace;
 import org.pentaho.di.core.Const;
-import org.pentaho.di.core.util.StringUtil;
 import org.pentaho.di.i18n.BaseMessages;
 import org.pentaho.di.trans.Trans;
 import org.pentaho.di.trans.TransMeta;
 import org.pentaho.di.trans.TransPreviewFactory;
 import org.pentaho.di.trans.step.BaseStepMeta;
 import org.pentaho.di.trans.step.StepDialogInterface;
+import org.pentaho.di.ui.core.PropsUI;
 import org.pentaho.di.ui.core.dialog.EnterNumberDialog;
 import org.pentaho.di.ui.core.dialog.EnterTextDialog;
 import org.pentaho.di.ui.core.dialog.ErrorDialog;
 import org.pentaho.di.ui.core.dialog.PreviewRowsDialog;
 import org.pentaho.di.ui.core.dialog.ShowMessageDialog;
+import org.pentaho.di.ui.core.widget.PasswordTextVar;
 import org.pentaho.di.ui.core.widget.StyledTextComp;
 import org.pentaho.di.ui.core.widget.TextVar;
 import org.pentaho.di.ui.trans.dialog.TransPreviewProgressDialog;
@@ -306,12 +306,6 @@ public class CassandraInputDialog extends BaseStepDialog implements StepDialogIn
 
     m_userText = new TextVar( transMeta, shell, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     props.setLook( m_userText );
-    m_userText.addModifyListener( new ModifyListener() {
-      @Override
-      public void modifyText( ModifyEvent e ) {
-        m_userText.setToolTipText( transMeta.environmentSubstitute( m_userText.getText() ) );
-      }
-    } );
     m_userText.addModifyListener( lsMod );
     fd = new FormData();
     fd.right = new FormAttachment( 100, 0 );
@@ -329,17 +323,8 @@ public class CassandraInputDialog extends BaseStepDialog implements StepDialogIn
     fd.right = new FormAttachment( middle, -margin );
     m_passLab.setLayoutData( fd );
 
-    m_passText = new TextVar( transMeta, shell, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
+    m_passText = new PasswordTextVar( transMeta, shell, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     props.setLook( m_passText );
-    m_passText.setEchoChar( '*' );
-    // If the password contains a variable, don't hide it.
-    m_passText.getTextWidget().addModifyListener( new ModifyListener() {
-      @Override
-      public void modifyText( ModifyEvent e ) {
-        checkPasswordVisible();
-      }
-    } );
-
     m_passText.addModifyListener( lsMod );
 
     fd = new FormData();
@@ -538,7 +523,7 @@ public class CassandraInputDialog extends BaseStepDialog implements StepDialogIn
     m_cqlText =
       new StyledTextComp( transMeta, shell, SWT.MULTI | SWT.LEFT | SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL,
         "" ); //$NON-NLS-1$
-    props.setLook( m_cqlText, props.WIDGET_STYLE_FIXED );
+    props.setLook( m_cqlText, PropsUI.WIDGET_STYLE_FIXED );
     m_cqlText.addModifyListener( lsMod );
     fd = new FormData();
     fd.left = new FormAttachment( 0, 0 );
@@ -814,17 +799,6 @@ public class CassandraInputDialog extends BaseStepDialog implements StepDialogIn
     m_positionLab
       .setText( BaseMessages.getString( PKG, "CassandraInputDialog.Position.Label", "" + linenr,
         "" + colnr ) ); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-  }
-
-  private void checkPasswordVisible() {
-    String password = m_passText.getText();
-    ArrayList<String> list = new ArrayList<String>();
-    StringUtil.getUsedVariables( password, list, true );
-    if ( list.size() == 0 ) {
-      m_passText.setEchoChar( '*' );
-    } else {
-      m_passText.setEchoChar( '\0' ); // show everything
-    }
   }
 
   private boolean checkForUnresolved( CassandraInputMeta meta, String title ) {

@@ -22,7 +22,6 @@
 
 package org.pentaho.di.trans.steps.cassandraoutput;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -60,7 +59,6 @@ import org.pentaho.di.core.Props;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.row.RowMetaInterface;
 import org.pentaho.di.core.row.ValueMetaInterface;
-import org.pentaho.di.core.util.StringUtil;
 import org.pentaho.di.i18n.BaseMessages;
 import org.pentaho.di.trans.TransMeta;
 import org.pentaho.di.trans.step.BaseStepMeta;
@@ -69,6 +67,7 @@ import org.pentaho.di.trans.step.StepMeta;
 import org.pentaho.di.ui.core.dialog.EnterSelectionDialog;
 import org.pentaho.di.ui.core.dialog.ErrorDialog;
 import org.pentaho.di.ui.core.dialog.ShowMessageDialog;
+import org.pentaho.di.ui.core.widget.PasswordTextVar;
 import org.pentaho.di.ui.core.widget.TextVar;
 import org.pentaho.di.ui.trans.step.BaseStepDialog;
 
@@ -335,12 +334,6 @@ public class CassandraOutputDialog extends BaseStepDialog implements StepDialogI
 
     m_userText = new TextVar( transMeta, wConnectionComp, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     props.setLook( m_userText );
-    m_userText.addModifyListener( new ModifyListener() {
-      @Override
-      public void modifyText( ModifyEvent e ) {
-        m_userText.setToolTipText( transMeta.environmentSubstitute( m_userText.getText() ) );
-      }
-    } );
     m_userText.addModifyListener( lsMod );
     fd = new FormData();
     fd.right = new FormAttachment( 100, 0 );
@@ -358,17 +351,8 @@ public class CassandraOutputDialog extends BaseStepDialog implements StepDialogI
     fd.right = new FormAttachment( middle, -margin );
     m_passLab.setLayoutData( fd );
 
-    m_passText = new TextVar( transMeta, wConnectionComp, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
+    m_passText = new PasswordTextVar( transMeta, wConnectionComp, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     props.setLook( m_passText );
-    m_passText.setEchoChar( '*' );
-    // If the password contains a variable, don't hide it.
-    m_passText.getTextWidget().addModifyListener( new ModifyListener() {
-      @Override
-      public void modifyText( ModifyEvent e ) {
-        checkPasswordVisible();
-      }
-    } );
-
     m_passText.addModifyListener( lsMod );
 
     fd = new FormData();
@@ -1514,17 +1498,6 @@ public class CassandraOutputDialog extends BaseStepDialog implements StepDialogI
     m_useThriftIOCheck.setEnabled( c.supportsNonCQL() );
     if ( !c.supportsNonCQL() ) {
       m_useThriftIOCheck.setSelection( false );
-    }
-  }
-
-  private void checkPasswordVisible() {
-    String password = m_passText.getText();
-    ArrayList<String> list = new ArrayList<String>();
-    StringUtil.getUsedVariables( password, list, true );
-    if ( list.size() == 0 ) {
-      m_passText.setEchoChar( '*' );
-    } else {
-      m_passText.setEchoChar( '\0' ); // show everything
     }
   }
 }

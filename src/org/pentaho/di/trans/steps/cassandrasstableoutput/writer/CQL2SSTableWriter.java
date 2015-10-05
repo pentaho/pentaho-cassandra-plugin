@@ -35,22 +35,22 @@ package org.pentaho.di.trans.steps.cassandrasstableoutput.writer;
  *
  */
 
-import static org.apache.cassandra.utils.ByteBufferUtil.bytes;
+import org.apache.cassandra.db.marshal.AsciiType;
+import org.apache.cassandra.dht.IPartitioner;
+import org.apache.cassandra.dht.Murmur3Partitioner;
+import org.apache.cassandra.io.sstable.SSTableSimpleUnsortedWriter;
+import org.apache.cassandra.utils.ByteBufferUtil;
+import org.pentaho.di.core.Const;
+import org.pentaho.di.core.exception.KettleException;
+import org.pentaho.di.i18n.BaseMessages;
 
 import java.io.File;
-import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.Date;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.apache.cassandra.db.marshal.AsciiType;
-import org.apache.cassandra.dht.IPartitioner;
-import org.apache.cassandra.dht.Murmur3Partitioner;
-import org.apache.cassandra.dht.RandomPartitioner;
-import org.apache.cassandra.io.sstable.SSTableSimpleUnsortedWriter;
-import org.pentaho.di.core.Const;
-import org.pentaho.di.core.exception.KettleException;
+import static org.apache.cassandra.utils.ByteBufferUtil.bytes;
 
 /**
  * Outputs Cassandra SSTables (sorted-string tables) to a directory.
@@ -63,6 +63,7 @@ class CQL2SSTableWriter extends AbstractSSTableWriter {
   private String keyField;
   private String partitionerClassName;
   private SSTableSimpleUnsortedWriter writer;
+  protected static final Class<?> PKG = CQL2SSTableWriter.class;
 
   /**
    * Initialization. Creates target directory if needed and establishes the writer
@@ -82,11 +83,18 @@ class CQL2SSTableWriter extends AbstractSSTableWriter {
       }
 
       writer =
-          new SSTableSimpleUnsortedWriter( new File( getDirectory() ), (IPartitioner) partitionerClass.newInstance(), getKeyspace(),
-              getColumnFamily(), AsciiType.instance, null, getBufferSize() );
+        getSsTableSimpleUnsortedWriter( new File( getDirectory() ), partitionerClass, getKeyspace(), getColumnFamily(),
+          getBufferSize() );
     } catch ( Throwable t ) {
-      throw new KettleException( "Failed to create SSTableSimpleUnsortedWriter", t );
+      throw new KettleException( BaseMessages.getString( PKG, "SSTableOutput.Error.WriterCreation" ), t );
     }
+  }
+
+  SSTableSimpleUnsortedWriter getSsTableSimpleUnsortedWriter( File file, Class partitionerClass, String keyspace,
+                                                              String columnFamily, int bufferSize )
+    throws InstantiationException, IllegalAccessException {
+    return new SSTableSimpleUnsortedWriter( file, (IPartitioner) partitionerClass.newInstance(),
+      keyspace, columnFamily, AsciiType.instance, null, bufferSize );
   }
 
   /**
@@ -143,7 +151,10 @@ class CQL2SSTableWriter extends AbstractSSTableWriter {
     this.partitionerClassName = partitionerClassName;
   }
 
-  private static ByteBuffer valueToBytes( Object val ) throws Exception {
+  static ByteBuffer valueToBytes( Object val ) throws Exception {
+    if ( val == null ) {
+      return ByteBufferUtil.EMPTY_BYTE_BUFFER;
+    }
     if ( val instanceof String ) {
       return bytes( (String) val );
     }

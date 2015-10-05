@@ -30,6 +30,7 @@ import java.util.Map;
 
 import org.pentaho.di.core.Const;
 import org.pentaho.di.core.exception.KettleException;
+import org.pentaho.di.core.logging.LogChannelInterface;
 import org.pentaho.di.core.row.RowMetaInterface;
 import org.pentaho.di.i18n.BaseMessages;
 import org.pentaho.di.trans.Trans;
@@ -84,7 +85,12 @@ public class SSTableOutput extends BaseStep implements StepInterface {
     }
     logBasic( BaseMessages.getString( SSTableOutputMeta.PKG, "SSTableOutput.Message.YAMLPath", yamlPath ) );
 
-    File outputDir = new File( new URI( directory ) );
+    File outputDir;
+    if ( Const.isEmpty( directory ) ) {
+      outputDir = new File( System.getProperty( "java.io.tmpdir" ) );
+    } else {
+      outputDir = new File( new URI( directory ) );
+    }
 
     if ( !outputDir.exists() ) {
       if ( !outputDir.mkdirs() ) {
@@ -120,28 +126,32 @@ public class SSTableOutput extends BaseStep implements StepInterface {
     try {
       builder.withBufferSize( Integer.parseInt( bufferSize ) );
     } catch ( NumberFormatException nfe ) {
-      // TODO localize the message
-      logBasic( "Cannot determine buffer size to use, default settings will be used" );
+      logBasic( BaseMessages.getString( SSTableOutputMeta.PKG, "SSTableOutput.Message.DefaultBufferSize" ) );
     }
 
     writer = builder.build();
     try {
-      // Workaround JVM exit caused by org.apache.cassandra.config.DatabaseDescriptor in case of any issue with
-      // cassandra config. Do this by preventing JVM from exit for writer initialization time or give user a clue at
-      // least.
-      try {
-        System.setSecurityManager( new NoSystemExitDelegatingSecurityManager( sm ) );
-      } catch ( SecurityException se ) {
-        log.logError( "Could not setup protection from JVM exit caused by invalid cassandra config.", se );
-      }
+      disableSystemExit( sm, log );
       writer.init();
     } catch ( Exception e ) {
-      throw new RuntimeException( "Cassandra config is invalid. Check log for details.", e );
+      throw new RuntimeException( BaseMessages.getString( SSTableOutputMeta.PKG, "SSTableOutput.Error.InvalidConfig" ),
+        e );
     } finally {
       // Restore original security manager if needed
       if ( System.getSecurityManager() != sm ) {
         System.setSecurityManager( sm );
       }
+    }
+  }
+
+  void disableSystemExit( SecurityManager sm, LogChannelInterface log) {
+    // Workaround JVM exit caused by org.apache.cassandra.config.DatabaseDescriptor in case of any issue with
+    // cassandra config. Do this by preventing JVM from exit for writer initialization time or give user a clue at
+    // least.
+    try {
+      System.setSecurityManager( new NoSystemExitDelegatingSecurityManager( sm ) );
+    } catch ( SecurityException se ) {
+      log.logError( BaseMessages.getString( SSTableOutputMeta.PKG, "SSTableOutput.Error.JVMExitProtection" ), se );
     }
   }
 
@@ -158,7 +168,8 @@ public class SSTableOutput extends BaseStep implements StepInterface {
       try {
         initialize( (SSTableOutputMeta) smi );
       } catch ( Exception e ) {
-        throw new KettleException( "Writer initialization failed.", e );
+        throw new KettleException(
+          BaseMessages.getString( SSTableOutputMeta.PKG, "SSTableOutput.Error.WriterInitFailed" ), e );
       }
     }
 

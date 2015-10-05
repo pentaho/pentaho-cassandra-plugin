@@ -35,6 +35,7 @@ import org.eclipse.swt.layout.FormAttachment;
 import org.eclipse.swt.layout.FormData;
 import org.eclipse.swt.layout.FormLayout;
 import org.eclipse.swt.widgets.Button;
+import org.eclipse.swt.widgets.DirectoryDialog;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.FileDialog;
@@ -54,6 +55,8 @@ import org.pentaho.di.trans.step.StepMeta;
 import org.pentaho.di.ui.core.dialog.EnterSelectionDialog;
 import org.pentaho.di.ui.core.widget.TextVar;
 import org.pentaho.di.ui.trans.step.BaseStepDialog;
+
+import java.io.File;
 
 /**
  * Dialog class for the SSTableOutput step
@@ -191,9 +194,12 @@ public class SSTableOutputDialog extends BaseStepDialog implements StepDialogInt
         filterNames[1] = BaseMessages.getString( PKG, "System.FileType.AllFiles" );
 
         dialog.setFilterExtensions( extensions );
+        dialog.setFilterNames( filterNames );
 
         if ( dialog.open() != null ) {
-          m_yamlText.setText( dialog.getFilterPath() + System.getProperty( "file.separator" ) + dialog.getFileName() );
+          String path = dialog.getFilterPath() + System.getProperty( "file.separator" ) + dialog.getFileName();
+          path = new File( path ).toURI().toString();
+          m_yamlText.setText( path );
         }
       }
     } );
@@ -233,21 +239,12 @@ public class SSTableOutputDialog extends BaseStepDialog implements StepDialogInt
     m_directoryBut.addSelectionListener( new SelectionAdapter() {
       @Override
       public void widgetSelected( SelectionEvent e ) {
-        FileDialog dialog = new FileDialog( shell, SWT.OPEN );
-        String[] extensions = null;
-        String[] filterNames = null;
-
-        extensions = new String[1];
-        filterNames = new String[1];
-
-        extensions[0] = "*";
-        filterNames[0] = BaseMessages.getString( PKG, "System.FileType.AllFiles" );
-
-        dialog.setFilterExtensions( extensions );
+        DirectoryDialog dialog = new DirectoryDialog( shell, SWT.OPEN );
 
         if ( dialog.open() != null ) {
-          m_directoryText.setText( dialog.getFilterPath() + System.getProperty( "file.separator" )
-              + dialog.getFileName() );
+          String path = dialog.getFilterPath();
+          path = new File( path ).toURI().toString();
+          m_directoryText.setText( path );
         }
       }
     } );

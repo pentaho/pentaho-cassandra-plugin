@@ -41,10 +41,17 @@ class CQL3SSTableWriter extends AbstractSSTableWriter {
   @Override
   public void init() throws Exception {
     //Allow column family to be reloaded
+    purgeSchemaInstance();
+    writer = getCQLSSTableWriter();
+  }
+
+  void purgeSchemaInstance() {
     Schema.instance.purge( new CFMetaData( getKeyspace(), getColumnFamily(), null, null ) );
-    writer =
-        CQLSSTableWriter.builder().inDirectory( getDirectory() ).forTable( buildCreateColumnFamilyCQLStatement() )
-            .using( buildInsertCQLStatement() ).withBufferSizeInMB( getBufferSize() ).build();
+  }
+
+  CQLSSTableWriter getCQLSSTableWriter() {
+    return CQLSSTableWriter.builder().inDirectory( getDirectory() ).forTable( buildCreateColumnFamilyCQLStatement() )
+      .using( buildInsertCQLStatement() ).withBufferSizeInMB( getBufferSize() ).build();
   }
 
   @Override
@@ -63,7 +70,7 @@ class CQL3SSTableWriter extends AbstractSSTableWriter {
     this.rowMeta = rowMeta;
   }
 
-  private String buildCreateColumnFamilyCQLStatement() {
+  String buildCreateColumnFamilyCQLStatement() {
     StringBuilder tableColumnsSpecification = new StringBuilder();
     for ( ValueMetaInterface valueMeta : rowMeta.getValueMetaList() ) {
       tableColumnsSpecification.append( CassandraUtils.cql3MixedCaseQuote( valueMeta.getName() ) ).append( " " )
@@ -76,7 +83,7 @@ class CQL3SSTableWriter extends AbstractSSTableWriter {
     return String.format( "CREATE TABLE %s.%s (%s);", getKeyspace(), getColumnFamily(), tableColumnsSpecification );
   }
 
-  private String buildInsertCQLStatement() {
+  String buildInsertCQLStatement() {
     Joiner columnsJoiner = Joiner.on( "\",\"" ).skipNulls();
     Joiner valuesJoiner = Joiner.on( "," ).skipNulls();
     String[] columnNames = rowMeta.getFieldNames();

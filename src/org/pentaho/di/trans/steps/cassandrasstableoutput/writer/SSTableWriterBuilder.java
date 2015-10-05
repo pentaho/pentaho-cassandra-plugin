@@ -23,40 +23,57 @@
 package org.pentaho.di.trans.steps.cassandrasstableoutput.writer;
 
 import org.apache.cassandra.config.YamlConfigurationLoader;
+import org.apache.cassandra.exceptions.ConfigurationException;
 import org.pentaho.di.core.row.RowMetaInterface;
 
 /**
- * //TODO Add some javadoc or remove this comment
+ * Builder is used to create specific SSTableWriter depending mostly on CQL version
  *
  * @author Pavel Sakun
  */
 public class SSTableWriterBuilder {
-  /** Path to cassandra YAML config */
+  /**
+   * Path to cassandra YAML config
+   */
   private String configFilePath;
 
-  /** CQL Version */
+  /**
+   * CQL Version
+   */
   private int cqlVersion;
 
-  /** The directory to output to */
+  /**
+   * The directory to output to
+   */
   private String directory;
 
-  /** The keyspace to use */
+  /**
+   * The keyspace to use
+   */
   private String keyspace;
 
-  /** The name of the column family (table) to write to */
+  /**
+   * The name of the column family (table) to write to
+   */
   private String columnFamily;
 
-  /** The key field used to determine unique keys (IDs) for rows */
+  /**
+   * The key field used to determine unique keys (IDs) for rows
+   */
   private String keyField;
 
-  /** Size (MB) of write buffer */
+  /**
+   * Size (MB) of write buffer
+   */
   private int bufferSize;
 
-  /** Input row meta */
+  /**
+   * Input row meta
+   */
   private RowMetaInterface rowMeta;
 
-  public SSTableWriterBuilder withConfig(String configFilePath) {
-    if ( ! configFilePath.startsWith( "file:" )) {
+  public SSTableWriterBuilder withConfig( String configFilePath ) {
+    if ( !configFilePath.startsWith( "file:" ) ) {
       this.configFilePath = "file:" + configFilePath;
     } else {
       this.configFilePath = configFilePath;
@@ -64,52 +81,55 @@ public class SSTableWriterBuilder {
     return this;
   }
 
-  public SSTableWriterBuilder withDirectory(String outputDirectoryPath) {
+  public SSTableWriterBuilder withDirectory( String outputDirectoryPath ) {
     this.directory = outputDirectoryPath;
     return this;
   }
 
-  public SSTableWriterBuilder withKeyspace(String keyspaceName) {
+  public SSTableWriterBuilder withKeyspace( String keyspaceName ) {
     this.keyspace = keyspaceName;
     return this;
   }
-  public SSTableWriterBuilder withColumnFamily(String columnFamilyName) {
+
+  public SSTableWriterBuilder withColumnFamily( String columnFamilyName ) {
     this.columnFamily = columnFamilyName;
     return this;
   }
-  public SSTableWriterBuilder withKeyField(String keyField) {
+
+  public SSTableWriterBuilder withKeyField( String keyField ) {
     this.keyField = keyField;
     return this;
   }
-  public SSTableWriterBuilder withBufferSize(int bufferSize) {
+
+  public SSTableWriterBuilder withBufferSize( int bufferSize ) {
     this.bufferSize = bufferSize;
     return this;
   }
 
-  public SSTableWriterBuilder withRowMeta(RowMetaInterface rowMeta) {
+  public SSTableWriterBuilder withRowMeta( RowMetaInterface rowMeta ) {
     this.rowMeta = rowMeta;
     return this;
   }
 
-  public SSTableWriterBuilder withCqlVersion(int cqlVersion) {
+  public SSTableWriterBuilder withCqlVersion( int cqlVersion ) {
     this.cqlVersion = cqlVersion;
     return this;
   }
 
   public AbstractSSTableWriter build() throws Exception {
-    System.setProperty("cassandra.config", configFilePath);
+    System.setProperty( "cassandra.config", configFilePath );
     AbstractSSTableWriter result;
 
-    if (cqlVersion == 3) {
-      CQL3SSTableWriter writer = new CQL3SSTableWriter();
+    if ( cqlVersion == 3 ) {
+      CQL3SSTableWriter writer = getCql3SSTableWriter();
 
       writer.setRowMeta( rowMeta );
 
       result = writer;
     } else {
-      CQL2SSTableWriter writer = new CQL2SSTableWriter();
+      CQL2SSTableWriter writer = getCql2SSTableWriter();
 
-      writer.setPartitionerClassName( new YamlConfigurationLoader().loadConfig().partitioner );
+      writer.setPartitionerClassName( getPartitionerClass() );
 
       result = writer;
     }
@@ -120,5 +140,17 @@ public class SSTableWriterBuilder {
     result.setBufferSize( bufferSize );
 
     return result;
+  }
+
+  String getPartitionerClass() throws ConfigurationException {
+    return new YamlConfigurationLoader().loadConfig().partitioner;
+  }
+
+  CQL2SSTableWriter getCql2SSTableWriter() {
+    return new CQL2SSTableWriter();
+  }
+
+  CQL3SSTableWriter getCql3SSTableWriter() {
+    return new CQL3SSTableWriter();
   }
 }

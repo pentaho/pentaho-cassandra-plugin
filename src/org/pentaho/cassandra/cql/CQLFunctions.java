@@ -1,0 +1,66 @@
+/*! ******************************************************************************
+ *
+ * Pentaho Data Integration
+ *
+ * Copyright (C) 2002-2015 by Pentaho : http://www.pentaho.com
+ *
+ *******************************************************************************
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ ******************************************************************************/
+package org.pentaho.cassandra.cql;
+
+/**
+ * @author Tatsiana_Kasiankova
+ * 
+ */
+public enum CQLFunctions {
+  TOKEN( "org.apache.cassandra.db.marshal.LongType" ), COUNT( "org.apache.cassandra.db.marshal.LongType" ), WRITETIME(
+      "org.apache.cassandra.db.marshal.LongType" ), TTL( "org.apache.cassandra.db.marshal.Int32Type" ), DATEOF(
+      "org.apache.cassandra.db.marshal.TimestampType" ), UNIXTIMESTAMPOF( "org.apache.cassandra.db.marshal.LongType" );
+
+  private final String validator;
+
+  private CQLFunctions( String validator ) {
+    this.validator = validator;
+  }
+
+  /**Returns the Cassandra validator class for the function.
+   * @return the Cassandra validator class for the function.
+   */
+  public String getValidator() {
+    return validator;
+  }
+
+  /** Returns CQLFunction by the string representation of it.
+   * @param input the string representation of CQLFunction
+   * @return the CQLFunction if the input string contains this one, otherwise null.
+   */
+  public static CQLFunctions getFromString( String input ) {
+    if ( input != null ) {
+      input = input.trim().toUpperCase();
+      for ( CQLFunctions fs : CQLFunctions.values() ) {
+        if ( isFunction( fs, input ) ) {
+          return fs;
+        }
+      }
+    }
+    return null;
+  }
+
+  private static boolean isFunction( CQLFunctions fs, String input ) {
+    return input.equals( fs.name() );
+  }
+
+}

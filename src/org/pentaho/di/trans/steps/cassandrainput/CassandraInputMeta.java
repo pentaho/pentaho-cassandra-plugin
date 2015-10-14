@@ -30,6 +30,8 @@ import java.util.Map;
 import org.eclipse.swt.widgets.Shell;
 import org.pentaho.cassandra.CassandraUtils;
 import org.pentaho.cassandra.ConnectionFactory;
+import org.pentaho.cassandra.cql.CQLUtils;
+import org.pentaho.cassandra.cql.Selector;
 import org.pentaho.cassandra.spi.ColumnFamilyMetaData;
 import org.pentaho.cassandra.spi.Connection;
 import org.pentaho.cassandra.spi.Keyspace;
@@ -697,15 +699,16 @@ public class CassandraInputMeta extends BaseStepMeta implements StepMetaInterfac
       fromIndex = subQ.toLowerCase().indexOf( "from" ); //$NON-NLS-1$
 
       // now determine if its a select */FIRST or specific set of columns
-      String[] cols = null;
-      if ( subQ.indexOf( "*" ) >= 0 ) { //$NON-NLS-1$
+      Selector[] cols = null;
+      if ( subQ.indexOf( "*" ) >= 0 && subQ.toLowerCase().indexOf( "count(*)") == -1) { //$NON-NLS-1$
         // nothing special to do here
         m_isSelectStarQuery = true;
       } else {
         m_isSelectStarQuery = false;
         // String colsS = subQ.substring(subQ.indexOf('\''), fromIndex);
         String colsS = subQ.substring( 0, fromIndex );
-        cols = colsS.split( "," ); //$NON-NLS-1$
+        //Parse select expression to get selectors: columns and functions
+        cols = CQLUtils.getColumnsInSelect( colsS, getUseCQL3() ); //$NON-NLS-1$
       }
 
       // try and connect to get meta data
@@ -786,9 +789,8 @@ public class CassandraInputMeta extends BaseStepMeta implements StepMetaInterfac
           // specific columns requested
           if ( cols != null ) {
             m_specificCols = new ArrayList<String>();
-            for ( String col : cols ) {
-              col = cleanseColName( col, getUseCQL3() );
-              m_specificCols.add( col );
+            for ( Selector col : cols ) {
+              m_specificCols.add( col.getColumnName() );
             }
           }
           return;
@@ -802,17 +804,15 @@ public class CassandraInputMeta extends BaseStepMeta implements StepMetaInterfac
           }
         } else {
           m_specificCols = new ArrayList<String>();
-          // do the individual columns
-          for ( String col : cols ) {
-            col = cleanseColName( col, getUseCQL3() );
-            if ( !colMeta.columnExistsInSchema( col ) ) {
+          for ( Selector col : cols ) {
+            if ( !col.isFunction() && !colMeta.columnExistsInSchema( col.getColumnName() ) ) {
               // this one isn't known about in about in the schema - we can
               // output it
               // as long as its values satisfy the default validator...
               logBasic(
                 BaseMessages.getString( PKG, "CassandraInput.Info.DefaultColumnValidator", col ) ); //$NON-NLS-1$
             }
-            ValueMetaInterface vm = colMeta.getValueMetaForColumn( col );
+            ValueMetaInterface vm = colMeta.getValueMeta( col );
             rowMeta.addValueMeta( vm );
           }
         }

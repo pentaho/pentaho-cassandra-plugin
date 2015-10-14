@@ -64,12 +64,16 @@ import org.apache.cassandra.thrift.CqlRow;
 import org.apache.cassandra.thrift.KeySlice;
 import org.apache.cassandra.thrift.KsDef;
 import org.pentaho.cassandra.CassandraUtils;
+import org.pentaho.cassandra.cql.CQLFunctions;
+import org.pentaho.cassandra.cql.Partitioners;
+import org.pentaho.cassandra.cql.Selector;
 import org.pentaho.cassandra.spi.ColumnFamilyMetaData;
 import org.pentaho.cassandra.spi.Keyspace;
 import org.pentaho.di.core.Const;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.row.ValueMeta;
 import org.pentaho.di.core.row.ValueMetaInterface;
+import org.pentaho.di.core.row.value.ValueMetaBase;
 import org.pentaho.di.i18n.BaseMessages;
 
 /**
@@ -108,6 +112,9 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
   /** Map of column names + cassandra types (decoder classes) */
   protected Map<String, String> m_columnMeta;
 
+  /** Map of functions names + cassandra types (decoder classes) */
+  private Map<String, String> m_functionMeta;
+
   /**
    * Convenience map that stores ValueMeta objects that correspond to the columns
    */
@@ -132,6 +139,11 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
    * serialize/deserialize)
    */
   protected static AbstractType<java.util.Date> s_cachedTimestampType;
+
+  /**
+   * CQL to get partitioner.
+   */
+  private static final String SELECT_PARTITIONER_LOCAL = "SELECT partitioner FROM system.local WHERE key='local'";
 
   /**
    * Constructor
@@ -233,7 +245,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
     m_columnMeta = new LinkedHashMap<String, String>();
     m_indexedVals = new HashMap<String, HashSet<Object>>();
     m_keyColumnNames = new ArrayList<String>();
-
+    m_functionMeta = extractFunctionMeta( conn, c, z );
     m_schemaDescription = new StringBuffer();
     String columnFamNameAdditionalInfo = ""; //$NON-NLS-1$
 
@@ -1389,6 +1401,54 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
   }
 
   /**
+   * Get the Kettle ValueMeta that corresponds to the type of the supplied cassandra element: column of function.
+   * 
+   * @param selector the selector that corresponds either to Cassandra column name or Cassandra function to get the
+   * Kettle type
+   * 
+   * @return the Kettle type for the selector
+   */
+  public ValueMetaInterface getValueMeta( Selector selector ) {
+    String type = null;
+    ValueMetaInterface vm = null;
+    if ( !selector.isFunction() ) {
+      // m_columnMeta contains exactly column_name values - please see the method
+      // org.pentaho.cassandra.legacy.CassandraColumnMetaData.refreshCQL3(CassandraConnection)
+      // cqlQ = "select column_name, validator, index_name from system.schema_columns where keyspace_name='"
+      type = m_columnMeta.get( selector.getColumnName() );
+    } else {
+      type = m_functionMeta.get( selector.getFunction().name() );
+    }
+
+    if ( type == null ) {
+      type = m_defaultValidationClass;
+    } else {
+      // entry from lookup
+      if ( m_kettleColumnMeta.containsKey( selector.getColumnName() ) ) {
+
+        ValueMetaInterface valueMetaInterface = m_kettleColumnMeta.get( selector.getColumnName() ).clone();
+        if ( selector.getAlias() != null ) {
+          valueMetaInterface.setName( selector.getAlias() );
+        }
+        return valueMetaInterface;
+      }
+    }
+
+    int kettleType = cassandraTypeToKettleType( type );
+
+    vm = new ValueMetaBase( selector.getAlias() != null ? selector.getAlias() : selector.getColumnName(), kettleType );
+    if ( m_indexedVals.containsKey( selector.getColumnName() ) ) {
+      // make it indexed!
+      vm.setStorageType( ValueMetaInterface.STORAGE_TYPE_INDEXED );
+      HashSet<Object> indexedV = m_indexedVals.get( selector.getColumnName() );
+      Object[] iv = indexedV.toArray();
+      vm.setIndex( iv );
+    }
+
+    return vm;
+  }
+
+  /**
    * Get a list of ValueMetas corresponding to the columns in this schema
    *
    * @return a list of ValueMetas
@@ -1615,36 +1675,73 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
   }
 
   /**
-   * Decode the supplied column value. Uses the default validation class to decode the value if the column is not
-   * explicitly defined in the schema.
-   *
-   * @param aCol
-   * @return
-   * @throws KettleException
+   * Decode the supplied thrift column value for the cassandra column.
+   * 
+   * @param aCol the thrift column
+   * @return decoded value
+   * @throws KettleException if any exception occurs
    */
   public Object getColumnValue( Column aCol ) throws KettleException {
     String colName = getColumnName( aCol );
-    String decoder = null;
+    String decoder = getDecoder( colName );
+    return getColumnValue( aCol, decoder, colName );
+  }
 
-    decoder = m_columnMeta.get( colName );
-
-    if ( decoder == null ) {
-      // column is not in schema so use default validator
-      decoder = m_defaultValidationClass;
+  /**
+   * Decode the supplied thrift column value for the element: column of function.
+   *
+   * @param aCol the thrift column
+   * @return decoded value
+   * @throws KettleException if any exception occurs
+   */
+  public Object getColumnValue( Column aCol, Selector element ) throws KettleException {
+    if ( element != null ) {
+      String decoder = getDecoder( element );
+      return getColumnValue( aCol, decoder, element.getColumnName() );
+    } else {
+      return getColumnValue( aCol );
     }
+  }
 
-    String fullDecoder = decoder;
-    if ( decoder.indexOf( '(' ) > 0 ) {
-      decoder = decoder.substring( 0, decoder.indexOf( '(' ) );
-    }
+  /**
+   * Decode the supplied thrift column value.
+   * 
+   * @param aCol
+   *          the thrift column
+   * @param decoder
+   *          the decoder
+   * @param name
+   *          the name of the column
+   * @return the value of the column
+   * @throws KettleException
+   *           if any exception occurs
+   */
+  private Object getColumnValue( Column aCol, String decoder, String name ) throws KettleException {
+    Object result = null;
 
-    if ( decoder.indexOf( "BytesType" ) > 0 ) { //$NON-NLS-1$
-      return aCol.getValue(); // raw bytes
+    if ( isDecoderOfByteType( decoder ) ) {
+      return aCol.getValue();
     }
 
     ByteBuffer valueBuff = aCol.bufferForValue();
-    Object result = getColumnValue( valueBuff, fullDecoder );
+    result = getColumnValue( valueBuff, decoder );
 
+    result = processResultFoIndexedValues( name, result );
+    return result;
+
+  }
+
+  /**
+   * Processes indexed values for the column.
+   * 
+   * @param colName
+   *          the name of the column
+   * @param colValue
+   *          the value of the column
+   * @return the column value if no indexed values are found, otherwise the index of the value in index array or null.
+   */
+  private Object processResultFoIndexedValues( String colName, Object colValue ) {
+    Object result = colValue;
     // check for indexed values
     if ( m_indexedVals.containsKey( colName ) ) {
       HashSet<Object> vals = m_indexedVals.get( colName );
@@ -1665,7 +1762,102 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
         result = null; // any values that are not indexed are unknown...
       }
     }
-
     return result;
   }
+
+  /**Get decoder for element depending on if this is a column or function.
+   * @param element the selector of element
+   * @return the decoder
+   */
+  private String getDecoder( Selector element ) {
+    String decoder = null;
+    if ( !element.isFunction() ) {
+      decoder = m_columnMeta.get( element.getColumnName() );
+    } else {
+      decoder = m_functionMeta.get( element.getFunction().name() );
+    }
+    if ( decoder == null ) {
+      // column is not in schema so use default validator
+      decoder = m_defaultValidationClass;
+    }
+    return decoder;
+  }
+
+  /**Get decoder for the named column.
+   * @param colName the name of the column
+   * @return the decoder
+   */
+  private String getDecoder( String colName ) {
+    String decoder = null;
+    decoder = m_columnMeta.get( colName );
+    if ( decoder == null ) {
+      // column is not in schema so use default validator
+      decoder = m_defaultValidationClass;
+    }
+    return decoder;
+  }
+
+  private boolean isDecoderOfByteType( String decoder ) {
+    if ( decoder.indexOf( '(' ) > 0 ) {
+      decoder = decoder.substring( 0, decoder.indexOf( '(' ) );
+    }
+    if ( decoder.indexOf( "BytesType" ) > 0 ) {
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Returns the partitioner.
+   * 
+   * @param conn
+   *          the connection to use
+   * @param c
+   *          the consistency level to use
+   * @param z
+   *          the compression to use
+   * @return the partitioner
+   * @throws Exception
+   *           if if a problem occurs
+   */
+  private String getPartitioner( CassandraConnection conn, ConsistencyLevel c, Compression z ) throws Exception {
+    String partitioner = null;
+    byte[] data = SELECT_PARTITIONER_LOCAL.getBytes( Charset.forName( "UTF-8" ) );
+    CqlResult result = conn.m_client.execute_cql3_query( ByteBuffer.wrap( data ), z, c );
+    // only one row
+    CqlRow row = result.getRows().get( 0 );
+    Column column = row.getColumns().get( 0 );
+    partitioner = UTF8Type.instance.compose( column.bufferForValue() ).toString();
+    return partitioner;
+  }
+
+  /**
+   * Returns the mapping of the cassandra functions to its validators.
+   * 
+   * @param conn
+   *          the connection to use
+   * @param c
+   *          the consistency level to use
+   * @param z
+   *          the compression to use
+   * @return the mapping of the cassandra function to its validator
+   * @throws Exception
+   *           if a problem occurs
+   */
+  private Map<String, String> extractFunctionMeta( CassandraConnection conn, ConsistencyLevel c, Compression z )
+    throws Exception {
+    Map<String, String> meta = new HashMap<String, String>();
+    for ( CQLFunctions f : CQLFunctions.values() ) {
+      switch ( f ) {
+        case TOKEN:
+          meta.put( f.name(), Partitioners.getFromString( getPartitioner( conn, c, z ) ).getType() );
+          break;
+        default:
+          meta.put( f.name(), f.getValidator() );
+          break;
+      }
+    }
+    return meta;
+  }
+
 }

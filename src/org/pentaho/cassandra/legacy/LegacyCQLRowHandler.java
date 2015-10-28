@@ -38,6 +38,9 @@ import org.apache.cassandra.thrift.ConsistencyLevel;
 import org.apache.cassandra.thrift.CqlResult;
 import org.apache.cassandra.thrift.CqlRow;
 import org.pentaho.cassandra.CassandraUtils;
+import static org.pentaho.cassandra.cql.CQLUtils.getColumnsInSelect;
+import static org.pentaho.cassandra.cql.CQLUtils.getSelectExpression;
+import org.pentaho.cassandra.cql.Selector;
 import org.pentaho.cassandra.spi.CQLRowHandler;
 import org.pentaho.cassandra.spi.Keyspace;
 import org.pentaho.di.core.Const;
@@ -80,6 +83,8 @@ public class LegacyCQLRowHandler implements CQLRowHandler {
   protected boolean m_outputTuples;
 
   protected StepInterface m_requestingStep;
+  
+  private Selector[] selectorList;
 
   @Override
   public boolean supportsCQLVersion( int cqlMajVersion ) {
@@ -257,6 +262,9 @@ public class LegacyCQLRowHandler implements CQLRowHandler {
     m_metaData = (CassandraColumnMetaData) m_keyspace.getColumnFamilyMetaData( colFamName );
 
     m_isSelectStarQuery = ( cqlQuery.toLowerCase().indexOf( "select *" ) >= 0 ); //$NON-NLS-1$
+    if ( !m_isSelectStarQuery ) {
+      selectorList = getColumnsInSelect( getSelectExpression( cqlQuery ), m_cql3 );
+    }
 
     m_outputTuples = outputTuples;
     m_requestingStep = requestingStep;
@@ -551,7 +559,7 @@ public class LegacyCQLRowHandler implements CQLRowHandler {
 
       Integer outputIndex = outputFormatMap.get( colName );
       if ( outputIndex != null ) {
-        Object colValue = m_metaData.getColumnValue( aCol );
+        Object colValue = m_metaData.getColumnValue( aCol, getSelector( outputIndex ) );
         if ( colValue instanceof Collection || colValue instanceof Map ) {
           if ( primaryCollection == null ) {
             if ( colValue instanceof Collection ) {
@@ -602,4 +610,20 @@ public class LegacyCQLRowHandler implements CQLRowHandler {
 
     return outputRowData;
   }
+
+  /**
+   * Returns selector by index from the list of selectors if this is not null,
+   * 
+   * @param index
+   *          the index of element
+   * @return selector
+   */
+  private Selector getSelector( int index ) {
+    Selector selector = null;
+    if ( selectorList != null ) {
+      selector = selectorList[index];
+    }
+    return selector;
+  }
+
 }

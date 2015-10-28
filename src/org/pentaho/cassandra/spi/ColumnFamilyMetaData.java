@@ -24,6 +24,7 @@ package org.pentaho.cassandra.spi;
 
 import java.util.List;
 
+import org.pentaho.cassandra.cql.Selector;
 import org.pentaho.di.core.row.ValueMetaInterface;
 
 /**
@@ -119,4 +120,13 @@ public interface ColumnFamilyMetaData {
    *         column family
    */
   List<ValueMetaInterface> getValueMetasForSchema();
+
+  /**
+   * Return the appropriate Kettle type for the selector depending on id this is column or function. If the column is
+   * not explicitly named in the column family schema or the function is incorrect named then the Kettle type
+   * equivalent to the default validation class should be returned.
+   * @param selector the selector that corresponds either to Cassandra column name or Cassandra function to get the Kettle type
+   * @return the Kettle type for the selector
+   */
+  ValueMetaInterface getValueMeta( Selector selector );
 }

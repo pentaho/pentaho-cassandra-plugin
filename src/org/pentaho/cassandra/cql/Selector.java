@@ -26,10 +26,12 @@ package org.pentaho.cassandra.cql;
  * 
  */
 /**
- * A representation of a selector in a selection list of a select clause. 
- *
+ * A representation of a selector in a selection list of a select clause.
+ * 
  */
 public class Selector {
+
+  private static final String OPEN_BRACKET = "(";
 
   private String columnName;
 
@@ -68,28 +70,37 @@ public class Selector {
   }
 
   /**
-   * @return the alias
+   * Returns the alias of the selector
+   * 
+   * @return alias the alias of the selector
    */
   public String getAlias() {
     return alias;
   }
 
   /**
-   * @return the columnName
+   * Returns the column name for the selector if this is a simple Cassandra column. If the selector is a function,
+   * returns the function with arguments and besides the function name will be normalized.
+   * 
+   * @return the column name in the selector
    */
   public String getColumnName() {
-    return columnName;
+    return isFunction() ? getNomalizedFunctionName( columnName, getFunction().isCaseSensitive() ) : columnName;
   }
 
   /**
-   * @return the function
+   * Returns the function for the selector
+   * 
+   * @return function the function for the selector
    */
   public CQLFunctions getFunction() {
     return function;
   }
 
   /**
-   * @return the isFunction
+   * Indicates if the selector is a function or not
+   * 
+   * @return isFunction the indicator if the selector is a function or not
    */
   public boolean isFunction() {
     return isFunction;
@@ -104,6 +115,34 @@ public class Selector {
   public String toString() {
     return "Selector [columnName=" + columnName + ", alias=" + alias + ", function=" + function + ", isFunction="
         + isFunction + "]";
+  }
+
+  /**
+   * Depending on indicator <code>isCaseSensetive</code>
+   * <P>
+   * Converts the name of the function to lower case if <code>isCaseSensetive = false</code>, nothing changes if
+   * <code>isCaseSensetive = true.</code>
+   * 
+   * @param function
+   *          the function whose name is to be changed
+   * @param isCaseSensetive
+   *          the indicator to define if the name of the function should be processed as case sensitive or not.
+   * @return the function with normalized name
+   */
+  private String getNomalizedFunctionName( String function, boolean isCaseSensetive ) {
+    String nName = null;
+    if ( function != null ) {
+      nName = isCaseSensetive ? function : function.toLowerCase();
+      StringBuffer newName = new StringBuffer( function.length() );
+      int ind = function.indexOf( OPEN_BRACKET );
+      if ( ind != -1 ) {
+        nName = function.substring( 0, ind ).trim();
+        nName =
+            newName.append( isCaseSensetive ? nName : nName.toLowerCase() ).append( function.substring( ind ) )
+                .toString();
+      }
+    }
+    return nName;
   }
 
 }

@@ -36,7 +36,7 @@ import org.pentaho.di.core.Const;
  */
 /**
  * Utilities for CQL processing.
- *
+ * 
  */
 public class CQLUtils {
 
@@ -47,8 +47,9 @@ public class CQLUtils {
   private static final Pattern ADD_WHITESPACE_AFTER_COMMA_PATTERN = Pattern.compile( "(,)(?=[\\da-zA-Z])" );
   private static final Pattern DOUBLE_QUOTES_PATTERN = Pattern.compile( "\"" );
   private static final Pattern QUOTE_PATTERN = Pattern.compile( "\'" );
+  private static final Pattern NUMERIC_PATTERN = Pattern.compile( "\\d+" );
 
-  private static final String DISTING = "disting";
+  private static final String DISTINCT = "distinct";
   private static final String FIRST = "first";
   private static final String OPEN_BRACKET = "(";
   private static final String CLOSE_BRACKET = ")";
@@ -56,11 +57,11 @@ public class CQLUtils {
   private static final String COMMA = ",";
   private static final String SELECT = "select";
   private static final String FROM = "from";
-  private static final String SPACE = " ";
+  private static final String WHITESPACE = " ";
 
   private enum SpecificNames {
 
-    COUNT( "count(*)", "count(1)" );
+    COUNT( "count", "count(*)", "count(1)" );
 
     List<String> variants;
 
@@ -103,7 +104,7 @@ public class CQLUtils {
       } else {
         // The part of the function, we need one more part
         StringBuffer sb = new StringBuffer();
-        sb.append( possibleSelectorElement ).append( COMMA ).append( SPACE );
+        sb.append( possibleSelectorElement ).append( COMMA ).append( WHITESPACE );
         int indexFunctionEnd = selectExpression.indexOf( CLOSE_BRACKET );
         possibleEnd = selectExpression.indexOf( COMMA, indexFunctionEnd );
         possibleSelectorElement =
@@ -120,9 +121,12 @@ public class CQLUtils {
     return sList;
   }
 
-  /**Extract select expression from the select clause. Assumes that any kettle variables have been
-   * already substituted in the query.
-   * @param cqlExpresssion the select clause
+  /**
+   * Extract select expression from the select clause. Assumes that any kettle variables have been already substituted
+   * in the query.
+   * 
+   * @param cqlExpresssion
+   *          the select clause
    * @return the select expression. Null if select clause is empty or null.
    */
   public static String getSelectExpression( String cqlExpresssion ) {
@@ -135,20 +139,28 @@ public class CQLUtils {
         selectExpression = cqlExpresssion.substring( start, end );
         int firstInd = selectExpression.toLowerCase().indexOf( FIRST );
         if ( firstInd > -1 ) {
-          selectExpression = selectExpression.substring( firstInd + FIRST.length() );
+          selectExpression = selectExpression.substring( firstInd + FIRST.length() ).trim();
+          int nearWsIndex = selectExpression.indexOf( WHITESPACE );
+          String numberPart = selectExpression.substring( 0, nearWsIndex );
+          selectExpression = isNumeric( numberPart ) ? selectExpression.substring( nearWsIndex ) : selectExpression;
         }
-        int distInd = selectExpression.toLowerCase().indexOf( DISTING );
+        int distInd = selectExpression.toLowerCase().indexOf( DISTINCT );
         if ( distInd > -1 ) {
-          selectExpression = selectExpression.substring( firstInd + DISTING.length() ).trim();
+          selectExpression = selectExpression.substring( distInd + DISTINCT.length() ).trim();
         }
+        selectExpression = selectExpression.trim();
       }
     }
     return selectExpression;
   }
 
-  /**Returns the array of selectors
-   * @param selectExpression the CQL select expression
-   * @param isCql3 the indicator of CQL3 version used
+  /**
+   * Returns the array of selectors
+   * 
+   * @param selectExpression
+   *          the CQL select expression
+   * @param isCql3
+   *          the indicator of CQL3 version used
    * @return the array of selectors
    */
   public static Selector[] getColumnsInSelect( String selectExpression, boolean isCql3 ) {
@@ -190,7 +202,7 @@ public class CQLUtils {
       name = name.substring( 0, idx ).trim();
     }
     if ( !isFunction( element ) ) {
-      getNormalizedForCql3Name( name, isCql3 );
+      name = getNormalizedForCql3Name( name, isCql3 );
     }
     name = cleanQuotes( name );
     return name;
@@ -206,10 +218,10 @@ public class CQLUtils {
     return alias;
   }
 
-  static String cleanUnnecessaryWhitespaces( String input ) {
+  private static String cleanUnnecessaryWhitespaces( String input ) {
     String cleaned = null;
     if ( input != null ) {
-      cleaned = WHITESPACE_PATTERN.matcher( input.trim() ).replaceAll( SPACE );
+      cleaned = WHITESPACE_PATTERN.matcher( input.trim() ).replaceAll( WHITESPACE );
       cleaned = WHITESPACE_IN_FUNCTION_OPEN_BRACKET_PATTERN.matcher( cleaned.trim() ).replaceAll( "$2" );
       cleaned = WHITESPACE_IN_FUNCTION_CLOSE_BRACKET_PATTERN.matcher( cleaned.trim() ).replaceAll( "$2" );
       cleaned = UNNECESSARY_WHITESPACE_BEFORE_COMMA_PATTERN.matcher( cleaned.trim() ).replaceAll( "$2" );
@@ -217,7 +229,7 @@ public class CQLUtils {
     return cleaned;
   }
 
-  static String addWhitespaceAfterComa( String input ) {
+  private static String addWhitespaceAfterComa( String input ) {
     String cleaned = null;
     if ( input != null ) {
       cleaned = ADD_WHITESPACE_AFTER_COMMA_PATTERN.matcher( input.trim() ).replaceAll( "$1 " );
@@ -225,9 +237,12 @@ public class CQLUtils {
     return cleaned;
   }
 
-  /**Clean input from all unnecessary whitespaces: double and etc., before comma, inside functions and etc.
-   * Add whitespace after comma if it is absent.
-   * @param input the input string
+  /**
+   * Clean input from all unnecessary whitespaces: double and etc., before comma, inside functions and etc. Add
+   * whitespace after comma if it is absent.
+   * 
+   * @param input
+   *          the input string
    * @return cleaned string
    */
   public static String clean( String input ) {
@@ -239,7 +254,14 @@ public class CQLUtils {
     return cleaned;
   }
 
-  static String cleanQuotes( String input ) {
+  /**
+   * Clean input of quotes and double quotes
+   * 
+   * @param input
+   *          the input string
+   * @return cleaned string
+   */
+  public static String cleanQuotes( String input ) {
     String cleaned = null;
     if ( input != null ) {
       cleaned = DOUBLE_QUOTES_PATTERN.matcher( input ).replaceAll( "" );
@@ -248,11 +270,11 @@ public class CQLUtils {
     return cleaned;
   }
 
-  static boolean isQuoted( String input ) {
+  private static boolean isQuoted( String input ) {
     return DOUBLE_QUOTES_PATTERN.matcher( input ).find() || QUOTE_PATTERN.matcher( input ).find();
   }
 
-  static String getGeneralVariantForSpecificNames( String sName ) {
+  private static String getGeneralVariantForSpecificNames( String sName ) {
     String gName = null;
     if ( sName != null ) {
       String name = SpecificNames.getName( sName );
@@ -268,4 +290,13 @@ public class CQLUtils {
     }
     return normalizedName;
   }
+
+  private static boolean isNumeric( String input ) {
+    boolean result = false;
+    if ( input != null ) {
+      result = NUMERIC_PATTERN.matcher( input ).matches();
+    }
+    return result;
+  }
+
 }

@@ -587,6 +587,10 @@ public class LegacyNonCQLRowHandler implements NonCQLRowHandler {
       try {
         levelToUse = ConsistencyLevel.valueOf( consistencyLevel );
       } catch ( IllegalArgumentException ex ) {
+        if ( log != null && log.isDebug() ) {
+          log.logDebug( BaseMessages.getString( PKG, "LegacyCQLRowHandler.Error.NoValidConsistencyLevelSpecified",
+              consistencyLevel, levelToUse.toString() ) );
+        }
       }
     }
 

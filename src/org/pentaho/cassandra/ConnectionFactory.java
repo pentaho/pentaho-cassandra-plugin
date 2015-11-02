@@ -39,12 +39,11 @@ public class ConnectionFactory {
     return s_singleton;
   }
 
-  public Connection getConnection(Driver d) {
-    switch (d) {
-    case LEGACY_THRIFT:
-      return new CassandraConnection();
+  public Connection getConnection( Driver d ) {
+    switch ( d ) {
+      case LEGACY_THRIFT:
+        return new CassandraConnection();
     }
-
     return null;
   }
 }

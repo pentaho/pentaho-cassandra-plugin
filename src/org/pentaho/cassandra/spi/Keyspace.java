@@ -42,7 +42,7 @@ public interface Keyspace {
    * @param conn the connection to use
    * @throws Exception if a problem occurs
    */
-  void setConnection(Connection conn) throws Exception;
+  void setConnection( Connection conn ) throws Exception;
 
   /**
    * Get the current connection
@@ -57,43 +57,50 @@ public interface Keyspace {
    * @param keyspaceName the name of the keyspace to use
    * @throws Exception if a problem occurs
    */
-  void setKeyspace(String keyspaceName) throws Exception;
+  void setKeyspace( String keyspaceName ) throws Exception;
 
   /**
    * Set any special options for keyspace operations (e.g. timeouts etc.)
    * 
    * @param options the options to use. Can be null.
    */
-  void setOptions(Map<String, String> options);
+  void setOptions( Map<String, String> options );
 
   /**
    * Execute a CQL statement.
    * 
-   * @param cql the CQL to execute
-   * @param compression the compression to use (GZIP or NONE)
-   * @param consistencyLevel the consistency level to use
-   * @param log log to write to (may be null)
-   * @throws UnsupportedOperationException if CQL is not supported by the
-   *           underlying driver
-   * @throws Exception if a problem occurs
+   * @param cql
+   *          the CQL to execute
+   * @param compression
+   *          the compression to use (GZIP or NONE)
+   * @param consistencyLevel
+   *          the consistency level to use
+   * @param log
+   *          log to write to (may be null)
+   * @throws UnsupportedOperationException
+   *           if CQL is not supported by the underlying driver
+   * @throws Exception
+   *           if a problem occurs
    */
-  void executeCQL(String cql, String compresson, String consistencyLevel,
-      LogChannelInterface log) throws UnsupportedOperationException, Exception;
+  void executeCQL( String cql, String compresson, String consistencyLevel, LogChannelInterface log )
+    throws UnsupportedOperationException, Exception;
 
   /**
    * Create a keyspace.
    * 
-   * @param keyspaceName the name of the keyspace
-   * @param options additional options (see
-   *          http://www.datastax.com/docs/1.0/configuration
-   *          /storage_configuration)
-   * @param log log to write to (may be null)
-   * @throws UnsupportedOperationException if the underlying driver does not
-   *           support creating keyspaces
-   * @throws Exception if a problem occurs
+   * @param keyspaceName
+   *          the name of the keyspace
+   * @param options
+   *          additional options (see http://www.datastax.com/docs/1.0/configuration /storage_configuration)
+   * @param log
+   *          log to write to (may be null)
+   * @throws UnsupportedOperationException
+   *           if the underlying driver does not support creating keyspaces
+   * @throws Exception
+   *           if a problem occurs
    */
-  void createKeyspace(String keyspaceName, Map<String, Object> options,
-      LogChannelInterface log) throws UnsupportedOperationException, Exception;
+  void createKeyspace( String keyspaceName, Map<String, Object> options, LogChannelInterface log )
+    throws UnsupportedOperationException, Exception;
 
   /**
    * Get a list of the names of the column families in this keyspace
@@ -106,67 +113,78 @@ public interface Keyspace {
   /**
    * Check to see if the named column family exists in the current keyspace
    * 
-   * @param colFamName the column family name to check
+   * @param colFamName
+   *          the column family name to check
    * @return true if the named column family exists in the current keyspace
-   * @throws Exception if a problem occurs
+   * @throws Exception
+   *           if a problem occurs
    */
-  boolean columnFamilyExists(String colFamName) throws Exception;
+  boolean columnFamilyExists( String colFamName ) throws Exception;
 
   /**
    * Get meta data for the named column family
    * 
-   * @param familyName the name of the column family to get meta data for
+   * @param familyName
+   *          the name of the column family to get meta data for
    * @return the column family meta data
-   * @throws Exception if the named column family does not exist in the keyspace
-   *           or a problem occurs
+   * @throws Exception
+   *           if the named column family does not exist in the keyspace or a problem occurs
    */
-  ColumnFamilyMetaData getColumnFamilyMetaData(String familyName)
-      throws Exception;
+  ColumnFamilyMetaData getColumnFamilyMetaData( String familyName ) throws Exception;
 
   /**
    * Create a column family in the current keyspace.
    * 
-   * @param colFamName the name of the column family to create
-   * @param rowMeta the incoming fields to base the column family schema on
-   * @param keyIndexes the index(es) of the incoming field(s) to use as the key
-   * @param createTableWithClause any WITH clause to include when creating the
-   *          table
-   * @param log log to write to (may be null)
+   * @param colFamName
+   *          the name of the column family to create
+   * @param rowMeta
+   *          the incoming fields to base the column family schema on
+   * @param keyIndexes
+   *          the index(es) of the incoming field(s) to use as the key
+   * @param createTableWithClause
+   *          any WITH clause to include when creating the table
+   * @param log
+   *          log to write to (may be null)
    * @return true if the column family was created successfully
-   * @throws Exception if a problem occurs
+   * @throws Exception
+   *           if a problem occurs
    */
-  boolean createColumnFamily(String colFamName, RowMetaInterface rowMeta,
-      List<Integer> keyIndexes, String createTableWithClause,
-      LogChannelInterface log) throws Exception;
+  boolean createColumnFamily( String colFamName, RowMetaInterface rowMeta, List<Integer> keyIndexes,
+      String createTableWithClause, LogChannelInterface log ) throws Exception;
 
   /**
-   * Update the named column family with any incoming fields that are not
-   * present in its schema already
+   * Update the named column family with any incoming fields that are not present in its schema already
    * 
-   * @param colFamName the name of the column family to update
-   * @param rowMeta the incoming row meta data
-   * @param keyIndexes the index(es) of the incoming field(s) that make up the
-   *          key
-   * @param log the log to write to (may be null)
-   * @throws UnsupportedOperationException if the underlying driver does not
-   *           support updating column family schema information
-   * @throws Exception if a problem occurs
+   * @param colFamName
+   *          the name of the column family to update
+   * @param rowMeta
+   *          the incoming row meta data
+   * @param keyIndexes
+   *          the index(es) of the incoming field(s) that make up the key
+   * @param log
+   *          the log to write to (may be null)
+   * @throws UnsupportedOperationException
+   *           if the underlying driver does not support updating column family schema information
+   * @throws Exception
+   *           if a problem occurs
    */
-  void updateColumnFamily(String colFamName, RowMetaInterface rowMeta,
-      List<Integer> keyIndexes, LogChannelInterface log)
-      throws UnsupportedOperationException, Exception;
+  void updateColumnFamily( String colFamName, RowMetaInterface rowMeta, List<Integer> keyIndexes,
+      LogChannelInterface log ) throws UnsupportedOperationException, Exception;
 
   /**
    * Truncate the named column family.
    * 
-   * @param colFamName the name of the column family to truncate
-   * @param log log to write to (may be null)
-   * @throws UnsupportedOperationException if the underlying driver does not
-   *           support truncating a column family
-   * @throws Exception if a problem occurs
+   * @param colFamName
+   *          the name of the column family to truncate
+   * @param log
+   *          log to write to (may be null)
+   * @throws UnsupportedOperationException
+   *           if the underlying driver does not support truncating a column family
+   * @throws Exception
+   *           if a problem occurs
    */
-  void truncateColumnFamily(String colFamName, LogChannelInterface log)
-      throws UnsupportedOperationException, Exception;
+  void truncateColumnFamily( String colFamName, LogChannelInterface log ) throws UnsupportedOperationException,
+    Exception;
 
   /**
    * Get a concrete implementation of CQLRowHandler for the underlying driver

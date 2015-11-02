@@ -40,14 +40,14 @@ public interface ColumnFamilyMetaData {
    * 
    * @param keyspace the keyspace to use
    */
-  void setKeyspace(Keyspace keyspace);
+  void setKeyspace( Keyspace keyspace );
 
   /**
    * Set the name of this column family
    * 
    * @param colFamName the name of this column family
    */
-  void setColumnFamilyName(String colFamName);
+  void setColumnFamilyName( String colFamName );
 
   /**
    * Get the name of this column family
@@ -72,7 +72,7 @@ public interface ColumnFamilyMetaData {
    * @param colName the name of the column to check for
    * @return true if the named column is explicitly defined
    */
-  boolean columnExistsInSchema(String colName);
+  boolean columnExistsInSchema( String colName );
 
   /**
    * Return the appropriate Kettle type for the column family's key. This should
@@ -102,7 +102,7 @@ public interface ColumnFamilyMetaData {
    * @param colName the Cassandra column name to get the Kettle type for
    * @return the Kettle type for the named column.
    */
-  ValueMetaInterface getValueMetaForColumn(String colName);
+  ValueMetaInterface getValueMetaForColumn( String colName );
 
   /**
    * Return the appropriate Kettle type for the default validator (column value

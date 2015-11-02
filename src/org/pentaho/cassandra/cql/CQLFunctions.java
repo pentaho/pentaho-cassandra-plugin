@@ -26,25 +26,42 @@ package org.pentaho.cassandra.cql;
  * 
  */
 public enum CQLFunctions {
-  TOKEN( "org.apache.cassandra.db.marshal.LongType" ), COUNT( "org.apache.cassandra.db.marshal.LongType" ), WRITETIME(
-      "org.apache.cassandra.db.marshal.LongType" ), TTL( "org.apache.cassandra.db.marshal.Int32Type" ), DATEOF(
-      "org.apache.cassandra.db.marshal.TimestampType" ), UNIXTIMESTAMPOF( "org.apache.cassandra.db.marshal.LongType" );
+  TOKEN( false, "org.apache.cassandra.db.marshal.LongType" ), COUNT( false, "org.apache.cassandra.db.marshal.LongType" ), WRITETIME(
+      false, "org.apache.cassandra.db.marshal.LongType" ), TTL( false, "org.apache.cassandra.db.marshal.Int32Type" ), DATEOF(
+      true, "org.apache.cassandra.db.marshal.TimestampType" ), UNIXTIMESTAMPOF( true,
+      "org.apache.cassandra.db.marshal.LongType" );
 
+  private final boolean isCaseSensitive;
   private final String validator;
 
-  private CQLFunctions( String validator ) {
+  private CQLFunctions( boolean isCaseSensetive, String validator ) {
+    this.isCaseSensitive = isCaseSensetive;
     this.validator = validator;
   }
 
-  /**Returns the Cassandra validator class for the function.
+  /**
+   * Indicates if the name of the function should be processed as case sensitive or not.
+   * 
+   * @return isCaseSensitive true if the name of the function should be processed as case sensitive or not.
+   */
+  public boolean isCaseSensitive() {
+    return isCaseSensitive;
+  }
+
+  /**
+   * Returns the Cassandra validator class for the function.
+   * 
    * @return the Cassandra validator class for the function.
    */
   public String getValidator() {
     return validator;
   }
 
-  /** Returns CQLFunction by the string representation of it.
-   * @param input the string representation of CQLFunction
+  /**
+   * Returns CQLFunction by the string representation of it.
+   * 
+   * @param input
+   *          the string representation of CQLFunction
    * @return the CQLFunction if the input string contains this one, otherwise null.
    */
   public static CQLFunctions getFromString( String input ) {

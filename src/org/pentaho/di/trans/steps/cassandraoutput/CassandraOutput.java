@@ -545,6 +545,7 @@ public class CassandraOutput extends BaseStep implements StepInterface {
         value = theUnit.convertToSeconds( value );
         m_opts.put( "TTL", "" + value );
       } catch ( NumberFormatException e ) {
+        logDebug( BaseMessages.getString( CassandraOutputMeta.PKG, "CassandraOutput.Error.CantParseTTL", ttl ) );
       }
     }
 

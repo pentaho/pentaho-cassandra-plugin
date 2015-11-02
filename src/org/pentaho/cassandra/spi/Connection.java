@@ -36,35 +36,35 @@ public interface Connection {
    * 
    * @param hosts comma separated host:[port] pairs
    */
-  void setHosts(String hosts);
+  void setHosts( String hosts );
 
   /**
    * Default port to use if no port(s) are provided via setHosts()
    * 
    * @param port default port to use for all hosts
    */
-  void setDefaultPort(int port);
+  void setDefaultPort( int port );
 
   /**
    * Set username for authentication
    * 
    * @param username the username to authenticate with
    */
-  void setUsername(String username);
+  void setUsername( String username );
 
   /**
    * Set password for authentication
    * 
    * @param password the password to authenticate with
    */
-  void setPassword(String password);
+  void setPassword( String password );
 
   /**
    * Map of additional options.
    * 
    * @param opts additional options to pass to the underlying connection
    */
-  void setAdditionalOptions(Map<String, String> opts);
+  void setAdditionalOptions( Map<String, String> opts );
 
   /**
    * Get any additional options
@@ -114,5 +114,5 @@ public interface Connection {
    * @return a Keyspace implementation
    * @throws Exception if a problem occurs
    */
-  Keyspace getKeyspace(String keyspacename) throws Exception;
+  Keyspace getKeyspace( String keyspacename ) throws Exception;
 }

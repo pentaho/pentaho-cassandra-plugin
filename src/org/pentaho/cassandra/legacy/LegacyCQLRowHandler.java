@@ -83,7 +83,7 @@ public class LegacyCQLRowHandler implements CQLRowHandler {
   protected boolean m_outputTuples;
 
   protected StepInterface m_requestingStep;
-  
+
   private Selector[] selectorList;
 
   @Override
@@ -128,6 +128,10 @@ public class LegacyCQLRowHandler implements CQLRowHandler {
       try {
         c = ConsistencyLevel.valueOf( consistencyLevel );
       } catch ( IllegalArgumentException e ) {
+        if ( log != null && log.isDebug() ) {
+          log.logDebug( BaseMessages.getString( PKG, "LegacyCQLRowHandler.Error.NoValidConsistencyLevelSpecified",
+              consistencyLevel, c.toString() ) );
+        }
       }
     }
 
@@ -180,7 +184,7 @@ public class LegacyCQLRowHandler implements CQLRowHandler {
         try {
           // try to kill it!
           t.stop();
-        } catch ( Exception ex ) {/* YUM! */
+        } catch ( Exception ex ) { /* YUM! */
         }
 
         throw new KettleException( BaseMessages.getString( PKG, "LegacyCQLRowHandler.Error.TimeoutReached" ) ); //$NON-NLS-1$
@@ -276,6 +280,10 @@ public class LegacyCQLRowHandler implements CQLRowHandler {
       try {
         c = ConsistencyLevel.valueOf( consistencyLevel );
       } catch ( IllegalArgumentException e ) {
+        if ( log != null && log.isDebug() ) {
+          log.logDebug( BaseMessages.getString( PKG, "LegacyCQLRowHandler.Error.NoValidConsistencyLevelSpecified",
+              consistencyLevel, c.toString() ) );
+        }
       }
     }
     if ( !Const.isEmpty( compress ) ) {

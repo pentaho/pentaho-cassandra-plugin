@@ -53,7 +53,7 @@ public class CassandraOutputData extends BaseStepData implements
    * 
    * @param rmi the output row format
    */
-  public void setOutputRowMeta(RowMetaInterface rmi) {
+  public void setOutputRowMeta( RowMetaInterface rmi ) {
     m_outputRowMeta = rmi;
   }
 }

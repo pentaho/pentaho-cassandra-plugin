@@ -700,7 +700,7 @@ public class CassandraInputMeta extends BaseStepMeta implements StepMetaInterfac
 
       // now determine if its a select */FIRST or specific set of columns
       Selector[] cols = null;
-      if ( subQ.indexOf( "*" ) >= 0 && subQ.toLowerCase().indexOf( "count(*)") == -1) { //$NON-NLS-1$
+      if ( subQ.indexOf( "*" ) >= 0 && subQ.toLowerCase().indexOf( "count(*)" ) == -1 ) { //$NON-NLS-1$
         // nothing special to do here
         m_isSelectStarQuery = true;
       } else {

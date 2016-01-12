@@ -25,6 +25,7 @@
       changing="true" />
     <dependency org="pentaho-kettle" name="kettle-ui-swt" rev="${dependency.kettle.revision}" transitive="false" conf="default->default"
       changing="true" />
+    <dependency org="pentaho" name="pentaho-xul-core" rev="${dependency.pentaho-xul.revision}" changing="true" />
 
     <dependency org="pentaho"             name="metastore"           rev="${dependency.pentaho-metastore.revision}"   changing="true" />
 

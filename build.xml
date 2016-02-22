@@ -71,6 +71,9 @@
 	    <copy todir="${stage.dir}/${ivy.artifact.id}">
 	      <fileset file="${dist.dir}/${package.basename}.jar" />
 	    </copy>
+	    <!-- Update the version.xml with the current version of this plugin -->
+	    <copy file="res/version.xml" todir="${stage.dir}/${ivy.artifact.id}" />
+	    <replace file="${stage.dir}/${ivy.artifact.id}/version.xml" token="@TRUNK@" value="${project.revision}" />
 	  </target>
 	
 </project>

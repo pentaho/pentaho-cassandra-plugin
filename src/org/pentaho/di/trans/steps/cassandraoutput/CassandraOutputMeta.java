@@ -2,7 +2,7 @@
  *
  * Pentaho Big Data
  *
- * Copyright (C) 2002-2013 by Pentaho : http://www.pentaho.com
+ * Copyright (C) 2002-2016 by Pentaho : http://www.pentaho.com
  *
  *******************************************************************************
  *
@@ -34,6 +34,8 @@ import org.pentaho.di.core.database.DatabaseMeta;
 import org.pentaho.di.core.encryption.Encr;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.exception.KettleXMLException;
+import org.pentaho.di.core.injection.Injection;
+import org.pentaho.di.core.injection.InjectionSupported;
 import org.pentaho.di.core.row.RowMetaInterface;
 import org.pentaho.di.core.xml.XMLHandler;
 import org.pentaho.di.i18n.BaseMessages;
@@ -56,60 +58,77 @@ import org.w3c.dom.Node;
  */
 @Step( id = "CassandraOutput", image = "Cassandraout.svg", name = "Cassandra Output",
     description = "Writes to a Cassandra table", categoryDescription = "Big Data" )
+@InjectionSupported( localizationPrefix = "CassandraOutput.Injection." )
 public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterface {
 
   public static final Class<?> PKG = CassandraOutputMeta.class;
 
   /** The host to contact */
+  @Injection( name = "CASSANDRA_HOST" )
   protected String m_cassandraHost = "localhost"; //$NON-NLS-1$
 
   /** The port that cassandra is listening on */
+  @Injection( name = "CASSANDRA_PORT" )
   protected String m_cassandraPort = "9160"; //$NON-NLS-1$
 
   /** The username to use for authentication */
+  @Injection( name = "USER_NAME" )
   protected String m_username;
 
   /** The password to use for authentication */
+  @Injection( name = "PASSWORD" )
   protected String m_password;
 
   /** The keyspace (database) to use */
+  @Injection( name = "CASSANDRA_KEYSPACE" )
   protected String m_cassandraKeyspace;
 
   /** The cassandra node to put schema updates through */
+  @Injection( name = "SCHEMA_HOST" )
   protected String m_schemaHost;
 
   /** The port of the cassandra node for schema updates */
+  @Injection( name = "SCHEMA_PORT" )
   protected String m_schemaPort;
 
   /** The column family (table) to write to */
+  @Injection( name = "COLUMN_FAMILY" )
   protected String m_columnFamily = ""; //$NON-NLS-1$
 
   /** The consistency level to use - null or empty string result in the default */
+  @Injection( name = "CONSISTENCY_LEVEL" )
   protected String m_consistency = ""; //$NON-NLS-1$
 
   /**
    * The batch size - i.e. how many rows to collect before inserting them via a batch CQL statement
    */
+  @Injection( name = "BATCH_SIZE" )
   protected String m_batchSize = "100"; //$NON-NLS-1$
 
   /** True if unlogged (i.e. non atomic) batch writes are to be used. CQL 3 only */
+  @Injection( name = "USE_UNLOGGED_BATCH" )
   protected boolean m_unloggedBatch = false;
 
   /** Whether to use GZIP compression of CQL queries */
+  @Injection( name = "USE_QUERY_COMPRESSION" )
   protected boolean m_useCompression = false;
 
   /** Whether to create the specified column family (table) if it doesn't exist */
+  @Injection( name = "CREATE_COLUMN_FAMILY" )
   protected boolean m_createColumnFamily = true;
 
   /** Anything to include in the WITH clause at table creation time? */
+  @Injection( name = "CREATE_TABLE_WITH_CLAUSE" )
   protected String m_createTableWithClause;
 
   /** The field in the incoming data to use as the key for inserts */
+  @Injection( name = "KEY_FIELD" )
   protected String m_keyField = ""; //$NON-NLS-1$
 
   /**
    * Timeout (milliseconds) to use for socket connections - blank means use cluster default
    */
+  @Injection( name = "SOCKET_TIMEOUT" )
   protected String m_socketTimeout = ""; //$NON-NLS-1$
 
   /**
@@ -117,48 +136,59 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
    * occurs the step will try to kill the insert and re-try after splitting the batch according to the batch split
    * factor
    */
+  @Injection( name = "BATCH_TIMEOUT" )
   protected String m_cqlBatchTimeout = ""; //$NON-NLS-1$
 
   /**
    * Default batch split size - only comes into play if cql batch timeout has been specified. Specifies the size of the
    * sub-batches to split the batch into if a timeout occurs.
    */
+  @Injection( name = "SUB_BATCH_SIZE" )
   protected String m_cqlSubBatchSize = "10"; //$NON-NLS-1$
 
   /**
    * Whether or not to insert incoming fields that are not in the cassandra table's meta data. Has no affect if the user
    * has opted to update the meta data for unknown incoming fields
    */
+  @Injection( name = "INSERT_FIELDS_NOT_IN_META" )
   protected boolean m_insertFieldsNotInMeta = false;
 
   /**
    * Whether or not to initially update the column family meta data with any unknown incoming fields
    */
+  @Injection( name = "UPDATE_CASSANDRA_META" )
   protected boolean m_updateCassandraMeta = false;
 
   /** Whether to truncate the column family (table) before inserting */
+  @Injection( name = "TRUNCATE_COLUMN_FAMILY" )
   protected boolean m_truncateColumnFamily = false;
 
   /**
    * Any CQL statements to execute before inserting the first row. Can be used, for example, to create secondary indexes
    * on columns in a column family.
    */
+  @Injection( name = "APRIORI_CQL" )
   protected String m_aprioriCQL = ""; //$NON-NLS-1$
 
   /**
    * Whether or not an exception generated when executing apriori CQL statements should stop the step
    */
+  @Injection( name = "DONT_COMPLAIN_IF_APRIORI_CQL_FAILS" )
   protected boolean m_dontComplainAboutAprioriCQLFailing;
 
   /** Use thrift IO-based batch mutate instead of CQL? */
+  @Injection( name = "USE_THRIFT_IO" )
   protected boolean m_useThriftIO = false;
 
   /** Whether to use CQL version 3 */
+  @Injection( name = "USE_CQL_VERSION_3" )
   protected boolean m_useCQL3 = false;
 
   /** Time to live (TTL) for inserts (affects all fields inserted) */
+  @Injection( name = "TTL" )
   protected String m_ttl = ""; //$NON-NLS-1$
 
+  @Injection( name = "TTL_UNIT" )
   protected String m_ttlUnit = TTLUnits.NONE.toString();
 
   public enum TTLUnits {

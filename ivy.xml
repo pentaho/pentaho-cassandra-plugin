@@ -41,6 +41,7 @@
     <dependency org="log4j"                    name="log4j"           rev="1.2.14" />
 
     <dependency org="junit" name="junit" rev="4.5" conf="test->default" />
+    <dependency org="pentaho-kettle" name="kettle-engine-test" rev="${dependency.kettle.revision}" transitive="false" conf="test->default" />
 
   </dependencies>
 </ivy-module>

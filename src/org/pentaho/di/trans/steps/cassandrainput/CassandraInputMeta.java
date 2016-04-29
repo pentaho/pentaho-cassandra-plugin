@@ -2,7 +2,7 @@
  *
  * Pentaho Big Data
  *
- * Copyright (C) 2002-2013 by Pentaho : http://www.pentaho.com
+ * Copyright (C) 2002-2016 by Pentaho : http://www.pentaho.com
  *
  *******************************************************************************
  *
@@ -44,6 +44,8 @@ import org.pentaho.di.core.encryption.Encr;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.exception.KettleStepException;
 import org.pentaho.di.core.exception.KettleXMLException;
+import org.pentaho.di.core.injection.Injection;
+import org.pentaho.di.core.injection.InjectionSupported;
 import org.pentaho.di.core.row.RowMetaInterface;
 import org.pentaho.di.core.row.ValueMeta;
 import org.pentaho.di.core.row.ValueMetaInterface;
@@ -70,6 +72,7 @@ import org.w3c.dom.Node;
  */
 @Step( id = "CassandraInput", image = "Cassandrain.svg", name = "Cassandra Input",
   description = "Reads data from a Cassandra table", categoryDescription = "Big Data" )
+@InjectionSupported( localizationPrefix = "CassandraInput.Injection." )
 public class CassandraInputMeta extends BaseStepMeta implements StepMetaInterface {
 
   protected static final Class<?> PKG = CassandraInputMeta.class;
@@ -77,66 +80,79 @@ public class CassandraInputMeta extends BaseStepMeta implements StepMetaInterfac
   /**
    * The host to contact
    */
+  @Injection( name = "CASSANDRA_HOST" )
   protected String m_cassandraHost = "localhost"; //$NON-NLS-1$
 
   /**
    * The port that cassandra is listening on
    */
+  @Injection( name = "CASSANDRA_PORT" )
   protected String m_cassandraPort = "9160"; //$NON-NLS-1$
 
   /**
    * Username for authentication
    */
+  @Injection( name = "USER_NAME" )
   protected String m_username;
 
   /**
    * Password for authentication
    */
+  @Injection( name = "PASSWORD" )
   protected String m_password;
 
   /**
    * The keyspace (database) to use
    */
+  @Injection( name = "CASSANDRA_KEYSPACE" )
   protected String m_cassandraKeyspace;
 
   /**
    * Whether to use GZIP compression of CQL queries
    */
+  @Injection( name = "USE_QUERY_COMPRESSION" )
   protected boolean m_useCompression;
 
   /**
    * The select query to execute
    */
+  @Injection( name = "CQL_QUERY" )
   protected String m_cqlSelectQuery = "SELECT <fields> FROM <column family> WHERE <condition>;"; //$NON-NLS-1$
 
   /**
    * Output in tuple mode?
    */
+  @Injection( name = "OUTPUT_KEY_VALUE_TIMESTAMP_TUPLES" )
   protected boolean m_outputKeyValueTimestampTuples;
 
   /**
    * Use thrift IO for tuple mode?
    */
+  @Injection( name = "USE_THRIFT_IO" )
   protected boolean m_useThriftIO = false;
 
   /**
    * Whether to use CQL version 3
    */
+  @Injection( name = "USE_CQL_VERSION_3" )
   protected boolean m_useCQL3 = false;
 
   /**
    * Whether to execute the query for each incoming row
    */
+  @Injection( name = "EXECUTE_FOR_EACH_ROW" )
   protected boolean m_executeForEachIncomingRow;
 
   /**
    * Timeout (milliseconds) to use for socket connections - blank means use cluster default
    */
+  @Injection( name = "SOCKET_TIMEOUT" )
   protected String m_socketTimeout = ""; //$NON-NLS-1$
 
   /**
    * Max size of the object can be transported - blank means use default (16384000)
    */
+  @Injection( name = "TRANSPORT_MAX_LENGTH" )
   protected String m_maxLength = ""; //$NON-NLS-1$
 
   // set based on parsed CQL

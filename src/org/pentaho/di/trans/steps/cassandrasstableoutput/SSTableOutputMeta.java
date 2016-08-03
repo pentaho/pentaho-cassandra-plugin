@@ -2,7 +2,7 @@
  *
  * Pentaho Big Data
  *
- * Copyright (C) 2002-2013 by Pentaho : http://www.pentaho.com
+ * Copyright (C) 2002-2016 by Pentaho : http://www.pentaho.com
  *
  *******************************************************************************
  *
@@ -33,6 +33,8 @@ import org.pentaho.di.core.annotations.Step;
 import org.pentaho.di.core.database.DatabaseMeta;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.exception.KettleXMLException;
+import org.pentaho.di.core.injection.Injection;
+import org.pentaho.di.core.injection.InjectionSupported;
 import org.pentaho.di.core.row.RowMetaInterface;
 import org.pentaho.di.core.xml.XMLHandler;
 import org.pentaho.di.repository.ObjectId;
@@ -54,26 +56,33 @@ import org.w3c.dom.Node;
  */
 @Step( id = "SSTableOutput", image = "Cassandra.svg", name = "SSTable Output",
     description = "Writes to a filesystem directory as a Cassandra SSTable", categoryDescription = "Big Data" )
+@InjectionSupported( localizationPrefix = "SSTableOutput.Injection." )
 public class SSTableOutputMeta extends BaseStepMeta implements StepMetaInterface {
 
   protected static final Class<?> PKG = SSTableOutputMeta.class;
 
   /** The path to the yaml file */
+  @Injection( name = "YAML_FILE_PATH" )
   protected String m_yamlPath;
 
   /** The directory to output to */
+  @Injection( name = "DIRECTORY" )
   protected String directory;
 
   /** The keyspace (database) to use */
+  @Injection( name = "CASSANDRA_KEYSPACE" )
   protected String cassandraKeyspace;
 
   /** The column family (table) to write to */
+  @Injection( name = "COLUMN_FAMILY" )
   protected String columnFamily = "";
 
   /** The field in the incoming data to use as the key for inserts */
+  @Injection( name = "KEY_FIELD" )
   protected String keyField = "";
 
   /** Size (MB) of write buffer */
+  @Injection( name = "BUFFER_SIZE" )
   protected String bufferSize = "16";
 
   /**

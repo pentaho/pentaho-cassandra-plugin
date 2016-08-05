@@ -50,11 +50,12 @@ import org.w3c.dom.Node;
 
 /**
  * Provides metadata for the Cassandra SSTable output step.
- * 
+ *
  * @author Rob Turner (robert{[at]}robertturner{[dot]}com{[dot]}au)
  * @author Mark Hall (mhall{[at]}pentaho{[dot]}com)
  */
 @Step( id = "SSTableOutput", image = "Cassandra.svg", name = "SSTable Output",
+    documentationUrl = "http://wiki.pentaho.com/display/EAI/SSTable+Output",
     description = "Writes to a filesystem directory as a Cassandra SSTable", categoryDescription = "Big Data" )
 @InjectionSupported( localizationPrefix = "SSTableOutput.Injection." )
 public class SSTableOutputMeta extends BaseStepMeta implements StepMetaInterface {
@@ -87,7 +88,7 @@ public class SSTableOutputMeta extends BaseStepMeta implements StepMetaInterface
 
   /**
    * Get the path the the yaml file
-   * 
+   *
    * @return the path to the yaml file
    */
   public String getYamlPath() {
@@ -96,7 +97,7 @@ public class SSTableOutputMeta extends BaseStepMeta implements StepMetaInterface
 
   /**
    * Set the path the the yaml file
-   * 
+   *
    * @param path
    *          the path to the yaml file
    */
@@ -106,7 +107,7 @@ public class SSTableOutputMeta extends BaseStepMeta implements StepMetaInterface
 
   /**
    * Where the SSTables are written to
-   * 
+   *
    * @return String directory
    */
   public String getDirectory() {
@@ -115,7 +116,7 @@ public class SSTableOutputMeta extends BaseStepMeta implements StepMetaInterface
 
   /**
    * Where the SSTables are written to
-   * 
+   *
    * @param directory
    *          String
    */
@@ -125,7 +126,7 @@ public class SSTableOutputMeta extends BaseStepMeta implements StepMetaInterface
 
   /**
    * Set the keyspace (db) to use
-   * 
+   *
    * @param keyspace
    *          the keyspace to use
    */
@@ -135,7 +136,7 @@ public class SSTableOutputMeta extends BaseStepMeta implements StepMetaInterface
 
   /**
    * Get the keyspace (db) to use
-   * 
+   *
    * @return the keyspace (db) to use
    */
   public String getCassandraKeyspace() {
@@ -144,7 +145,7 @@ public class SSTableOutputMeta extends BaseStepMeta implements StepMetaInterface
 
   /**
    * Set the column family (table) to write to
-   * 
+   *
    * @param colFam
    *          the name of the column family to write to
    */
@@ -154,7 +155,7 @@ public class SSTableOutputMeta extends BaseStepMeta implements StepMetaInterface
 
   /**
    * Get the name of the column family to write to
-   * 
+   *
    * @return the name of the columm family to write to
    */
   public String getColumnFamilyName() {
@@ -163,7 +164,7 @@ public class SSTableOutputMeta extends BaseStepMeta implements StepMetaInterface
 
   /**
    * Set the incoming field to use as the key for inserts
-   * 
+   *
    * @param keyField
    *          the name of the incoming field to use as the key
    */
@@ -173,7 +174,7 @@ public class SSTableOutputMeta extends BaseStepMeta implements StepMetaInterface
 
   /**
    * Get the name of the incoming field to use as the key for inserts
-   * 
+   *
    * @return the name of the incoming field to use as the key for inserts
    */
   public String getKeyField() {
@@ -182,7 +183,7 @@ public class SSTableOutputMeta extends BaseStepMeta implements StepMetaInterface
 
   /**
    * Size (MB) of write buffer
-   * 
+   *
    * @return String
    */
   public String getBufferSize() {
@@ -191,7 +192,7 @@ public class SSTableOutputMeta extends BaseStepMeta implements StepMetaInterface
 
   /**
    * Size (MB) of write buffer
-   * 
+   *
    * @param bufferSize
    *          String
    */
@@ -331,7 +332,7 @@ public class SSTableOutputMeta extends BaseStepMeta implements StepMetaInterface
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see org.pentaho.di.trans.step.BaseStepMeta#getDialogClassName()
    */
   @Override

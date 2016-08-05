@@ -53,11 +53,12 @@ import org.w3c.dom.Node;
 /**
  * Class providing an output step for writing data to a cassandra table (column family). Can create the specified column
  * family (if it doesn't already exist) and can update column family meta data.
- * 
+ *
  * @author Mark Hall (mhall{[at]}pentaho{[dot]}com)
  */
 @Step( id = "CassandraOutput", image = "Cassandraout.svg", name = "Cassandra Output",
-    description = "Writes to a Cassandra table", categoryDescription = "Big Data" )
+    description = "Writes to a Cassandra table",
+    documentationUrl = "http://wiki.pentaho.com/display/EAI/Cassandra+Output", categoryDescription = "Big Data" )
 @InjectionSupported( localizationPrefix = "CassandraOutput.Injection." )
 public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterface {
 
@@ -239,7 +240,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
 
   /**
    * Set the host for sending schema updates to
-   * 
+   *
    * @param s
    *          the host for sending schema updates to
    */
@@ -249,7 +250,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
 
   /**
    * Set the host for sending schema updates to
-   * 
+   *
    * @return the host for sending schema updates to
    */
   public String getSchemaHost() {
@@ -258,7 +259,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
 
   /**
    * Set the port for the schema update host
-   * 
+   *
    * @param p
    *          port for the schema update host
    */
@@ -268,7 +269,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
 
   /**
    * Get the port for the schema update host
-   * 
+   *
    * @return port for the schema update host
    */
   public String getSchemaPort() {
@@ -277,7 +278,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
 
   /**
    * Set how many sub-batches a batch should be split into when an insert times out.
-   * 
+   *
    * @param f
    *          the number of sub-batches to create when an insert times out.
    */
@@ -287,7 +288,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
 
   /**
    * Get how many sub-batches a batch should be split into when an insert times out.
-   * 
+   *
    * @return the number of sub-batches to create when an insert times out.
    */
   public String getCQLSubBatchSize() {
@@ -296,7 +297,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
 
   /**
    * Set the timeout for failing a batch insert attempt.
-   * 
+   *
    * @param t
    *          the time (milliseconds) to wait for a batch insert to succeed.
    */
@@ -306,7 +307,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
 
   /**
    * Get the timeout for failing a batch insert attempt.
-   * 
+   *
    * @return the time (milliseconds) to wait for a batch insert to succeed.
    */
   public String getCQLBatchInsertTimeout() {
@@ -315,7 +316,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
 
   /**
    * Set the timeout (milliseconds) to use for socket comms
-   * 
+   *
    * @param t
    *          the timeout to use in milliseconds
    */
@@ -325,7 +326,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
 
   /**
    * Get the timeout (milliseconds) to use for socket comms
-   * 
+   *
    * @return the timeout to use in milliseconds
    */
   public String getSocketTimeout() {
@@ -334,7 +335,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
 
   /**
    * Set the cassandra node hostname to connect to
-   * 
+   *
    * @param host
    *          the host to connect to
    */
@@ -344,7 +345,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
 
   /**
    * Get the name of the cassandra node to connect to
-   * 
+   *
    * @return the name of the cassandra node to connect to
    */
   public String getCassandraHost() {
@@ -353,7 +354,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
 
   /**
    * Set the port that cassandra is listening on
-   * 
+   *
    * @param port
    *          the port that cassandra is listening on
    */
@@ -363,7 +364,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
 
   /**
    * Get the port that cassandra is listening on
-   * 
+   *
    * @return the port that cassandra is listening on
    */
   public String getCassandraPort() {
@@ -372,7 +373,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
 
   /**
    * Set the username to authenticate with
-   * 
+   *
    * @param un
    *          the username to authenticate with
    */
@@ -382,7 +383,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
 
   /**
    * Get the username to authenticate with
-   * 
+   *
    * @return the username to authenticate with
    */
   public String getUsername() {
@@ -391,7 +392,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
 
   /**
    * Set the password to authenticate with
-   * 
+   *
    * @param pass
    *          the password to authenticate with
    */
@@ -401,7 +402,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
 
   /**
    * Get the password to authenticate with
-   * 
+   *
    * @return the password to authenticate with
    */
   public String getPassword() {
@@ -410,7 +411,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
 
   /**
    * Set the keyspace (db) to use
-   * 
+   *
    * @param keyspace
    *          the keyspace to use
    */
@@ -420,7 +421,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
 
   /**
    * Get the keyspace (db) to use
-   * 
+   *
    * @return the keyspace (db) to use
    */
   public String getCassandraKeyspace() {
@@ -429,7 +430,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
 
   /**
    * Set the column family (table) to write to
-   * 
+   *
    * @param colFam
    *          the name of the column family to write to
    */
@@ -439,7 +440,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
 
   /**
    * Get the name of the column family to write to
-   * 
+   *
    * @return the name of the columm family to write to
    */
   public String getColumnFamilyName() {
@@ -448,7 +449,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
 
   /**
    * Set whether to create the specified column family (table) if it doesn't already exist
-   * 
+   *
    * @param create
    *          true if the specified column family is to be created if it doesn't already exist
    */
@@ -458,7 +459,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
 
   /**
    * Get whether to create the specified column family (table) if it doesn't already exist
-   * 
+   *
    * @return true if the specified column family is to be created if it doesn't already exist
    */
   public boolean getCreateColumnFamily() {
@@ -475,7 +476,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
 
   /**
    * Set the consistency to use (e.g. ONE, QUORUM etc).
-   * 
+   *
    * @param consistency
    *          the consistency to use
    */
@@ -485,7 +486,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
 
   /**
    * Get the consistency to use
-   * 
+   *
    * @return the consistency
    */
   public String getConsistency() {
@@ -494,7 +495,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
 
   /**
    * Set the batch size to use (i.e. max rows to send via a CQL batch insert statement)
-   * 
+   *
    * @param batchSize
    *          the max number of rows to send in each CQL batch insert
    */
@@ -504,7 +505,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
 
   /**
    * Get the batch size to use (i.e. max rows to send via a CQL batch insert statement)
-   * 
+   *
    * @return the batch size.
    */
   public String getBatchSize() {
@@ -513,7 +514,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
 
   /**
    * Set whether unlogged batch writes (non-atomic) are to be used
-   * 
+   *
    * @param u
    *          true if unlogged batch operations are to be used
    */
@@ -523,7 +524,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
 
   /**
    * Get whether unlogged batch writes (non-atomic) are to be used
-   * 
+   *
    * @return true if unlogged batch operations are to be used
    */
   public boolean getUseUnloggedBatch() {
@@ -532,7 +533,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
 
   /**
    * Set whether to compress (GZIP) CQL queries when transmitting them to the server
-   * 
+   *
    * @param c
    *          true if CQL queries are to be compressed
    */
@@ -542,7 +543,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
 
   /**
    * Get whether CQL queries will be compressed (GZIP) or not
-   * 
+   *
    * @return true if CQL queries will be compressed when sending to the server
    */
   public boolean getUseCompression() {
@@ -552,7 +553,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
   /**
    * Set whether or not to insert any incoming fields that are not in the Cassandra table's column meta data. This has
    * no affect if the user has opted to first update the meta data with any unknown columns.
-   * 
+   *
    * @param insert
    *          true if incoming fields not found in the table's meta data are to be inserted (and validated according to
    *          the default validator for the table)
@@ -564,7 +565,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
   /**
    * Get whether or not to insert any incoming fields that are not in the Cassandra table's column meta data. This has
    * no affect if the user has opted to first update the meta data with any unknown columns.
-   * 
+   *
    * @return true if incoming fields not found in the table's meta data are to be inserted (and validated according to
    *         the default validator for the table)
    */
@@ -574,7 +575,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
 
   /**
    * Set the incoming field to use as the key for inserts
-   * 
+   *
    * @param keyField
    *          the name of the incoming field to use as the key
    */
@@ -584,7 +585,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
 
   /**
    * Get the name of the incoming field to use as the key for inserts
-   * 
+   *
    * @return the name of the incoming field to use as the key for inserts
    */
   public String getKeyField() {
@@ -593,7 +594,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
 
   /**
    * Set whether to update the column family meta data with any unknown incoming columns
-   * 
+   *
    * @param u
    *          true if the meta data is to be updated with any unknown incoming columns
    */
@@ -603,7 +604,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
 
   /**
    * Get whether to update the column family meta data with any unknown incoming columns
-   * 
+   *
    * @return true if the meta data is to be updated with any unknown incoming columns
    */
   public boolean getUpdateCassandraMeta() {
@@ -612,7 +613,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
 
   /**
    * Set whether to first truncate (remove all data) the column family (table) before inserting.
-   * 
+   *
    * @param t
    *          true if the column family is to be initially truncated.
    */
@@ -622,7 +623,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
 
   /**
    * Get whether to first truncate (remove all data) the column family (table) before inserting.
-   * 
+   *
    * @return true if the column family is to be initially truncated.
    */
   public boolean getTruncateColumnFamily() {
@@ -632,7 +633,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
   /**
    * Set any cql statements (separated by ;'s) to execute before inserting the first row into the column family. Can be
    * used to do tasks like creating secondary indexes on columns in the table.
-   * 
+   *
    * @param cql
    *          cql statements (separated by ;'s) to execute
    */
@@ -643,7 +644,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
   /**
    * Get any cql statements (separated by ;'s) to execute before inserting the first row into the column family. Can be
    * used to do tasks like creating secondary indexes on columns in the table.
-   * 
+   *
    * @return cql statements (separated by ;'s) to execute
    */
   public String getAprioriCQL() {
@@ -652,7 +653,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
 
   /**
    * Set whether to complain or not if any apriori CQL statements fail
-   * 
+   *
    * @param c
    *          true if failures should be ignored (but logged)
    */
@@ -662,7 +663,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
 
   /**
    * Get whether to complain or not if any apriori CQL statements fail
-   * 
+   *
    * @return true if failures should be ignored (but logged)
    */
   public boolean getDontComplainAboutAprioriCQLFailing() {
@@ -671,7 +672,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
 
   /**
    * Set whether to use Thrift IO-based batch mutate instead of batch CQL.
-   * 
+   *
    * @param useThrift
    *          true if Thrift IO is to be used rather than CQL.
    */
@@ -681,7 +682,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
 
   /**
    * Get whether to use Thrift IO-based batch mutate instead of batch CQL.
-   * 
+   *
    * @return true if Thrift IO is to be used rather than CQL.
    */
   public boolean getUseThriftIO() {
@@ -690,7 +691,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
 
   /**
    * Set whether to use CQL version 3 is to be used for CQL IO mode
-   * 
+   *
    * @param cql3
    *          true if CQL version 3 is to be used
    */
@@ -700,7 +701,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
 
   /**
    * Get whether to use CQL version 3 is to be used for CQL IO mode
-   * 
+   *
    * @param return true if CQL version 3 is to be used
    */
   public boolean getUseCQL3() {
@@ -709,7 +710,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
 
   /**
    * Set the time to live for fields inserted. Null or empty indicates no TTL (i.e. fields don't expire).
-   * 
+   *
    * @param ttl
    *          the time to live to use
    */
@@ -719,7 +720,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
 
   /**
    * Get the time to live for fields inserted. Null or empty indicates no TTL (i.e. fields don't expire).
-   * 
+   *
    * @return the time to live to use
    */
   public String getTTL() {
@@ -728,7 +729,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
 
   /**
    * Set the unit for the ttl
-   * 
+   *
    * @param unit
    *          the unit for the ttl
    */
@@ -738,7 +739,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
 
   /**
    * Get the unit for the ttl
-   * 
+   *
    * @return the unit for the ttl
    */
   public String getTTLUnit() {
@@ -1136,7 +1137,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see org.pentaho.di.trans.step.BaseStepMeta#getDialogClassName()
    */
   @Override

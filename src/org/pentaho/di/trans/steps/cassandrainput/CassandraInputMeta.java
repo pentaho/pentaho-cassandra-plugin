@@ -69,7 +69,8 @@ import org.w3c.dom.Node;
  * @version $Revision$
  */
 @Step( id = "CassandraInput", image = "Cassandrain.svg", name = "Cassandra Input",
-  description = "Reads data from a Cassandra table", categoryDescription = "Big Data" )
+    description = "Reads data from a Cassandra table",
+    documentationUrl = "http://wiki.pentaho.com/display/EAI/Cassandra+Input", categoryDescription = "Big Data" )
 public class CassandraInputMeta extends BaseStepMeta implements StepMetaInterface {
 
   protected static final Class<?> PKG = CassandraInputMeta.class;
@@ -514,7 +515,7 @@ public class CassandraInputMeta extends BaseStepMeta implements StepMetaInterfac
     m_useThriftIO = rep.getStepAttributeBoolean( id_step, 0, "use_thrift_io" ); //$NON-NLS-1$
     m_useCQL3 = rep.getStepAttributeBoolean( id_step, 0, "use_cql3" ); //$NON-NLS-1$
 
-    m_executeForEachIncomingRow = rep.getStepAttributeBoolean( id_step, "execute_for_each_row" ); //$NON-NLS-1$        
+    m_executeForEachIncomingRow = rep.getStepAttributeBoolean( id_step, "execute_for_each_row" ); //$NON-NLS-1$
 
     m_socketTimeout = rep.getStepAttributeString( id_step, 0, "socket_timeout" ); //$NON-NLS-1$
     m_maxLength = rep.getStepAttributeString( id_step, 0, "max_length" ); //$NON-NLS-1$

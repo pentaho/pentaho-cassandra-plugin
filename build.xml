@@ -65,7 +65,7 @@
 			<exclude name="metastore*.jar" />
 			<exclude name="dom4j*.jar" />	      	
 			<exclude name="jface*.jar" />	      	
-			<exclude name="x86*.jar" />	      	
+			<exclude name="org.eclipse.swt.*.jar" />	      	
           </fileset>
 	    </copy>
 	    <copy todir="${stage.dir}/${ivy.artifact.id}">

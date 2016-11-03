@@ -2,7 +2,7 @@
  *
  * Pentaho Big Data
  *
- * Copyright (C) 2002-2013 by Pentaho : http://www.pentaho.com
+ * Copyright (C) 2002-2016 by Pentaho : http://www.pentaho.com
  *
  *******************************************************************************
  *
@@ -22,14 +22,8 @@
 
 package org.pentaho.di.trans.steps.cassandrainput;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-
-import org.apache.cassandra.thrift.Compression;
-import org.apache.cassandra.thrift.CqlRow;
 import org.pentaho.cassandra.CassandraUtils;
+import org.pentaho.cassandra.CompressionOption;
 import org.pentaho.cassandra.ConnectionFactory;
 import org.pentaho.cassandra.spi.CQLRowHandler;
 import org.pentaho.cassandra.spi.ColumnFamilyMetaData;
@@ -47,6 +41,10 @@ import org.pentaho.di.trans.step.StepDataInterface;
 import org.pentaho.di.trans.step.StepInterface;
 import org.pentaho.di.trans.step.StepMeta;
 import org.pentaho.di.trans.step.StepMetaInterface;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Class providing an input step for reading data from a table (column family) in Cassandra. Accesses the schema
@@ -80,9 +78,6 @@ public class CassandraInput extends BaseStep implements StepInterface {
 
   /** Handler for non-CQL (i.e. slice type) row fetching */
   protected NonCQLRowHandler m_nonCqlHandler;
-
-  /** For iterating over a result set */
-  protected Iterator<CqlRow> m_resultIterator;
 
   /**
    * map of indexes into the output field structure (key is special - it's always the first field in the output row meta
@@ -309,7 +304,7 @@ public class CassandraInput extends BaseStep implements StepInterface {
     if ( m_meta.getExecuteForEachIncomingRow() ) {
       queryS = fieldSubstitute( queryS, getInputRowMeta(), m_currentInputRowDrivingQuery );
     }
-    Compression compression = m_meta.getUseCompression() ? Compression.GZIP : Compression.NONE;
+    CompressionOption compression = m_meta.getUseCompression() ? CompressionOption.GZIP : CompressionOption.NONE;
     try {
       if ( !m_meta.getUseThriftIO() ) {
         logBasic( BaseMessages.getString( CassandraInputMeta.PKG, "CassandraInput.Info.ExecutingQuery", //$NON-NLS-1$

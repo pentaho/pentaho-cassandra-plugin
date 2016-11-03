@@ -2,7 +2,7 @@
  *
  * Pentaho Big Data
  *
- * Copyright (C) 2002-2013 by Pentaho : http://www.pentaho.com
+ * Copyright (C) 2002-2016 by Pentaho : http://www.pentaho.com
  *
  *******************************************************************************
  *
@@ -25,7 +25,6 @@ package org.pentaho.di.trans.steps.cassandrainput;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.cassandra.thrift.InvalidRequestException;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.FocusAdapter;
 import org.eclipse.swt.events.FocusEvent;
@@ -898,14 +897,14 @@ public class CassandraInputDialog extends BaseStepDialog implements StepDialogIn
         conn.setUsername( userS );
         conn.setPassword( passS );
         kSpace = conn.getKeyspace( keyspaceS );
-      } catch ( InvalidRequestException ire ) {
+      } catch ( Exception ire ) {
         logError(
           BaseMessages.getString( PKG, "CassandraInputDialog.Error.ProblemGettingSchemaInfo.Message" ) //$NON-NLS-1$
-            + ":\n\n" + ire.why, ire ); //$NON-NLS-1$
+            + ":\n\n" + ire.getMessage(), ire ); //$NON-NLS-1$
         new ErrorDialog( shell, BaseMessages.getString( PKG,
           "CassandraInputDialog.Error.ProblemGettingSchemaInfo.Title" ), //$NON-NLS-1$
           BaseMessages.getString( PKG, "CassandraInputDialog.Error.ProblemGettingSchemaInfo.Message" ) //$NON-NLS-1$
-            + ":\n\n" + ire.why, ire ); //$NON-NLS-1$
+            + ":\n\n" + ire.getMessage(), ire ); //$NON-NLS-1$
         return;
       }
 

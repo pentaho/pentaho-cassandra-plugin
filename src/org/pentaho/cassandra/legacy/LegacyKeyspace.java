@@ -2,7 +2,7 @@
  *
  * Pentaho Big Data
  *
- * Copyright (C) 2002-2013 by Pentaho : http://www.pentaho.com
+ * Copyright (C) 2002-2016 by Pentaho : http://www.pentaho.com
  *
  *******************************************************************************
  *
@@ -39,6 +39,7 @@ import org.apache.cassandra.thrift.CqlResult;
 import org.apache.cassandra.thrift.CqlRow;
 import org.apache.cassandra.thrift.KsDef;
 import org.pentaho.cassandra.CassandraUtils;
+import org.pentaho.cassandra.CompressionOption;
 import org.pentaho.cassandra.spi.CQLRowHandler;
 import org.pentaho.cassandra.spi.ColumnFamilyMetaData;
 import org.pentaho.cassandra.spi.Connection;
@@ -143,19 +144,19 @@ public class LegacyKeyspace implements Keyspace {
    */
   @Override
   public void executeCQL( String cql, String compression, String consistencyLevel, LogChannelInterface log )
-    throws UnsupportedOperationException, Exception {
+    throws Exception {
 
     ConsistencyLevel c = ConsistencyLevel.ONE; // default for CQL
-    Compression z = Compression.NONE;
+    CompressionOption z = CompressionOption.NONE;
 
     if ( !Const.isEmpty( consistencyLevel ) ) {
       c = ConsistencyLevel.valueOf( consistencyLevel );
     }
     if ( !Const.isEmpty( compression ) ) {
       if ( compression.equalsIgnoreCase( "gzip" ) ) { //$NON-NLS-1$
-        z = Compression.GZIP;
+        z = CompressionOption.GZIP;
       } else {
-        z = Compression.NONE;
+        z = CompressionOption.NONE;
       }
     }
 
@@ -164,9 +165,9 @@ public class LegacyKeyspace implements Keyspace {
     if ( m_conn != null ) {
       if ( m_cql3 ) {
         // m_conn.getClient().set_cql_version(CQL3_VERSION);
-        m_conn.getClient().execute_cql3_query( ByteBuffer.wrap( queryBytes ), z, c );
+        m_conn.getClient().execute_cql3_query( ByteBuffer.wrap( queryBytes ), z.getThriftValue(), c );
       } else {
-        m_conn.getClient().execute_cql_query( ByteBuffer.wrap( queryBytes ), z );
+        m_conn.getClient().execute_cql_query( ByteBuffer.wrap( queryBytes ), z.getThriftValue() );
       }
     }
   }
@@ -254,7 +255,7 @@ public class LegacyKeyspace implements Keyspace {
    */
   @Override
   public void createKeyspace( String keyspaceName, Map<String, Object> options, LogChannelInterface log )
-    throws UnsupportedOperationException, Exception {
+    throws Exception {
     throw new UnsupportedOperationException( "Legacy driver does not support keyspace creation" ); //$NON-NLS-1$
   }
 
@@ -292,7 +293,7 @@ public class LegacyKeyspace implements Keyspace {
   /**
    * Create a column family in the current keyspace.
    * 
-   * @param colFamName
+   * @param colFamilyName
    *          the name of the column family to create
    * @param rowMeta
    *          the incoming fields to base the column family schema on
@@ -461,7 +462,7 @@ public class LegacyKeyspace implements Keyspace {
   /**
    * Update the named column family with any incoming fields that are not present in its schema already
    * 
-   * @param colFamName
+   * @param colFamilyName
    *          the name of the column family to update
    * @param rowMeta
    *          the incoming row meta data
@@ -476,7 +477,7 @@ public class LegacyKeyspace implements Keyspace {
    */
   @Override
   public void updateColumnFamily( String colFamilyName, RowMetaInterface rowMeta, List<Integer> keyIndexes,
-      LogChannelInterface log ) throws UnsupportedOperationException, Exception {
+      LogChannelInterface log ) throws Exception {
 
     if ( m_cql3 ) {
       updateColumnFamilyCQL3( colFamilyName, rowMeta, keyIndexes, log );
@@ -546,7 +547,7 @@ public class LegacyKeyspace implements Keyspace {
       String meta = ""; //$NON-NLS-1$
       if ( comment != null && comment.length() > 0 ) {
         // is there any indexed value meta data there already?
-        if ( comment.indexOf( "@@@" ) >= 0 ) { //$NON-NLS-1$
+        if ( comment.contains( "@@@" ) ) { //$NON-NLS-1$
           // have to strip out existing stuff
           before = comment.substring( 0, comment.indexOf( "@@@" ) ); //$NON-NLS-1$
           after = comment.substring( comment.lastIndexOf( "@@@" ) + 3, //$NON-NLS-1$

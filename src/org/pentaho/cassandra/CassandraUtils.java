@@ -2,7 +2,7 @@
  *
  * Pentaho Big Data
  *
- * Copyright (C) 2002-2013 by Pentaho : http://www.pentaho.com
+ * Copyright (C) 2002-2016 by Pentaho : http://www.pentaho.com
  *
  *******************************************************************************
  *
@@ -41,7 +41,6 @@ import org.apache.cassandra.db.marshal.DecimalType;
 import org.apache.cassandra.db.marshal.DoubleType;
 import org.apache.cassandra.db.marshal.LongType;
 import org.apache.cassandra.db.marshal.UTF8Type;
-import org.apache.cassandra.thrift.Compression;
 import org.pentaho.cassandra.spi.ColumnFamilyMetaData;
 import org.pentaho.cassandra.spi.Connection;
 import org.pentaho.di.core.Const;
@@ -151,10 +150,10 @@ public class CassandraUtils {
    *          compression option (GZIP is the only option - so far)
    * @return an array of bytes containing the compressed query
    */
-  public static byte[] compressCQLQuery( String queryStr, Compression compression ) {
+  public static byte[] compressCQLQuery( String queryStr, CompressionOption compression ) {
     byte[] data = queryStr.getBytes( Charset.forName( "UTF-8" ) ); //$NON-NLS-1$
 
-    if ( compression != Compression.GZIP ) {
+    if ( compression != CompressionOption.GZIP ) {
       return data;
     }
 

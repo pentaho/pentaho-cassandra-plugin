@@ -2,7 +2,7 @@
  *
  * Pentaho Big Data
  *
- * Copyright (C) 2002-2016 by Pentaho : http://www.pentaho.com
+ * Copyright (C) 2002-2017 by Pentaho : http://www.pentaho.com
  *
  *******************************************************************************
  *
@@ -19,7 +19,6 @@
  * limitations under the License.
  *
  ******************************************************************************/
-
 package org.pentaho.di.trans.steps.cassandrasstableoutput;
 
 import java.util.List;
@@ -85,6 +84,11 @@ public class SSTableOutputMeta extends BaseStepMeta implements StepMetaInterface
   /** Size (MB) of write buffer */
   @Injection( name = "BUFFER_SIZE" )
   protected String bufferSize = "16";
+
+  /**
+   * Whether to use CQL version 3
+   */
+  protected boolean m_useCQL3 = false;
 
   /**
    * Get the path the the yaml file
@@ -200,6 +204,24 @@ public class SSTableOutputMeta extends BaseStepMeta implements StepMetaInterface
     this.bufferSize = bufferSize;
   }
 
+  /**
+   * Set whether to use CQL version 3 is to be used for CQL IO mode
+   *
+   * @param cql3 true if CQL version 3 is to be used
+   */
+  public void setUseCQL3( boolean cql3 ) {
+    m_useCQL3 = cql3;
+  }
+
+  /**
+   * Get whether to use CQL version 3 is to be used for CQL IO mode
+   *
+   * @return true if CQL version 3 is to be used
+   */
+  public boolean getUseCQL3() {
+    return m_useCQL3;
+  }
+
   @Override
   public boolean supportsErrorHandling() {
     // enable define error handling option
@@ -211,72 +233,89 @@ public class SSTableOutputMeta extends BaseStepMeta implements StepMetaInterface
     StringBuffer retval = new StringBuffer();
 
     if ( !Const.isEmpty( m_yamlPath ) ) {
-      retval.append( "\n    " ).append( XMLHandler.addTagValue( "yaml_path", m_yamlPath ) );
+      retval.append( "\n    " ).append(
+        XMLHandler.addTagValue( "yaml_path", m_yamlPath ) );
     }
 
     if ( !Const.isEmpty( directory ) ) {
-      retval.append( "\n    " ).append( XMLHandler.addTagValue( "output_directory", directory ) );
+      retval.append( "\n    " ).append(
+        XMLHandler.addTagValue( "output_directory", directory ) );
     }
 
     if ( !Const.isEmpty( cassandraKeyspace ) ) {
-      retval.append( "\n    " ).append( XMLHandler.addTagValue( "cassandra_keyspace", cassandraKeyspace ) );
-    }
-
-    if ( !Const.isEmpty( cassandraKeyspace ) ) {
-      retval.append( "\n    " ).append( XMLHandler.addTagValue( "cassandra_keyspace", cassandraKeyspace ) );
+      retval.append( "\n    " ).append(
+        XMLHandler.addTagValue( "cassandra_keyspace", cassandraKeyspace ) );
     }
 
     if ( !Const.isEmpty( columnFamily ) ) {
-      retval.append( "\n    " ).append( XMLHandler.addTagValue( "column_family", columnFamily ) );
+      retval.append( "\n    " ).append(
+        XMLHandler.addTagValue( "column_family", columnFamily ) );
     }
 
     if ( !Const.isEmpty( keyField ) ) {
-      retval.append( "\n    " ).append( XMLHandler.addTagValue( "key_field", keyField ) );
+      retval.append( "\n    " ).append(
+        XMLHandler.addTagValue( "key_field", keyField ) );
     }
 
     if ( !Const.isEmpty( bufferSize ) ) {
-      retval.append( "\n    " ).append( XMLHandler.addTagValue( "buffer_size_mb", bufferSize ) );
+      retval.append( "\n    " ).append(
+        XMLHandler.addTagValue( "buffer_size_mb", bufferSize ) );
     }
+
+    retval.append( "\n    " ).append( //$NON-NLS-1$
+      XMLHandler.addTagValue( "use_cql3", m_useCQL3 ) ); //$NON-NLS-1$
 
     return retval.toString();
   }
 
-  public void loadXML( Node stepnode, List<DatabaseMeta> databases, Map<String, Counter> counters )
-    throws KettleXMLException {
+  public void loadXML( Node stepnode, List<DatabaseMeta> databases,
+                       Map<String, Counter> counters ) throws KettleXMLException {
     m_yamlPath = XMLHandler.getTagValue( stepnode, "yaml_path" );
     directory = XMLHandler.getTagValue( stepnode, "output_directory" );
     cassandraKeyspace = XMLHandler.getTagValue( stepnode, "cassandra_keyspace" );
     columnFamily = XMLHandler.getTagValue( stepnode, "column_family" );
     keyField = XMLHandler.getTagValue( stepnode, "key_field" );
     bufferSize = XMLHandler.getTagValue( stepnode, "buffer_size_mb" );
+
+    String useCQL3 = XMLHandler.getTagValue( stepnode, "use_cql3" ); //$NON-NLS-1$
+    if ( !Const.isEmpty( useCQL3 ) ) {
+      m_useCQL3 = useCQL3.equalsIgnoreCase( "Y" ); //$NON-NLS-1$
+    }
   }
 
-  public void readRep( Repository rep, ObjectId id_step, List<DatabaseMeta> databases, Map<String, Counter> counters )
+  public void readRep( Repository rep, ObjectId id_step,
+                       List<DatabaseMeta> databases, Map<String, Counter> counters )
     throws KettleException {
     m_yamlPath = rep.getStepAttributeString( id_step, 0, "yaml_path" );
     directory = rep.getStepAttributeString( id_step, 0, "output_directory" );
-    cassandraKeyspace = rep.getStepAttributeString( id_step, 0, "cassandra_keyspace" );
+    cassandraKeyspace = rep.getStepAttributeString( id_step, 0,
+      "cassandra_keyspace" );
     columnFamily = rep.getStepAttributeString( id_step, 0, "column_family" );
     keyField = rep.getStepAttributeString( id_step, 0, "key_field" );
     bufferSize = rep.getStepAttributeString( id_step, 0, "buffer_size_mb" );
+    m_useCQL3 = rep.getStepAttributeBoolean( id_step, 0, "use_cql3" ); //$NON-NLS-1$
   }
 
-  public void saveRep( Repository rep, ObjectId id_transformation, ObjectId id_step ) throws KettleException {
+  public void saveRep( Repository rep, ObjectId id_transformation,
+                       ObjectId id_step ) throws KettleException {
 
     if ( !Const.isEmpty( m_yamlPath ) ) {
       rep.saveStepAttribute( id_transformation, id_step, "yaml_path", m_yamlPath );
     }
 
     if ( !Const.isEmpty( directory ) ) {
-      rep.saveStepAttribute( id_transformation, id_step, "output_directory", directory );
+      rep.saveStepAttribute( id_transformation, id_step, "output_directory",
+        directory );
     }
 
     if ( !Const.isEmpty( cassandraKeyspace ) ) {
-      rep.saveStepAttribute( id_transformation, id_step, "cassandra_keyspace", cassandraKeyspace );
+      rep.saveStepAttribute( id_transformation, id_step, "cassandra_keyspace",
+        cassandraKeyspace );
     }
 
     if ( !Const.isEmpty( columnFamily ) ) {
-      rep.saveStepAttribute( id_transformation, id_step, "column_family", columnFamily );
+      rep.saveStepAttribute( id_transformation, id_step, "column_family",
+        columnFamily );
     }
 
     if ( !Const.isEmpty( keyField ) ) {
@@ -284,40 +323,48 @@ public class SSTableOutputMeta extends BaseStepMeta implements StepMetaInterface
     }
 
     if ( !Const.isEmpty( bufferSize ) ) {
-      rep.saveStepAttribute( id_transformation, id_step, "buffer_size_mb", bufferSize );
+      rep.saveStepAttribute( id_transformation, id_step, "buffer_size_mb",
+        bufferSize );
     }
 
+    rep.saveStepAttribute( id_transformation, id_step, 0, "use_cql3", m_useCQL3 ); //$NON-NLS-1$
   }
 
-  public void check( List<CheckResultInterface> remarks, TransMeta transMeta, StepMeta stepMeta, RowMetaInterface prev,
-      String[] input, String[] output, RowMetaInterface info ) {
+  public void check( List<CheckResultInterface> remarks, TransMeta transMeta,
+                     StepMeta stepMeta, RowMetaInterface prev, String[] input,
+                     String[] output, RowMetaInterface info ) {
 
     CheckResult cr;
 
     if ( ( prev == null ) || ( prev.size() == 0 ) ) {
-      cr = new CheckResult( CheckResult.TYPE_RESULT_WARNING, "Not receiving any fields from previous steps!", stepMeta );
+      cr = new CheckResult( CheckResult.TYPE_RESULT_WARNING,
+        "Not receiving any fields from previous steps!", stepMeta );
       remarks.add( cr );
     } else {
-      cr =
-          new CheckResult( CheckResult.TYPE_RESULT_OK, "Step is connected to previous one, receiving " + prev.size()
-              + " fields", stepMeta );
+      cr = new CheckResult( CheckResult.TYPE_RESULT_OK,
+        "Step is connected to previous one, receiving " + prev.size()
+          + " fields", stepMeta );
       remarks.add( cr );
     }
 
     // See if we have input streams leading to this step!
     if ( input.length > 0 ) {
-      cr = new CheckResult( CheckResult.TYPE_RESULT_OK, "Step is receiving info from other steps.", stepMeta );
+      cr = new CheckResult( CheckResult.TYPE_RESULT_OK,
+        "Step is receiving info from other steps.", stepMeta );
       remarks.add( cr );
     } else {
-      cr = new CheckResult( CheckResult.TYPE_RESULT_ERROR, "No input received from other steps!", stepMeta );
+      cr = new CheckResult( CheckResult.TYPE_RESULT_ERROR,
+        "No input received from other steps!", stepMeta );
       remarks.add( cr );
     }
   }
 
-  public StepInterface getStep( StepMeta stepMeta, StepDataInterface stepDataInterface, int copyNr,
-      TransMeta transMeta, Trans trans ) {
+  public StepInterface getStep( StepMeta stepMeta,
+                                StepDataInterface stepDataInterface, int copyNr, TransMeta transMeta,
+                                Trans trans ) {
 
-    return new SSTableOutput( stepMeta, stepDataInterface, copyNr, transMeta, trans );
+    return new SSTableOutput( stepMeta, stepDataInterface, copyNr, transMeta,
+      trans );
   }
 
   public StepDataInterface getStepData() {

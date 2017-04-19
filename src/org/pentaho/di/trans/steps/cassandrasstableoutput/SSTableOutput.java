@@ -2,7 +2,7 @@
  *
  * Pentaho Big Data
  *
- * Copyright (C) 2002-2013 by Pentaho : http://www.pentaho.com
+ * Copyright (C) 2002-2017 by Pentaho : http://www.pentaho.com
  *
  *******************************************************************************
  *
@@ -22,11 +22,15 @@
 
 package org.pentaho.di.trans.steps.cassandrasstableoutput;
 
+import java.io.File;
+import java.net.URI;
+import java.security.Permission;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.pentaho.di.core.Const;
 import org.pentaho.di.core.exception.KettleException;
+import org.pentaho.di.core.logging.LogChannelInterface;
 import org.pentaho.di.core.row.RowMetaInterface;
 import org.pentaho.di.i18n.BaseMessages;
 import org.pentaho.di.trans.Trans;
@@ -36,17 +40,27 @@ import org.pentaho.di.trans.step.StepDataInterface;
 import org.pentaho.di.trans.step.StepInterface;
 import org.pentaho.di.trans.step.StepMeta;
 import org.pentaho.di.trans.step.StepMetaInterface;
+import org.pentaho.di.trans.steps.cassandrasstableoutput.writer.AbstractSSTableWriter;
+import org.pentaho.di.trans.steps.cassandrasstableoutput.writer.SSTableWriterBuilder;
 
 /**
  * Output step for writing Cassandra SSTables (sorted-string tables).
- * 
+ *
  * @author Rob Turner (robert{[at]}robertturner{[dot]}com{[dot]}au)
  * @author Mark Hall (mhall{[at]}pentaho{[dot]}com)
  */
 public class SSTableOutput extends BaseStep implements StepInterface {
-
-  protected SSTableOutputMeta m_meta;
-  protected SSTableOutputData m_data;
+  private static final SecurityManager sm = System.getSecurityManager();
+  /** The number of rows seen so far for this batch */
+  protected int rowsSeen;
+  /** Writes the SSTable output */
+  protected AbstractSSTableWriter writer;
+  /** Used to determine input fields */
+  protected RowMetaInterface inputMetadata;
+  /** List of field names (optimization) */
+  private String[] fieldNames;
+  /** List of field indices (optimization) */
+  private int[] fieldValueIndices;
 
   public SSTableOutput( StepMeta stepMeta, StepDataInterface stepDataInterface, int copyNr, TransMeta transMeta,
       Trans trans ) {
@@ -54,63 +68,46 @@ public class SSTableOutput extends BaseStep implements StepInterface {
     super( stepMeta, stepDataInterface, copyNr, transMeta, trans );
   }
 
-  /** The number of rows seen so far for this batch */
-  protected int rowsSeen;
-
-  /** The directory to output to */
-  protected String directory;
-
-  /** The keyspace to use */
-  protected String keyspace;
-
-  /** The name of the column family (table) to write to */
-  protected String columnFamily;
-
-  /** The key field used to determine unique keys (IDs) for rows */
-  protected String keyField;
-
-  /** Size (MB) of write buffer */
-  protected String bufferSize;
-
-  /** Writes the SSTable output */
-  protected SSTableWriter writer;
-
-  /** Used to determine input fields */
-  protected RowMetaInterface inputMetadata;
-
-  /** List of field names (optimization) */
-  private String[] fieldNames;
-
-  /** List of field indices (optimization) */
-  private int[] fieldValueIndices;
-
-  private void initialize( StepMetaInterface smi, StepDataInterface sdi ) throws Exception {
+  private void initialize( SSTableOutputMeta smi ) throws Exception {
     first = false;
     rowsSeen = 0;
-    m_meta = (SSTableOutputMeta) smi;
-    m_data = (SSTableOutputData) sdi;
     inputMetadata = getInputRowMeta();
 
-    String yamlPath = environmentSubstitute( m_meta.getYamlPath() );
+    String yamlPath = environmentSubstitute( smi.getYamlPath() );
+    String directory = environmentSubstitute( smi.getDirectory() );
+    String keyspace = environmentSubstitute( smi.getCassandraKeyspace() );
+    String columnFamily = environmentSubstitute( smi.getColumnFamilyName() );
+    String keyField = environmentSubstitute( smi.getKeyField() );
+    String bufferSize = environmentSubstitute( smi.getBufferSize() );
+
     if ( Const.isEmpty( yamlPath ) ) {
       throw new Exception( BaseMessages.getString( SSTableOutputMeta.PKG, "SSTableOutput.Error.NoPathToYAML" ) );
     }
     logBasic( BaseMessages.getString( SSTableOutputMeta.PKG, "SSTableOutput.Message.YAMLPath", yamlPath ) );
 
-    System.setProperty( "cassandra.config", "file:" + yamlPath );
+    File outputDir;
+    if ( Const.isEmpty( directory ) ) {
+      outputDir = new File( System.getProperty( "java.io.tmpdir" ) );
+    } else {
+      outputDir = new File( new URI( directory ) );
+    }
 
-    directory = environmentSubstitute( m_meta.getDirectory() );
-    keyspace = environmentSubstitute( m_meta.getCassandraKeyspace() );
-    columnFamily = environmentSubstitute( m_meta.getColumnFamilyName() );
-    keyField = environmentSubstitute( m_meta.getKeyField() );
-    bufferSize = environmentSubstitute( m_meta.getBufferSize() );
+    if ( !outputDir.exists() ) {
+      if ( !outputDir.mkdirs() ) {
+        throw new KettleException( BaseMessages.getString( SSTableOutputMeta.PKG,
+            "SSTableOutput.Error.OutputDirDoesntExist" ) );
+      }
+    }
+
     if ( Const.isEmpty( columnFamily ) ) {
       throw new KettleException( BaseMessages.getString( SSTableOutputMeta.PKG,
           "SSTableOutput.Error.NoColumnFamilySpecified" ) );
     }
+
     if ( Const.isEmpty( keyField ) ) {
       throw new KettleException( BaseMessages.getString( SSTableOutputMeta.PKG, "SSTableOutput.Error.NoKeySpecified" ) );
     }
+
     // what are the fields? where are they?
     fieldNames = inputMetadata.getFieldNames();
     fieldValueIndices = new int[fieldNames.length];
@@ -121,13 +118,41 @@ public class SSTableOutput extends BaseStep implements StepInterface {
     if ( writer != null ) {
       writer.close();
     }
-    writer = new SSTableWriter();
-    writer.setDirectory( directory );
-    writer.setKeyspace( keyspace );
-    writer.setColumnFamily( columnFamily );
-    writer.setKeyField( keyField );
-    writer.setBufferSize( Integer.parseInt( bufferSize ) );
-    writer.init();
+
+    SSTableWriterBuilder builder =
+        new SSTableWriterBuilder().withConfig( yamlPath ).withDirectory( outputDir.getAbsolutePath() ).withKeyspace(
+            keyspace ).withColumnFamily( columnFamily ).withRowMeta( getInputRowMeta() ).withKeyField( keyField )
+            .withCqlVersion( smi.getUseCQL3() ? 3 : 2 );
+    try {
+      builder.withBufferSize( Integer.parseInt( bufferSize ) );
+    } catch ( NumberFormatException nfe ) {
+      logBasic( BaseMessages.getString( SSTableOutputMeta.PKG, "SSTableOutput.Message.DefaultBufferSize" ) );
+    }
+
+    writer = builder.build();
+    try {
+      disableSystemExit( sm, log );
+      writer.init();
+    } catch ( Exception e ) {
+      throw new RuntimeException( BaseMessages.getString( SSTableOutputMeta.PKG, "SSTableOutput.Error.InvalidConfig" ),
+        e );
+    } finally {
+      // Restore original security manager if needed
+      if ( System.getSecurityManager() != sm ) {
+        System.setSecurityManager( sm );
+      }
+    }
+  }
+
+  void disableSystemExit( SecurityManager sm, LogChannelInterface log ) {
+    // Workaround JVM exit caused by org.apache.cassandra.config.DatabaseDescriptor in case of any issue with
+    // cassandra config. Do this by preventing JVM from exit for writer initialization time or give user a clue at
+    // least.
+    try {
+      System.setSecurityManager( new NoSystemExitDelegatingSecurityManager( sm ) );
+    } catch ( SecurityException se ) {
+      log.logError( BaseMessages.getString( SSTableOutputMeta.PKG, "SSTableOutput.Error.JVMExitProtection" ), se );
+    }
   }
 
   @Override
@@ -136,7 +161,18 @@ public class SSTableOutput extends BaseStep implements StepInterface {
     if ( isStopped() ) {
       return false;
     }
+
     Object[] r = getRow();
+
+    if ( first ) {
+      try {
+        initialize( (SSTableOutputMeta) smi );
+      } catch ( Exception e ) {
+        throw new KettleException(
+          BaseMessages.getString( SSTableOutputMeta.PKG, "SSTableOutput.Error.WriterInitFailed" ), e );
+      }
+    }
+
     try {
       if ( r == null ) {
         // no more output - clean up/close connections
@@ -144,24 +180,23 @@ public class SSTableOutput extends BaseStep implements StepInterface {
         closeWriter();
         return false;
       }
-      if ( first ) {
-        initialize( smi, sdi );
-      }
       // create record
       Map<String, Object> record = new HashMap<String, Object>();
       for ( int i = 0; i < fieldNames.length; i++ ) {
         Object value = r[fieldValueIndices[i]];
-        if ( SSTableWriter.isNull( value ) ) {
+        if ( value == null || "".equals( value ) ) {
           continue;
         }
         record.put( fieldNames[i], value );
       }
       // write it
       writer.processRow( record );
+      incrementLinesWritten();
     } catch ( Exception e ) {
       logError( BaseMessages.getString( SSTableOutputMeta.PKG, "SSTableOutput.Error.FailedToProcessRow" ), e );
       // single error row - found it!
       putError( getInputRowMeta(), r, 1L, e.getMessage(), null, "ERR_SSTABLE_OUTPUT_01" );
+      incrementLinesRejected();
     }
 
     // error will occur after adding it
@@ -185,6 +220,36 @@ public class SSTableOutput extends BaseStep implements StepInterface {
         // YUM!!
         logError( BaseMessages.getString( SSTableOutputMeta.PKG, "SSTableOutput.Error.FailedToCloseWriter" ), e );
       }
+    }
+  }
+
+  private class JVMShutdownAttemptedException extends SecurityException {
+  }
+
+  private class NoSystemExitDelegatingSecurityManager extends SecurityManager {
+    private SecurityManager delegate;
+
+    NoSystemExitDelegatingSecurityManager( SecurityManager delegate ) {
+      this.delegate = delegate;
+    }
+
+    @Override
+    public void checkPermission( Permission perm ) {
+      if ( delegate != null ) {
+        delegate.checkPermission( perm );
+      }
+    }
+
+    @Override
+    public void checkPermission( Permission perm, Object context ) {
+      if ( delegate != null ) {
+        delegate.checkPermission( perm, context );
+      }
+    }
+
+    @Override
+    public void checkExit( int status ) {
+      throw new JVMShutdownAttemptedException();
     }
   }
 }

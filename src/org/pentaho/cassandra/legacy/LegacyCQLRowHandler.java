@@ -2,7 +2,7 @@
  *
  * Pentaho Big Data
  *
- * Copyright (C) 2002-2013 by Pentaho : http://www.pentaho.com
+ * Copyright (C) 2002-2016 by Pentaho : http://www.pentaho.com
  *
  *******************************************************************************
  *
@@ -33,13 +33,14 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.cassandra.thrift.Column;
-import org.apache.cassandra.thrift.Compression;
 import org.apache.cassandra.thrift.ConsistencyLevel;
 import org.apache.cassandra.thrift.CqlResult;
 import org.apache.cassandra.thrift.CqlRow;
 import org.pentaho.cassandra.CassandraUtils;
 import static org.pentaho.cassandra.cql.CQLUtils.getColumnsInSelect;
 import static org.pentaho.cassandra.cql.CQLUtils.getSelectExpression;
+
+import org.pentaho.cassandra.CompressionOption;
 import org.pentaho.cassandra.cql.Selector;
 import org.pentaho.cassandra.spi.CQLRowHandler;
 import org.pentaho.cassandra.spi.Keyspace;
@@ -135,12 +136,12 @@ public class LegacyCQLRowHandler implements CQLRowHandler {
       }
     }
 
-    Compression comp = Compression.NONE;
+    CompressionOption comp = CompressionOption.NONE;
     if ( !Const.isEmpty( compress ) ) {
-      comp = Compression.valueOf( compress );
+      comp = CompressionOption.valueOf( compress );
 
       if ( comp == null ) {
-        comp = Compression.NONE;
+        comp = CompressionOption.NONE;
       }
     }
 
@@ -155,7 +156,7 @@ public class LegacyCQLRowHandler implements CQLRowHandler {
     long time = System.currentTimeMillis() - start;
     final Exception[] e = new Exception[1];
     final AtomicBoolean done = new AtomicBoolean( false );
-    final Compression comp2 = comp;
+    final CompressionOption comp2 = comp;
     final ConsistencyLevel c2 = c;
     Thread t = new Thread( new Runnable() {
       @Override
@@ -163,10 +164,10 @@ public class LegacyCQLRowHandler implements CQLRowHandler {
         try {
           if ( m_cql3 ) {
             ( (CassandraConnection) m_keyspace.getConnection() ).getClient().execute_cql3_query(
-                ByteBuffer.wrap( toSend ), comp2, c2 );
+                ByteBuffer.wrap( toSend ), comp2.getThriftValue(), c2 );
           } else {
             ( (CassandraConnection) m_keyspace.getConnection() ).getClient().execute_cql_query(
-                ByteBuffer.wrap( toSend ), comp2 );
+                ByteBuffer.wrap( toSend ), comp2.getThriftValue() );
           }
         } catch ( Exception ex ) {
           e[0] = ex;
@@ -274,7 +275,7 @@ public class LegacyCQLRowHandler implements CQLRowHandler {
     m_requestingStep = requestingStep;
 
     ConsistencyLevel c = ConsistencyLevel.ONE; // default for CQL
-    Compression z = Compression.NONE;
+    CompressionOption z = CompressionOption.NONE;
 
     if ( !Const.isEmpty( consistencyLevel ) ) {
       try {
@@ -288,9 +289,9 @@ public class LegacyCQLRowHandler implements CQLRowHandler {
     }
     if ( !Const.isEmpty( compress ) ) {
       if ( compress.equalsIgnoreCase( "gzip" ) ) { //$NON-NLS-1$
-        z = Compression.GZIP;
+        z = CompressionOption.GZIP;
       } else {
-        z = Compression.NONE;
+        z = CompressionOption.NONE;
       }
     }
 
@@ -300,11 +301,11 @@ public class LegacyCQLRowHandler implements CQLRowHandler {
     if ( m_cql3 ) {
       result =
           ( (CassandraConnection) m_keyspace.getConnection() ).getClient().execute_cql3_query(
-              ByteBuffer.wrap( queryBytes ), z, c );
+              ByteBuffer.wrap( queryBytes ), z.getThriftValue(), c );
     } else {
       result =
           ( (CassandraConnection) m_keyspace.getConnection() ).getClient().execute_cql_query(
-              ByteBuffer.wrap( queryBytes ), z );
+              ByteBuffer.wrap( queryBytes ), z.getThriftValue() );
     }
 
     m_resultIterator = result.getRowsIterator();

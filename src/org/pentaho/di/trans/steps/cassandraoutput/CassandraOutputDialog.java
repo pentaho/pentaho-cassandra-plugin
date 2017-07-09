@@ -2,7 +2,7 @@
  *
  * Pentaho Big Data
  *
- * Copyright (C) 2002-2013 by Pentaho : http://www.pentaho.com
+ * Copyright (C) 2002-2016 by Pentaho : http://www.pentaho.com
  *
  *******************************************************************************
  *
@@ -26,7 +26,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.cassandra.thrift.InvalidRequestException;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CCombo;
@@ -1104,13 +1103,13 @@ public class CassandraOutputDialog extends BaseStepDialog implements StepDialogI
                 ConnectionFactory.Driver.LEGACY_THRIFT, opts );
 
         kSpace = conn.getKeyspace( keyspaceS );
-      } catch ( InvalidRequestException ire ) {
+      } catch ( Exception ire ) {
         logError( BaseMessages.getString( PKG, "CassandraOutputDialog.Error.ProblemGettingSchemaInfo.Message" ) //$NON-NLS-1$
-            + ":\n\n" + ire.why, ire ); //$NON-NLS-1$
+            + ":\n\n" + ire.getMessage(), ire ); //$NON-NLS-1$
         new ErrorDialog( shell, BaseMessages.getString( PKG,
             "CassandraOutputDialog.Error.ProblemGettingSchemaInfo.Title" ), //$NON-NLS-1$
             BaseMessages.getString( PKG, "CassandraOutputDialog.Error.ProblemGettingSchemaInfo.Message" ) //$NON-NLS-1$
-                + ":\n\n" + ire.why, ire ); //$NON-NLS-1$
+                + ":\n\n" + ire.getMessage(), ire ); //$NON-NLS-1$
         return;
       }
 
@@ -1323,24 +1322,15 @@ public class CassandraOutputDialog extends BaseStepDialog implements StepDialogI
         conn =
             CassandraUtils.getCassandraConnection( hostS, Integer.parseInt( portS ), userS, passS,
                 ConnectionFactory.Driver.LEGACY_THRIFT, opts );
-
-        conn.setHosts( hostS );
         conn.setDefaultPort( Integer.parseInt( portS ) );
-        conn.setUsername( userS );
-        conn.setPassword( passS );
         kSpace = conn.getKeyspace( keyspaceS );
-
-        // conn = CassandraOutputData.getCassandraConnection(hostS,
-        // Integer.parseInt(portS), userS, passS);
-        //
-        // conn.setKeyspace(keyspaceS);
-      } catch ( InvalidRequestException ire ) {
+      } catch ( Exception ire ) {
         logError( BaseMessages.getString( PKG, "CassandraOutputDialog.Error.ProblemGettingSchemaInfo.Message" ) //$NON-NLS-1$
-            + ":\n\n" + ire.why, ire ); //$NON-NLS-1$
+            + ":\n\n" + ire.getMessage(), ire ); //$NON-NLS-1$
         new ErrorDialog( shell, BaseMessages.getString( PKG,
             "CassandraOutputDialog.Error.ProblemGettingSchemaInfo.Title" ), //$NON-NLS-1$
             BaseMessages.getString( PKG, "CassandraOutputDialog.Error.ProblemGettingSchemaInfo.Message" ) //$NON-NLS-1$
-                + ":\n\n" + ire.why, ire ); //$NON-NLS-1$
+                + ":\n\n" + ire.getMessage(), ire ); //$NON-NLS-1$
         return;
       }
 

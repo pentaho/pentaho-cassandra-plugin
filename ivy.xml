@@ -25,33 +25,61 @@
       changing="true" />
     <dependency org="pentaho-kettle" name="kettle-ui-swt" rev="${dependency.kettle.revision}" transitive="false" conf="default->default"
       changing="true" />
-    <dependency org="pentaho" name="pentaho-xul-core" rev="${dependency.pentaho-xul.revision}" changing="true" />
+    <dependency org="pentaho" name="pentaho-xul-core" rev="${dependency.pentaho-xul.revision}" transitive="false" changing="true" />
 
-    <dependency org="pentaho"             name="metastore"           rev="${dependency.pentaho-metastore.revision}"   changing="true" />
 
     <!-- Third-party (external) dependencies -->
-    <dependency org="org.eclipse.swt.win32.win32" name="x86" rev="3.3.0-v3346" transitive="false" />
-    <dependency org="org.eclipse" name="jface" rev="3.3.0-I20070606-0010" transitive="false" />
-
-    <dependency org="com.google.guava" name="guava" rev="${dependency.guava.revision}" transitive="false" conf="default->default"  changing="false"/>
-    <dependency org="org.apache.thrift" name="libthrift" rev="${dependency.libthrift.revision}" transitive="false" conf="default->default" changing="false"/>
+    <!-- Cassandra dependencies (SSTable) -->
     <dependency org="org.apache.cassandra" name="cassandra-all" rev="${dependency.apache-cassandra.revision}" transitive="false" conf="default->default" changing="false"/>
     <dependency org="org.apache.cassandra" name="cassandra-thrift" rev="${dependency.apache-cassandra-thrift.revision}" transitive="false" conf="default->default"  changing="false"/>
-
     <dependency org="org.yaml" name="snakeyaml" rev="${dependency.snakeyaml.revision}" transitive="false" conf="default->default"  changing="false"/>
-    <dependency org="org.slf4j" name="slf4j-api" rev="1.7.7" transitive="false" conf="default->default"  changing="false"/>
-    <dependency org="org.slf4j" name="slf4j-log4j12" rev="1.7.7" transitive="false" conf="default->default"  changing="false"/>
-    <dependency org="log4j" name="log4j" rev="1.2.14" />
+    <dependency org="com.boundary" name="high-scale-lib" rev="${dependency.high-scale-lib.revision}" transitive="false" conf="default->default" changing="false"/>
+    <dependency org="com.github.jbellis" name="jamm" rev="${dependency.jamm.revision}" transitive="false" conf="default->default" changing="false"/>
+    <dependency org="net.java.dev.jna" name="jna" rev="${dependency.jna.revision}" transitive="false" conf="default->default" changing="false"/>
+    <dependency org="net.jpountz.lz4" name="lz4" rev="${dependency.lz4.revision}" transitive="false" conf="default->default" changing="false"/>
+    <dependency org="io.dropwizard.metrics" name="metrics-core" rev="${dependency.dropwizard-metrics.revision}" transitive="false" conf="default->default" changing="false"/>
+    <dependency org="io.dropwizard.metrics" name="metrics-jvm" rev="${dependency.dropwizard-metrics.revision}" transitive="false" conf="default->default" changing="false"/>
+    <dependency org="org.fusesource" name="sigar" rev="${dependency.sigar.revision}" transitive="false" conf="default->default" changing="false"/>
+    <dependency org="com.clearspring.analytics" name="stream" rev="${dependency.clearspring-stream.revision}" transitive="false" conf="default->default" changing="false"/>
+
+
+    <dependency org="net.sf.supercsv" name="super-csv" rev="${dependency.supercsv.revision}" transitive="false" conf="default->default" changing="false"/>
+    <dependency org="com.google.guava" name="guava" rev="${dependency.guava.revision}" transitive="false" conf="default->default"  changing="false"/>
+
+    <dependency org="org.apache.commons" name="commons-lang3" rev="${dependency.commons-lang3.revision}"/>
+
+    <dependency org="org.apache.thrift" name="libthrift" rev="${dependency.libthrift.revision}" transitive="false" conf="default->default" changing="false"/>
+
+
+    <!-- Input/Output driver impl dependencies  -->
+    <dependency org="com.datastax.cassandra" name="cassandra-driver-core" rev="${dependency.cassandra-driver.revision}" transitive="false"/>
+    <dependency org="com.datastax.cassandra" name="cassandra-driver-extras" rev="${dependency.cassandra-driver.revision}" transitive="false"/>
+    <dependency org="io.netty" name="netty-common" rev="${dependency.netty.revision}" transitive="false"/>
+    <dependency org="io.netty" name="netty-transport" rev="${dependency.netty.revision}" transitive="false"/>
+    <dependency org="io.netty" name="netty-buffer" rev="${dependency.netty.revision}" transitive="false"/>
+    <dependency org="io.netty" name="netty-codec" rev="${dependency.netty.revision}" transitive="false"/>
+    <dependency org="io.netty" name="netty-handler" rev="${dependency.netty.revision}" transitive="false"/>
+
+
+    <dependency org="com.googlecode.concurrentlinkedhashmap" name="concurrentlinkedhashmap-lru" rev="${dependency.concurrentlinkedhashmap-lru.revision}" transitive="false" conf="default->default" changing="false"/>
+    <dependency org="commons-lang"        name="commons-lang"        rev="${dependency.commons-lang.revision}"              transitive="false"/>
+
+    <dependency org="log4j" name="log4j" rev="${dependency.log4j.revision}" transitive="false" />
 
     <!--  for testing -->
-    <dependency org="org.mockito" name="mockito-all"   rev="1.9.5"   conf="test->default" transitive="false" />
-    <dependency org="junit" name="junit" rev="4.5" conf="test->default" />
-    <dependency org="org.apache.commons" name="commons-vfs2" rev="2.1-20150824" conf="test->default" />
-    <dependency org="pentaho-kettle" name="kettle-engine" rev="${dependency.kettle.revision}" transitive="false" conf="test->default" >
+    <dependency org="pentaho-kettle" name="kettle-core" rev="${dependency.kettle.revision}" transitive="true" conf="test->default" changing="true"/>
+    <dependency org="pentaho-kettle" name="kettle-engine" rev="${dependency.kettle.revision}" transitive="true" conf="test->default" changing="true">
       <artifact name="kettle-engine" ext="jar" m:classifier="tests"/>
     </dependency>
-    <dependency org="pentaho-kettle" name="kettle-core" rev="${dependency.kettle.revision}" transitive="true" conf="test->default" changing="true"/>
-    <dependency org="org.apache.cassandra" name="cassandra-all" rev="${dependency.apache-cassandra.revision}" transitive="true" conf="test->default" changing="false"/>
+    <dependency org="junit" name="junit" rev="4.11" conf="test->default" />
+    <dependency org="org.mockito" name="mockito-all"   rev="1.9.5"   conf="test->default" transitive="false" />
+    <dependency org="pentaho-kettle" name="kettle-engine-test" rev="${dependency.kettle.revision}" transitive="false" conf="test->default"/>
+    <dependency org="org.apache.commons" name="commons-vfs2" rev="2.1-20150824" conf="test->default" />
+    <dependency org="org.slf4j" name="slf4j-api" rev="1.7.7" transitive="false" conf="test->default"  changing="false"/>
+    <dependency org="org.slf4j" name="slf4j-log4j12" rev="1.7.7" transitive="false" conf="test->default"  changing="false"/>
+    <dependency org="javax.servlet" name="javax.servlet-api" rev="3.0.1" transitive="false" conf="test->default" />
 
+    <dependency org="org.codehaus.jackson"             name="jackson-core-asl"     rev="1.9.2"           transitive="false" conf="test->default"/>
+    <dependency org="org.codehaus.jackson"             name="jackson-mapper-asl"   rev="1.9.2"           transitive="false" conf="test->default"/>
   </dependencies>
 </ivy-module>

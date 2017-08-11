@@ -48,8 +48,9 @@ public class CQL2SSTableWriterTest {
   public static final String DIRECTORY_PATH = "directory_path";
   public static final int BUFFER_SIZE = 10;
   public static final AtomicBoolean checker = new AtomicBoolean( true );
-  public static final AtomicReference result = new AtomicReference( new HashMap<Object, List<Object>>() );
-  public static final AtomicReference workingKey = new AtomicReference( null );
+  public static final AtomicReference<Map<ByteBuffer, List<ByteBuffer>>> result =
+      new AtomicReference<>( new HashMap<ByteBuffer, List<ByteBuffer>>() );
+  public static final AtomicReference<ByteBuffer> workingKey = new AtomicReference<>( null );
 
   class CQL2SSTableWriterStub extends CQL2SSTableWriter {
     @Override SSTableSimpleUnsortedWriter getSsTableSimpleUnsortedWriter( File file,
@@ -99,28 +100,32 @@ public class CQL2SSTableWriterTest {
       }
 
 
-      doAnswer( new Answer() {
-        @Override public Object answer( InvocationOnMock invocation ) throws Throwable {
-          ByteBuffer name = (ByteBuffer) invocation.getArguments()[ 0 ];
-          ByteBuffer value = (ByteBuffer) invocation.getArguments()[ 1 ];
-          Object timestamp = invocation.getArguments()[ 2 ];
-          ByteBuffer currentKey = (ByteBuffer) workingKey.get();
-          assertNotNull( "adding columns without calling new row", currentKey );
-          assertFalse( "key is the same as column", currentKey.equals( value ) );
-          Map<ByteBuffer, List<ByteBuffer>> obj;
-          Map<ByteBuffer, List<ByteBuffer>> objClone;
-          do {
-            obj = (Map<ByteBuffer, List<ByteBuffer>>) result.get();
-            objClone = new HashMap<ByteBuffer, List<ByteBuffer>>( obj );
-            List<ByteBuffer> cols = objClone.get( currentKey );
-            assertNotNull( "adding columns without calling new row", cols );
-            cols.add( value );
-            objClone.put( currentKey, cols );
-          } while ( !result.compareAndSet( obj, objClone ) );
+      try {
+        doAnswer( new Answer() {
+          @Override public Object answer( InvocationOnMock invocation ) throws Throwable {
+            ByteBuffer name = (ByteBuffer) invocation.getArguments()[ 0 ];
+            ByteBuffer value = (ByteBuffer) invocation.getArguments()[ 1 ];
+            Object timestamp = invocation.getArguments()[ 2 ];
+            ByteBuffer currentKey = (ByteBuffer) workingKey.get();
+            assertNotNull( "adding columns without calling new row", currentKey );
+            assertFalse( "key is the same as column", currentKey.equals( value ) );
+            Map<ByteBuffer, List<ByteBuffer>> obj;
+            Map<ByteBuffer, List<ByteBuffer>> objClone;
+            do {
+              obj = (Map<ByteBuffer, List<ByteBuffer>>) result.get();
+              objClone = new HashMap<ByteBuffer, List<ByteBuffer>>( obj );
+              List<ByteBuffer> cols = objClone.get( currentKey );
+              assertNotNull( "adding columns without calling new row", cols );
+              cols.add( value );
+              objClone.put( currentKey, cols );
+            } while ( !result.compareAndSet( obj, objClone ) );
 
-          return null;
-        }
-      } ).when( ssWriter ).addColumn( (ByteBuffer) anyObject(), (ByteBuffer) anyObject(), anyLong() );
+            return null;
+          }
+        } ).when( ssWriter ).addColumn( (ByteBuffer) anyObject(), (ByteBuffer) anyObject(), anyLong() );
+      } catch ( Exception e ) {
+        throw new RuntimeException( e );
+      }
 
       return ssWriter;
     }

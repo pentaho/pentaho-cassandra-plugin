@@ -26,7 +26,6 @@ import java.util.Map;
 
 import org.pentaho.di.core.CheckResult;
 import org.pentaho.di.core.CheckResultInterface;
-import org.pentaho.di.core.Const;
 import org.pentaho.di.core.Counter;
 import org.pentaho.di.core.annotations.Step;
 import org.pentaho.di.core.database.DatabaseMeta;
@@ -34,7 +33,9 @@ import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.exception.KettleXMLException;
 import org.pentaho.di.core.injection.Injection;
 import org.pentaho.di.core.injection.InjectionSupported;
+import org.pentaho.di.core.plugins.ParentFirst;
 import org.pentaho.di.core.row.RowMetaInterface;
+import org.pentaho.di.core.util.Utils;
 import org.pentaho.di.core.xml.XMLHandler;
 import org.pentaho.di.repository.ObjectId;
 import org.pentaho.di.repository.Repository;
@@ -57,6 +58,7 @@ import org.w3c.dom.Node;
     documentationUrl = "http://wiki.pentaho.com/display/EAI/SSTable+Output",
     description = "Writes to a filesystem directory as a Cassandra SSTable", categoryDescription = "Big Data" )
 @InjectionSupported( localizationPrefix = "SSTableOutput.Injection." )
+@ParentFirst( patterns = { ".*" } )
 public class SSTableOutputMeta extends BaseStepMeta implements StepMetaInterface {
 
   protected static final Class<?> PKG = SSTableOutputMeta.class;
@@ -232,32 +234,32 @@ public class SSTableOutputMeta extends BaseStepMeta implements StepMetaInterface
   public String getXML() {
     StringBuffer retval = new StringBuffer();
 
-    if ( !Const.isEmpty( m_yamlPath ) ) {
+    if ( !Utils.isEmpty( m_yamlPath ) ) {
       retval.append( "\n    " ).append(
         XMLHandler.addTagValue( "yaml_path", m_yamlPath ) );
     }
 
-    if ( !Const.isEmpty( directory ) ) {
+    if ( !Utils.isEmpty( directory ) ) {
       retval.append( "\n    " ).append(
         XMLHandler.addTagValue( "output_directory", directory ) );
     }
 
-    if ( !Const.isEmpty( cassandraKeyspace ) ) {
+    if ( !Utils.isEmpty( cassandraKeyspace ) ) {
       retval.append( "\n    " ).append(
         XMLHandler.addTagValue( "cassandra_keyspace", cassandraKeyspace ) );
     }
 
-    if ( !Const.isEmpty( columnFamily ) ) {
+    if ( !Utils.isEmpty( columnFamily ) ) {
       retval.append( "\n    " ).append(
         XMLHandler.addTagValue( "column_family", columnFamily ) );
     }
 
-    if ( !Const.isEmpty( keyField ) ) {
+    if ( !Utils.isEmpty( keyField ) ) {
       retval.append( "\n    " ).append(
         XMLHandler.addTagValue( "key_field", keyField ) );
     }
 
-    if ( !Const.isEmpty( bufferSize ) ) {
+    if ( !Utils.isEmpty( bufferSize ) ) {
       retval.append( "\n    " ).append(
         XMLHandler.addTagValue( "buffer_size_mb", bufferSize ) );
     }
@@ -278,7 +280,7 @@ public class SSTableOutputMeta extends BaseStepMeta implements StepMetaInterface
     bufferSize = XMLHandler.getTagValue( stepnode, "buffer_size_mb" );
 
     String useCQL3 = XMLHandler.getTagValue( stepnode, "use_cql3" ); //$NON-NLS-1$
-    if ( !Const.isEmpty( useCQL3 ) ) {
+    if ( !Utils.isEmpty( useCQL3 ) ) {
       m_useCQL3 = useCQL3.equalsIgnoreCase( "Y" ); //$NON-NLS-1$
     }
   }
@@ -299,30 +301,30 @@ public class SSTableOutputMeta extends BaseStepMeta implements StepMetaInterface
   public void saveRep( Repository rep, ObjectId id_transformation,
                        ObjectId id_step ) throws KettleException {
 
-    if ( !Const.isEmpty( m_yamlPath ) ) {
+    if ( !Utils.isEmpty( m_yamlPath ) ) {
       rep.saveStepAttribute( id_transformation, id_step, "yaml_path", m_yamlPath );
     }
 
-    if ( !Const.isEmpty( directory ) ) {
+    if ( !Utils.isEmpty( directory ) ) {
       rep.saveStepAttribute( id_transformation, id_step, "output_directory",
         directory );
     }
 
-    if ( !Const.isEmpty( cassandraKeyspace ) ) {
+    if ( !Utils.isEmpty( cassandraKeyspace ) ) {
       rep.saveStepAttribute( id_transformation, id_step, "cassandra_keyspace",
         cassandraKeyspace );
     }
 
-    if ( !Const.isEmpty( columnFamily ) ) {
+    if ( !Utils.isEmpty( columnFamily ) ) {
       rep.saveStepAttribute( id_transformation, id_step, "column_family",
         columnFamily );
     }
 
-    if ( !Const.isEmpty( keyField ) ) {
+    if ( !Utils.isEmpty( keyField ) ) {
       rep.saveStepAttribute( id_transformation, id_step, "key_field", keyField );
     }
 
-    if ( !Const.isEmpty( bufferSize ) ) {
+    if ( !Utils.isEmpty( bufferSize ) ) {
       rep.saveStepAttribute( id_transformation, id_step, "buffer_size_mb",
         bufferSize );
     }

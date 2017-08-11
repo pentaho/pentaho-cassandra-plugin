@@ -2,7 +2,7 @@
  *
  * Pentaho Big Data
  *
- * Copyright (C) 2002-2016 by Pentaho : http://www.pentaho.com
+ * Copyright (C) 2002-2017 by Pentaho : http://www.pentaho.com
  *
  *******************************************************************************
  *
@@ -27,7 +27,6 @@ import java.util.Map;
 
 import org.pentaho.di.core.CheckResult;
 import org.pentaho.di.core.CheckResultInterface;
-import org.pentaho.di.core.Const;
 import org.pentaho.di.core.Counter;
 import org.pentaho.di.core.annotations.Step;
 import org.pentaho.di.core.database.DatabaseMeta;
@@ -37,6 +36,7 @@ import org.pentaho.di.core.exception.KettleXMLException;
 import org.pentaho.di.core.injection.Injection;
 import org.pentaho.di.core.injection.InjectionSupported;
 import org.pentaho.di.core.row.RowMetaInterface;
+import org.pentaho.di.core.util.Utils;
 import org.pentaho.di.core.xml.XMLHandler;
 import org.pentaho.di.i18n.BaseMessages;
 import org.pentaho.di.repository.ObjectId;
@@ -191,6 +191,12 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
 
   @Injection( name = "TTL_UNIT" )
   protected String m_ttlUnit = TTLUnits.NONE.toString();
+
+  private boolean useDriver = true;
+
+  public boolean isUseDriver() {
+    return useDriver && !m_useThriftIO && !m_useCQL3;
+  }
 
   public enum TTLUnits {
     NONE( BaseMessages.getString( PKG, "CassandraOutput.TTLUnit.None" ) ) { //$NON-NLS-1$
@@ -750,78 +756,78 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
   public String getXML() {
     StringBuffer retval = new StringBuffer();
 
-    if ( !Const.isEmpty( m_cassandraHost ) ) {
+    if ( !Utils.isEmpty( m_cassandraHost ) ) {
       retval.append( "\n    " ).append( //$NON-NLS-1$
           XMLHandler.addTagValue( "cassandra_host", m_cassandraHost ) ); //$NON-NLS-1$
     }
 
-    if ( !Const.isEmpty( m_cassandraPort ) ) {
+    if ( !Utils.isEmpty( m_cassandraPort ) ) {
       retval.append( "\n    " ).append( //$NON-NLS-1$
           XMLHandler.addTagValue( "cassandra_port", m_cassandraPort ) ); //$NON-NLS-1$
     }
 
-    if ( !Const.isEmpty( m_schemaHost ) ) {
+    if ( !Utils.isEmpty( m_schemaHost ) ) {
       retval.append( "\n    " ).append( //$NON-NLS-1$
           XMLHandler.addTagValue( "schema_host", m_schemaHost ) ); //$NON-NLS-1$
     }
 
-    if ( !Const.isEmpty( m_schemaPort ) ) {
+    if ( !Utils.isEmpty( m_schemaPort ) ) {
       retval.append( "\n    " ).append( //$NON-NLS-1$
           XMLHandler.addTagValue( "schema_port", m_schemaPort ) ); //$NON-NLS-1$
     }
 
-    if ( !Const.isEmpty( m_socketTimeout ) ) {
+    if ( !Utils.isEmpty( m_socketTimeout ) ) {
       retval.append( "\n    " ).append( //$NON-NLS-1$
           XMLHandler.addTagValue( "socket_timeout", m_socketTimeout ) ); //$NON-NLS-1$
     }
 
-    if ( !Const.isEmpty( m_password ) ) {
+    if ( !Utils.isEmpty( m_password ) ) {
       retval.append( "\n    " ).append( //$NON-NLS-1$
           XMLHandler.addTagValue( "password", //$NON-NLS-1$
               Encr.encryptPasswordIfNotUsingVariables( m_password ) ) );
     }
 
-    if ( !Const.isEmpty( m_username ) ) {
+    if ( !Utils.isEmpty( m_username ) ) {
       retval.append( "\n    " ).append( //$NON-NLS-1$
           XMLHandler.addTagValue( "username", m_username ) ); //$NON-NLS-1$
     }
 
-    if ( !Const.isEmpty( m_cassandraKeyspace ) ) {
+    if ( !Utils.isEmpty( m_cassandraKeyspace ) ) {
       retval.append( "\n    " ).append( //$NON-NLS-1$
           XMLHandler.addTagValue( "cassandra_keyspace", m_cassandraKeyspace ) ); //$NON-NLS-1$
     }
 
-    if ( !Const.isEmpty( m_cassandraKeyspace ) ) {
+    if ( !Utils.isEmpty( m_cassandraKeyspace ) ) {
       retval.append( "\n    " ).append( //$NON-NLS-1$
           XMLHandler.addTagValue( "cassandra_keyspace", m_cassandraKeyspace ) ); //$NON-NLS-1$
     }
 
-    if ( !Const.isEmpty( m_columnFamily ) ) {
+    if ( !Utils.isEmpty( m_columnFamily ) ) {
       retval.append( "\n    " ).append( //$NON-NLS-1$
           XMLHandler.addTagValue( "column_family", m_columnFamily ) ); //$NON-NLS-1$
     }
 
-    if ( !Const.isEmpty( m_keyField ) ) {
+    if ( !Utils.isEmpty( m_keyField ) ) {
       retval.append( "\n    " ).append( //$NON-NLS-1$
           XMLHandler.addTagValue( "key_field", m_keyField ) ); //$NON-NLS-1$
     }
 
-    if ( !Const.isEmpty( m_consistency ) ) {
+    if ( !Utils.isEmpty( m_consistency ) ) {
       retval.append( "\n    " ).append( //$NON-NLS-1$
           XMLHandler.addTagValue( "consistency", m_consistency ) ); //$NON-NLS-1$
     }
 
-    if ( !Const.isEmpty( m_batchSize ) ) {
+    if ( !Utils.isEmpty( m_batchSize ) ) {
       retval.append( "\n    " ).append( //$NON-NLS-1$
           XMLHandler.addTagValue( "batch_size", m_batchSize ) ); //$NON-NLS-1$
     }
 
-    if ( !Const.isEmpty( m_cqlBatchTimeout ) ) {
+    if ( !Utils.isEmpty( m_cqlBatchTimeout ) ) {
       retval.append( "\n    " ).append( //$NON-NLS-1$
           XMLHandler.addTagValue( "cql_batch_timeout", m_cqlBatchTimeout ) ); //$NON-NLS-1$
     }
 
-    if ( !Const.isEmpty( m_cqlSubBatchSize ) ) {
+    if ( !Utils.isEmpty( m_cqlSubBatchSize ) ) {
       retval.append( "\n    " ).append( //$NON-NLS-1$
           XMLHandler.addTagValue( "cql_sub_batch_size", m_cqlSubBatchSize ) ); //$NON-NLS-1$
     }
@@ -849,12 +855,12 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
         XMLHandler.addTagValue( "dont_complain_apriori_cql", //$NON-NLS-1$
             m_dontComplainAboutAprioriCQLFailing ) );
 
-    if ( !Const.isEmpty( m_aprioriCQL ) ) {
+    if ( !Utils.isEmpty( m_aprioriCQL ) ) {
       retval.append( "\n    " ).append( //$NON-NLS-1$
           XMLHandler.addTagValue( "apriori_cql", m_aprioriCQL ) ); //$NON-NLS-1$
     }
 
-    if ( !Const.isEmpty( m_createTableWithClause ) ) {
+    if ( !Utils.isEmpty( m_createTableWithClause ) ) {
       retval.append( "\n    " ).append( //$NON-NLS-1$
           XMLHandler.addTagValue( "create_table_with_clause", //$NON-NLS-1$
               m_createTableWithClause ) );
@@ -866,7 +872,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
     retval.append( "\n    " ).append( //$NON-NLS-1$
         XMLHandler.addTagValue( "use_cql3", m_useCQL3 ) ); //$NON-NLS-1$
 
-    if ( !Const.isEmpty( m_ttl ) ) {
+    if ( !Utils.isEmpty( m_ttl ) ) {
       retval.append( "\n    " ).append( XMLHandler.addTagValue( "ttl", m_ttl ) ); //$NON-NLS-1$ //$NON-NLS-2$
     }
 
@@ -886,7 +892,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
     m_socketTimeout = XMLHandler.getTagValue( stepnode, "socket_timeout" ); //$NON-NLS-1$
     m_username = XMLHandler.getTagValue( stepnode, "username" ); //$NON-NLS-1$
     m_password = XMLHandler.getTagValue( stepnode, "password" ); //$NON-NLS-1$
-    if ( !Const.isEmpty( m_password ) ) {
+    if ( !Utils.isEmpty( m_password ) ) {
       m_password = Encr.decryptPasswordOptionallyEncrypted( m_password );
     }
     m_cassandraKeyspace = XMLHandler.getTagValue( stepnode, "cassandra_keyspace" ); //$NON-NLS-1$
@@ -909,29 +915,29 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
     m_createTableWithClause = XMLHandler.getTagValue( stepnode, "create_table_with_clause" ); //$NON-NLS-1$
 
     String useThrift = XMLHandler.getTagValue( stepnode, "use_thrift_io" ); //$NON-NLS-1$
-    if ( !Const.isEmpty( useThrift ) ) {
+    if ( !Utils.isEmpty( useThrift ) ) {
       m_useThriftIO = useThrift.equalsIgnoreCase( "Y" ); //$NON-NLS-1$
     }
 
     String useCQL3 = XMLHandler.getTagValue( stepnode, "use_cql3" ); //$NON-NLS-1$
-    if ( !Const.isEmpty( useCQL3 ) ) {
+    if ( !Utils.isEmpty( useCQL3 ) ) {
       m_useCQL3 = useCQL3.equalsIgnoreCase( "Y" ); //$NON-NLS-1$
     }
 
     String unloggedBatch = XMLHandler.getTagValue( stepnode, "unlogged_batch" ); //$NON-NLS-1$
-    if ( !Const.isEmpty( unloggedBatch ) ) {
+    if ( !Utils.isEmpty( unloggedBatch ) ) {
       m_unloggedBatch = unloggedBatch.equalsIgnoreCase( "Y" ); //$NON-NLS-1$
     }
 
     String dontComplain = XMLHandler.getTagValue( stepnode, "dont_complain_apriori_cql" ); //$NON-NLS-1$
-    if ( !Const.isEmpty( dontComplain ) ) {
+    if ( !Utils.isEmpty( dontComplain ) ) {
       m_dontComplainAboutAprioriCQLFailing = dontComplain.equalsIgnoreCase( "Y" ); //$NON-NLS-1$
     }
 
     m_ttl = XMLHandler.getTagValue( stepnode, "ttl" ); //$NON-NLS-1$
     m_ttlUnit = XMLHandler.getTagValue( stepnode, "ttl_unit" ); //$NON-NLS-1$
 
-    if ( Const.isEmpty( m_ttlUnit ) ) {
+    if ( Utils.isEmpty( m_ttlUnit ) ) {
       m_ttlUnit = TTLUnits.NONE.toString();
     }
   }
@@ -946,7 +952,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
     m_socketTimeout = rep.getStepAttributeString( id_step, 0, "socket_timeout" ); //$NON-NLS-1$
     m_username = rep.getStepAttributeString( id_step, 0, "username" ); //$NON-NLS-1$
     m_password = rep.getStepAttributeString( id_step, 0, "password" ); //$NON-NLS-1$
-    if ( !Const.isEmpty( m_password ) ) {
+    if ( !Utils.isEmpty( m_password ) ) {
       m_password = Encr.decryptPasswordOptionallyEncrypted( m_password );
     }
     m_cassandraKeyspace = rep.getStepAttributeString( id_step, 0, "cassandra_keyspace" ); //$NON-NLS-1$
@@ -976,78 +982,78 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
     m_ttl = rep.getStepAttributeString( id_step, 0, "ttl" ); //$NON-NLS-1$
     m_ttlUnit = rep.getStepAttributeString( id_step, 0, "ttl_unit" ); //$NON-NLS-1$
 
-    if ( Const.isEmpty( m_ttlUnit ) ) {
+    if ( Utils.isEmpty( m_ttlUnit ) ) {
       m_ttlUnit = TTLUnits.NONE.toString();
     }
   }
 
   @Override
   public void saveRep( Repository rep, ObjectId id_transformation, ObjectId id_step ) throws KettleException {
-    if ( !Const.isEmpty( m_cassandraHost ) ) {
+    if ( !Utils.isEmpty( m_cassandraHost ) ) {
       rep.saveStepAttribute( id_transformation, id_step, 0, "cassandra_host", //$NON-NLS-1$
           m_cassandraHost );
     }
 
-    if ( !Const.isEmpty( m_cassandraPort ) ) {
+    if ( !Utils.isEmpty( m_cassandraPort ) ) {
       rep.saveStepAttribute( id_transformation, id_step, 0, "cassandra_port", //$NON-NLS-1$
           m_cassandraPort );
     }
 
-    if ( !Const.isEmpty( m_schemaHost ) ) {
+    if ( !Utils.isEmpty( m_schemaHost ) ) {
       rep.saveStepAttribute( id_transformation, id_step, 0, "schema_host", //$NON-NLS-1$
           m_schemaHost );
     }
 
-    if ( !Const.isEmpty( m_schemaPort ) ) {
+    if ( !Utils.isEmpty( m_schemaPort ) ) {
       rep.saveStepAttribute( id_transformation, id_step, 0, "schema_port", //$NON-NLS-1$
           m_schemaPort );
     }
 
-    if ( !Const.isEmpty( m_socketTimeout ) ) {
+    if ( !Utils.isEmpty( m_socketTimeout ) ) {
       rep.saveStepAttribute( id_transformation, id_step, 0, "socket_timeout", //$NON-NLS-1$
           m_socketTimeout );
     }
 
-    if ( !Const.isEmpty( m_username ) ) {
+    if ( !Utils.isEmpty( m_username ) ) {
       rep.saveStepAttribute( id_transformation, id_step, 0, "username", //$NON-NLS-1$
           m_username );
     }
 
-    if ( !Const.isEmpty( m_password ) ) {
+    if ( !Utils.isEmpty( m_password ) ) {
       rep.saveStepAttribute( id_transformation, id_step, 0, "password", //$NON-NLS-1$
           Encr.encryptPasswordIfNotUsingVariables( m_password ) );
     }
 
-    if ( !Const.isEmpty( m_cassandraKeyspace ) ) {
+    if ( !Utils.isEmpty( m_cassandraKeyspace ) ) {
       rep.saveStepAttribute( id_transformation, id_step, 0, "cassandra_keyspace", m_cassandraKeyspace ); //$NON-NLS-1$
     }
 
-    if ( !Const.isEmpty( m_columnFamily ) ) {
+    if ( !Utils.isEmpty( m_columnFamily ) ) {
       rep.saveStepAttribute( id_transformation, id_step, 0, "column_family", //$NON-NLS-1$
           m_columnFamily );
     }
 
-    if ( !Const.isEmpty( m_keyField ) ) {
+    if ( !Utils.isEmpty( m_keyField ) ) {
       rep.saveStepAttribute( id_transformation, id_step, 0, "key_field", //$NON-NLS-1$
           m_keyField );
     }
 
-    if ( !Const.isEmpty( m_consistency ) ) {
+    if ( !Utils.isEmpty( m_consistency ) ) {
       rep.saveStepAttribute( id_transformation, id_step, 0, "consistency", //$NON-NLS-1$
           m_consistency );
     }
 
-    if ( !Const.isEmpty( m_batchSize ) ) {
+    if ( !Utils.isEmpty( m_batchSize ) ) {
       rep.saveStepAttribute( id_transformation, id_step, 0, "batch_size", //$NON-NLS-1$
           m_batchSize );
     }
 
-    if ( !Const.isEmpty( m_cqlBatchTimeout ) ) {
+    if ( !Utils.isEmpty( m_cqlBatchTimeout ) ) {
       rep.saveStepAttribute( id_transformation, id_step, 0, "cql_batch_timeout", //$NON-NLS-1$
           m_cqlBatchTimeout );
     }
 
-    if ( !Const.isEmpty( m_cqlSubBatchSize ) ) {
+    if ( !Utils.isEmpty( m_cqlSubBatchSize ) ) {
       rep.saveStepAttribute( id_transformation, id_step, 0, "cql_sub_batch_size", m_cqlSubBatchSize ); //$NON-NLS-1$
     }
 
@@ -1060,16 +1066,16 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
     rep.saveStepAttribute( id_transformation, id_step, 0, "unlogged_batch", //$NON-NLS-1$
         m_unloggedBatch );
 
-    if ( !Const.isEmpty( m_aprioriCQL ) ) {
+    if ( !Utils.isEmpty( m_aprioriCQL ) ) {
       rep.saveStepAttribute( id_transformation, id_step, 0, "apriori_cql", //$NON-NLS-1$
           m_aprioriCQL );
     }
 
-    if ( !Const.isEmpty( m_createTableWithClause ) ) {
+    if ( !Utils.isEmpty( m_createTableWithClause ) ) {
       rep.saveStepAttribute( id_transformation, id_step, 0, "create_table_with_clause", m_aprioriCQL ); //$NON-NLS-1$
     }
 
-    if ( !Const.isEmpty( m_ttl ) ) {
+    if ( !Utils.isEmpty( m_ttl ) ) {
       rep.saveStepAttribute( id_transformation, id_step, 0, "ttl", m_ttl ); //$NON-NLS-1$
     }
 

@@ -2,7 +2,7 @@
  *
  * Pentaho Big Data
  *
- * Copyright (C) 2002-2013 by Pentaho : http://www.pentaho.com
+ * Copyright (C) 2002-2017 by Pentaho : http://www.pentaho.com
  *
  *******************************************************************************
  *
@@ -48,6 +48,7 @@ import org.pentaho.di.core.Const;
 import org.pentaho.di.core.logging.LogChannelInterface;
 import org.pentaho.di.core.row.RowMetaInterface;
 import org.pentaho.di.core.row.ValueMetaInterface;
+import org.pentaho.di.core.util.Utils;
 import org.pentaho.di.i18n.BaseMessages;
 
 /**
@@ -284,9 +285,7 @@ public class LegacyKeyspace implements Keyspace {
    */
   @Override
   public ColumnFamilyMetaData getColumnFamilyMetaData( String familyName ) throws Exception {
-    CassandraColumnMetaData meta = new CassandraColumnMetaData( this, familyName, m_cql3 );
-
-    return meta;
+    return new CassandraColumnMetaData( this, familyName, m_cql3 );
   }
 
   /**
@@ -374,7 +373,7 @@ public class LegacyKeyspace implements Keyspace {
       buff.append( ")" );
     }
 
-    if ( !Const.isEmpty( createTableWithClause ) ) {
+    if ( !Utils.isEmpty( createTableWithClause ) ) {
       buff.append( ") " );
       if ( !createTableWithClause.toLowerCase().trim().startsWith( "with" ) ) {
         buff.append( "WITH " );
@@ -385,12 +384,12 @@ public class LegacyKeyspace implements Keyspace {
 
     // abuse the comment field (if we can) to store any indexed values :-)
     if ( indexedVals.size() == 0 ) {
-      if ( Const.isEmpty( createTableWithClause ) ) {
+      if ( Utils.isEmpty( createTableWithClause ) ) {
         buff.append( ");" ); //$NON-NLS-1$
       }
     } else {
       boolean ok = false;
-      if ( Const.isEmpty( createTableWithClause ) ) {
+      if ( Utils.isEmpty( createTableWithClause ) ) {
         buff.append( ") WITH comment = '@@@" ); //$NON-NLS-1$
         ok = true;
       } else if ( !createTableWithClause.toLowerCase().contains( "comment" ) ) {

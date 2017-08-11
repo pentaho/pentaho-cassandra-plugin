@@ -2,7 +2,7 @@
  *
  * Pentaho Big Data
  *
- * Copyright (C) 2002-2013 by Pentaho : http://www.pentaho.com
+ * Copyright (C) 2002-2017 by Pentaho : http://www.pentaho.com
  *
  *******************************************************************************
  *
@@ -101,7 +101,9 @@ public interface CQLRowHandler {
    * @return true if the row was added to the batch
    * @throws Exception
    *           if a problem occurs
+   * @deprecated
    */
+  @Deprecated
   boolean addRowToCQLBatch( StringBuilder batch, String colFamilyName, RowMetaInterface inputMeta, Object[] row,
       boolean insertFieldsNotInMetaData, LogChannelInterface log ) throws Exception;
 
@@ -144,4 +146,5 @@ public interface CQLRowHandler {
    *           if a query hasn't been executed or another problem occurs.
    */
   Object[][] getNextOutputRow( RowMetaInterface outputRowMeta, Map<String, Integer> outputFormatMap ) throws Exception;
+
 }

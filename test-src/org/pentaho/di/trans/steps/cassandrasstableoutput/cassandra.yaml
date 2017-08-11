@@ -26,18 +26,11 @@ commitlog_sync: periodic
 commitlog_sync_period_in_ms: 10000
 commitlog_segment_size_in_mb: 32
 seed_provider:
-    
-    
-    
-    
     - class_name: org.apache.cassandra.locator.SimpleSeedProvider
       parameters:
-          
-          
-          - seeds: "127.0.0.1"
+    - seeds: "127.0.0.1"
 concurrent_reads: 32
 concurrent_writes: 32
-memtable_flush_queue_size: 4
 trickle_fsync: false
 trickle_fsync_interval_in_kb: 10240
 storage_port: 7000
@@ -57,10 +50,7 @@ auto_snapshot: true
 tombstone_warn_threshold: 1000
 tombstone_failure_threshold: 100000
 column_index_size_in_kb: 64
-in_memory_compaction_limit_in_mb: 64
-multithreaded_compaction: false
 compaction_throughput_mb_per_sec: 16
-compaction_preheat_key_cache: true
 read_request_timeout_in_ms: 5000
 range_request_timeout_in_ms: 10000
 write_request_timeout_in_ms: 2000
@@ -82,6 +72,4 @@ client_encryption_options:
     enabled: false
     keystore: conf/.keystore
     keystore_password: cassandra
-#    internode_compression: all
 inter_dc_tcp_nodelay: false
-preheat_kernel_page_cache: false

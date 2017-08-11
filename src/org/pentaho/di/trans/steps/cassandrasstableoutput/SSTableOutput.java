@@ -28,10 +28,10 @@ import java.security.Permission;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.pentaho.di.core.Const;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.logging.LogChannelInterface;
 import org.pentaho.di.core.row.RowMetaInterface;
+import org.pentaho.di.core.util.Utils;
 import org.pentaho.di.i18n.BaseMessages;
 import org.pentaho.di.trans.Trans;
 import org.pentaho.di.trans.TransMeta;
@@ -80,13 +80,13 @@ public class SSTableOutput extends BaseStep implements StepInterface {
     String keyField = environmentSubstitute( smi.getKeyField() );
     String bufferSize = environmentSubstitute( smi.getBufferSize() );
 
-    if ( Const.isEmpty( yamlPath ) ) {
+    if ( Utils.isEmpty( yamlPath ) ) {
       throw new Exception( BaseMessages.getString( SSTableOutputMeta.PKG, "SSTableOutput.Error.NoPathToYAML" ) );
     }
     logBasic( BaseMessages.getString( SSTableOutputMeta.PKG, "SSTableOutput.Message.YAMLPath", yamlPath ) );
 
     File outputDir;
-    if ( Const.isEmpty( directory ) ) {
+    if ( Utils.isEmpty( directory ) ) {
       outputDir = new File( System.getProperty( "java.io.tmpdir" ) );
     } else {
       outputDir = new File( new URI( directory ) );
@@ -99,12 +99,12 @@ public class SSTableOutput extends BaseStep implements StepInterface {
       }
     }
 
-    if ( Const.isEmpty( columnFamily ) ) {
+    if ( Utils.isEmpty( columnFamily ) ) {
       throw new KettleException( BaseMessages.getString( SSTableOutputMeta.PKG,
           "SSTableOutput.Error.NoColumnFamilySpecified" ) );
     }
 
-    if ( Const.isEmpty( keyField ) ) {
+    if ( Utils.isEmpty( keyField ) ) {
       throw new KettleException( BaseMessages.getString( SSTableOutputMeta.PKG, "SSTableOutput.Error.NoKeySpecified" ) );
     }
 

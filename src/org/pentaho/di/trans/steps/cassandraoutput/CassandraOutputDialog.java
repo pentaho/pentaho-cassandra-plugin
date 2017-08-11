@@ -2,7 +2,7 @@
  *
  * Pentaho Big Data
  *
- * Copyright (C) 2002-2013 by Pentaho : http://www.pentaho.com
+ * Copyright (C) 2002-2017 by Pentaho : http://www.pentaho.com
  *
  *******************************************************************************
  *
@@ -51,7 +51,7 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 import org.pentaho.cassandra.CassandraUtils;
 import org.pentaho.cassandra.ConnectionFactory;
-import org.pentaho.cassandra.legacy.CassandraColumnMetaData;
+import org.pentaho.cassandra.spi.ColumnFamilyMetaData;
 import org.pentaho.cassandra.spi.Connection;
 import org.pentaho.cassandra.spi.Keyspace;
 import org.pentaho.di.core.Const;
@@ -59,6 +59,7 @@ import org.pentaho.di.core.Props;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.row.RowMetaInterface;
 import org.pentaho.di.core.row.ValueMetaInterface;
+import org.pentaho.di.core.util.Utils;
 import org.pentaho.di.i18n.BaseMessages;
 import org.pentaho.di.trans.TransMeta;
 import org.pentaho.di.trans.step.BaseStepMeta;
@@ -1088,7 +1089,7 @@ public class CassandraOutputDialog extends BaseStepDialog implements StepDialogI
       String portS = transMeta.environmentSubstitute( m_portText.getText() );
       String userS = m_userText.getText();
       String passS = m_passText.getText();
-      if ( !Const.isEmpty( userS ) && !Const.isEmpty( passS ) ) {
+      if ( !Utils.isEmpty( userS ) && !Utils.isEmpty( passS ) ) {
         userS = transMeta.environmentSubstitute( userS );
         passS = transMeta.environmentSubstitute( passS );
       }
@@ -1101,7 +1102,9 @@ public class CassandraOutputDialog extends BaseStepDialog implements StepDialogI
         }
         conn =
             CassandraUtils.getCassandraConnection( hostS, Integer.parseInt( portS ), userS, passS,
-                ConnectionFactory.Driver.LEGACY_THRIFT, opts );
+                m_currentMeta.isUseDriver()
+                  ? ConnectionFactory.Driver.BINARY_CQL3_PROTOCOL
+                  : ConnectionFactory.Driver.LEGACY_THRIFT, opts );
 
         kSpace = conn.getKeyspace( keyspaceS );
       } catch ( InvalidRequestException ire ) {
@@ -1115,8 +1118,6 @@ public class CassandraOutputDialog extends BaseStepDialog implements StepDialogI
       }
 
       List<String> colFams = kSpace.getColumnFamilyNames();
-      // List<String> colFams =
-      // CassandraColumnMetaData.getColumnFamilyNames(conn);
       m_columnFamilyCombo.removeAll();
       for ( String famName : colFams ) {
         m_columnFamilyCombo.add( famName );
@@ -1168,7 +1169,7 @@ public class CassandraOutputDialog extends BaseStepDialog implements StepDialogI
                 "CassandraOutputDialog.SelectKeyFieldsDialog.Title" ), //$NON-NLS-1$
                 BaseMessages.getString( PKG, "CassandraOutputDialog.SelectKeyFieldsDialog.Message" ) ); //$NON-NLS-1$
         dialog.setMulti( true );
-        if ( !Const.isEmpty( m_keyFieldCombo.getText() ) ) {
+        if ( !Utils.isEmpty( m_keyFieldCombo.getText() ) ) {
           String current = m_keyFieldCombo.getText();
           String[] parts = current.split( "," ); //$NON-NLS-1$
           int[] currentSelection = new int[parts.length];
@@ -1239,7 +1240,7 @@ public class CassandraOutputDialog extends BaseStepDialog implements StepDialogI
   }
 
   protected void ok() {
-    if ( Const.isEmpty( m_stepnameText.getText() ) ) {
+    if ( Utils.isEmpty( m_stepnameText.getText() ) ) {
       return;
     }
 
@@ -1308,7 +1309,7 @@ public class CassandraOutputDialog extends BaseStepDialog implements StepDialogI
       String portS = transMeta.environmentSubstitute( m_portText.getText() );
       String userS = m_userText.getText();
       String passS = m_passText.getText();
-      if ( !Const.isEmpty( userS ) && !Const.isEmpty( passS ) ) {
+      if ( !Utils.isEmpty( userS ) && !Utils.isEmpty( passS ) ) {
         userS = transMeta.environmentSubstitute( userS );
         passS = transMeta.environmentSubstitute( passS );
       }
@@ -1320,9 +1321,9 @@ public class CassandraOutputDialog extends BaseStepDialog implements StepDialogI
           opts.put( CassandraUtils.CQLOptions.CQLVERSION_OPTION, CassandraUtils.CQLOptions.CQL3_STRING );
         }
 
-        conn =
-            CassandraUtils.getCassandraConnection( hostS, Integer.parseInt( portS ), userS, passS,
-                ConnectionFactory.Driver.LEGACY_THRIFT, opts );
+        conn = CassandraUtils.getCassandraConnection( hostS, Integer.parseInt( portS ), userS, passS,
+            m_currentMeta.isUseDriver() ? ConnectionFactory.Driver.BINARY_CQL3_PROTOCOL : ConnectionFactory.Driver.LEGACY_THRIFT,
+            opts );
 
         conn.setHosts( hostS );
         conn.setDefaultPort( Integer.parseInt( portS ) );
@@ -1330,10 +1331,6 @@ public class CassandraOutputDialog extends BaseStepDialog implements StepDialogI
         conn.setPassword( passS );
         kSpace = conn.getKeyspace( keyspaceS );
 
-        // conn = CassandraOutputData.getCassandraConnection(hostS,
-        // Integer.parseInt(portS), userS, passS);
-        //
-        // conn.setKeyspace(keyspaceS);
       } catch ( InvalidRequestException ire ) {
         logError( BaseMessages.getString( PKG, "CassandraOutputDialog.Error.ProblemGettingSchemaInfo.Message" ) //$NON-NLS-1$
             + ":\n\n" + ire.why, ire ); //$NON-NLS-1$
@@ -1345,7 +1342,7 @@ public class CassandraOutputDialog extends BaseStepDialog implements StepDialogI
       }
 
       String colFam = transMeta.environmentSubstitute( m_columnFamilyCombo.getText() );
-      if ( Const.isEmpty( colFam ) ) {
+      if ( Utils.isEmpty( colFam ) ) {
         throw new Exception( "No colummn family (table) name specified!" ); //$NON-NLS-1$
       }
       colFam = m_useCQL3Check.getSelection() ? CassandraUtils.cql3MixedCaseQuote( colFam ) : colFam;
@@ -1356,10 +1353,10 @@ public class CassandraOutputDialog extends BaseStepDialog implements StepDialogI
             + "seem to exist in the keyspace '" + keyspaceS ); //$NON-NLS-1$
       }
 
-      CassandraColumnMetaData cassMeta = (CassandraColumnMetaData) kSpace.getColumnFamilyMetaData( colFam );
+      ColumnFamilyMetaData cassMeta = kSpace.getColumnFamilyMetaData( colFam );
       // CassandraColumnMetaData cassMeta = new CassandraColumnMetaData(conn,
       // colFam);
-      String schemaDescription = cassMeta.getSchemaDescription();
+      String schemaDescription = cassMeta.describe();
       ShowMessageDialog smd =
           new ShowMessageDialog( shell, SWT.ICON_INFORMATION | SWT.OK, "Schema info", schemaDescription, true ); //$NON-NLS-1$
       smd.open();
@@ -1384,63 +1381,63 @@ public class CassandraOutputDialog extends BaseStepDialog implements StepDialogI
 
   protected void getData() {
 
-    if ( !Const.isEmpty( m_currentMeta.getCassandraHost() ) ) {
+    if ( !Utils.isEmpty( m_currentMeta.getCassandraHost() ) ) {
       m_hostText.setText( m_currentMeta.getCassandraHost() );
     }
 
-    if ( !Const.isEmpty( m_currentMeta.getCassandraPort() ) ) {
+    if ( !Utils.isEmpty( m_currentMeta.getCassandraPort() ) ) {
       m_portText.setText( m_currentMeta.getCassandraPort() );
     }
 
-    if ( !Const.isEmpty( m_currentMeta.getSchemaHost() ) ) {
+    if ( !Utils.isEmpty( m_currentMeta.getSchemaHost() ) ) {
       m_schemaHostText.setText( m_currentMeta.getSchemaHost() );
     }
 
-    if ( !Const.isEmpty( m_currentMeta.getSchemaPort() ) ) {
+    if ( !Utils.isEmpty( m_currentMeta.getSchemaPort() ) ) {
       m_schemaPortText.setText( m_currentMeta.getSchemaPort() );
     }
 
-    if ( !Const.isEmpty( m_currentMeta.getSocketTimeout() ) ) {
+    if ( !Utils.isEmpty( m_currentMeta.getSocketTimeout() ) ) {
       m_socketTimeoutText.setText( m_currentMeta.getSocketTimeout() );
     }
 
-    if ( !Const.isEmpty( m_currentMeta.getUsername() ) ) {
+    if ( !Utils.isEmpty( m_currentMeta.getUsername() ) ) {
       m_userText.setText( m_currentMeta.getUsername() );
     }
 
-    if ( !Const.isEmpty( m_currentMeta.getPassword() ) ) {
+    if ( !Utils.isEmpty( m_currentMeta.getPassword() ) ) {
       m_passText.setText( m_currentMeta.getPassword() );
     }
 
-    if ( !Const.isEmpty( m_currentMeta.getCassandraKeyspace() ) ) {
+    if ( !Utils.isEmpty( m_currentMeta.getCassandraKeyspace() ) ) {
       m_keyspaceText.setText( m_currentMeta.getCassandraKeyspace() );
     }
 
-    if ( !Const.isEmpty( m_currentMeta.getColumnFamilyName() ) ) {
+    if ( !Utils.isEmpty( m_currentMeta.getColumnFamilyName() ) ) {
       m_columnFamilyCombo.setText( m_currentMeta.getColumnFamilyName() );
     }
 
-    if ( !Const.isEmpty( m_currentMeta.getConsistency() ) ) {
+    if ( !Utils.isEmpty( m_currentMeta.getConsistency() ) ) {
       m_consistencyText.setText( m_currentMeta.getConsistency() );
     }
 
-    if ( !Const.isEmpty( m_currentMeta.getBatchSize() ) ) {
+    if ( !Utils.isEmpty( m_currentMeta.getBatchSize() ) ) {
       m_batchSizeText.setText( m_currentMeta.getBatchSize() );
     }
 
-    if ( !Const.isEmpty( m_currentMeta.getCQLBatchInsertTimeout() ) ) {
+    if ( !Utils.isEmpty( m_currentMeta.getCQLBatchInsertTimeout() ) ) {
       m_batchInsertTimeoutText.setText( m_currentMeta.getCQLBatchInsertTimeout() );
     }
 
-    if ( !Const.isEmpty( m_currentMeta.getCQLSubBatchSize() ) ) {
+    if ( !Utils.isEmpty( m_currentMeta.getCQLSubBatchSize() ) ) {
       m_subBatchSizeText.setText( m_currentMeta.getCQLSubBatchSize() );
     }
 
-    if ( !Const.isEmpty( m_currentMeta.getKeyField() ) ) {
+    if ( !Utils.isEmpty( m_currentMeta.getKeyField() ) ) {
       m_keyFieldCombo.setText( m_currentMeta.getKeyField() );
     }
 
-    if ( !Const.isEmpty( m_currentMeta.getCreateTableWithClause() ) ) {
+    if ( !Utils.isEmpty( m_currentMeta.getCreateTableWithClause() ) ) {
       m_withClauseText.setText( m_currentMeta.getCreateTableWithClause() );
     }
 
@@ -1474,7 +1471,7 @@ public class CassandraOutputDialog extends BaseStepDialog implements StepDialogI
       m_unloggedBatchBut.setEnabled( false );
     }
 
-    if ( !Const.isEmpty( m_currentMeta.getTTL() ) ) {
+    if ( !Utils.isEmpty( m_currentMeta.getTTL() ) ) {
       m_ttlValueText.setText( m_currentMeta.getTTL() );
       m_ttlUnitsCombo.setText( m_currentMeta.getTTLUnit() );
       m_ttlValueText.setEnabled( m_ttlUnitsCombo.getSelectionIndex() > 0 );

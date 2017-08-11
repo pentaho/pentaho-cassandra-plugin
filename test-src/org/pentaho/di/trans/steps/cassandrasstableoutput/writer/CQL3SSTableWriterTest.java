@@ -33,7 +33,6 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.Assert.*;
-import static org.mockito.Matchers.anyObject;
 import static org.mockito.Mockito.*;
 
 public class CQL3SSTableWriterTest {
@@ -55,8 +54,8 @@ public class CQL3SSTableWriterTest {
       assertEquals( KEY_FIELD, getKeyField() );
       CQLSSTableWriter ssWriter = mock( CQLSSTableWriter.class );
       try {
-        doAnswer( new Answer() {
-          @Override public Object answer( InvocationOnMock invocation ) throws Throwable {
+        doAnswer( new Answer<Void>() {
+          @Override public Void answer( InvocationOnMock invocation ) throws Throwable {
             checker.set( false );
             return null;
           }
@@ -66,12 +65,12 @@ public class CQL3SSTableWriterTest {
       }
 
       try {
-        doAnswer( new Answer() {
-          @Override public Object answer( InvocationOnMock invocation ) throws Throwable {
+        doAnswer( new Answer<Void>() {
+          @Override public Void answer( InvocationOnMock invocation ) throws Throwable {
             checker.set( true );
             return null;
           }
-        } ).when( ssWriter ).addRow( (Map<String, Object>) anyObject() );
+        } ).when( ssWriter ).addRow( anyMapOf( String.class, Object.class ) );
       } catch ( Exception e ) {
         fail( e.toString() );
       }

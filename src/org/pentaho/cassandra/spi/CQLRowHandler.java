@@ -2,7 +2,7 @@
  *
  * Pentaho Big Data
  *
- * Copyright (C) 2002-2013 by Pentaho : http://www.pentaho.com
+ * Copyright (C) 2002-2018 by Hitachi Vantara : http://www.pentaho.com
  *
  *******************************************************************************
  *
@@ -101,7 +101,9 @@ public interface CQLRowHandler {
    * @return true if the row was added to the batch
    * @throws Exception
    *           if a problem occurs
+   * @deprecated
    */
+  @Deprecated
   boolean addRowToCQLBatch( StringBuilder batch, String colFamilyName, RowMetaInterface inputMeta, Object[] row,
       boolean insertFieldsNotInMetaData, LogChannelInterface log ) throws Exception;
 

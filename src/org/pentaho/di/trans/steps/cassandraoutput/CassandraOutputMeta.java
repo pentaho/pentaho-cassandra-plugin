@@ -2,7 +2,7 @@
  *
  * Pentaho Big Data
  *
- * Copyright (C) 2002-2017 by Hitachi Vantara : http://www.pentaho.com
+ * Copyright (C) 2002-2018 by Hitachi Vantara : http://www.pentaho.com
  *
  *******************************************************************************
  *
@@ -53,11 +53,12 @@ import org.w3c.dom.Node;
 /**
  * Class providing an output step for writing data to a cassandra table (column family). Can create the specified column
  * family (if it doesn't already exist) and can update column family meta data.
+ *
+ * @author Mark Hall (mhall{[at]}pentaho{[dot]}com)
  */
 @Step( id = "CassandraOutput", image = "Cassandraout.svg", name = "Cassandra Output",
     description = "Writes to a Cassandra table",
-    documentationUrl = "Products/Data_Integration/Transformation_Step_Reference/Cassandra_Output",
-    categoryDescription = "Big Data" )
+    documentationUrl = "http://wiki.pentaho.com/display/EAI/Cassandra+Output", categoryDescription = "Big Data" )
 @InjectionSupported( localizationPrefix = "CassandraOutput.Injection." )
 public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterface {
 

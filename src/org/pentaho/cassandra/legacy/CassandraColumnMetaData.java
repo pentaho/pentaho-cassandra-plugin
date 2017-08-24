@@ -2,7 +2,7 @@
  *
  * Pentaho Big Data
  *
- * Copyright (C) 2002-2013 by Pentaho : http://www.pentaho.com
+ * Copyright (C) 2002-2017 by Pentaho : http://www.pentaho.com
  *
  *******************************************************************************
  *
@@ -113,7 +113,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
   protected Map<String, String> m_columnMeta;
 
   /** Map of functions names + cassandra types (decoder classes) */
-  private Map<String, String> m_functionMeta;
+  protected Map<String, String> m_functionMeta;
 
   /**
    * Convenience map that stores ValueMeta objects that correspond to the columns
@@ -200,14 +200,23 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
   // "COMPACT STORAGE")
 
   protected static enum CFMetaDataElements {
-    COMPARATOR( "comparator" ), DEFAULT_VALIDATOR( "default_validator" ), COLUMN_ALIASES( "column_aliases" ), KEY_ALIASES( //$NON-NLS-1$//$NON-NLS-2$ //$NON-NLS-3$
-        "key_aliases" ), KEY_VALIDATOR( "key_validator" ), BLOOM_FILTER_FP_CHANCE( "bloom_filter_fp_chance" ), CACHING( //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-        "caching" ), COMPACTION_STRATEGY_CLASS( "compaction_strategy_class" ), COMPACTION_STRATEGY_OPTIONS( //$NON-NLS-1$ //$NON-NLS-2$
-        "compaction_strategy_options" ), COMPRESSION_PARAMETERS( "compression_parameters" ), GC_GRACE_SECONDS( //$NON-NLS-1$ //$NON-NLS-2$
-        "gc_grace_seconds" ), LOCAL_READ_REPAIR_CHANCE( "local_read_repair_chance" ), MAX_COMPACTION_THRESHOLD( //$NON-NLS-1$ //$NON-NLS-2$
-        "max_compaction_threshold" ), MIN_COMPACTION_THRESHOLD( "min_compaction_threshold" ), POPULATE_IO_CACHE_ON_FLUSH( //$NON-NLS-1$ //$NON-NLS-2$
-        "populate_io_cache_on_flush" ), READ_REPAIR_CHANCE( "read_repair_chance" ), REPLICATE_ON_WRITE( //$NON-NLS-1$ //$NON-NLS-2$
-        "replicate_on_write" ), TYPE( "type" ), VALUE_ALIAS( "value_alias" ); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+    COMPARATOR( "comparator" ), DEFAULT_VALIDATOR( "default_validator" ),
+    @Deprecated COLUMN_ALIASES( "column_aliases" ), @Deprecated KEY_ALIASES( "key_aliases" ),
+    @Deprecated  KEY_VALIDATOR( "key_validator" ),
+    BLOOM_FILTER_FP_CHANCE( "bloom_filter_fp_chance" ),
+    CACHING( "caching" ),
+    COMPACTION_STRATEGY_CLASS( "compaction_strategy_class" ),
+    COMPACTION_STRATEGY_OPTIONS( "compaction_strategy_options" ),
+    COMPRESSION_PARAMETERS( "compression_parameters" ),
+    GC_GRACE_SECONDS( "gc_grace_seconds" ),
+    LOCAL_READ_REPAIR_CHANCE( "local_read_repair_chance" ),
+    MAX_COMPACTION_THRESHOLD( "max_compaction_threshold" ),
+    MIN_COMPACTION_THRESHOLD( "min_compaction_threshold" ),
+    @Deprecated POPULATE_IO_CACHE_ON_FLUSH( "populate_io_cache_on_flush" ),
+    READ_REPAIR_CHANCE( "read_repair_chance" ),
+    @Deprecated REPLICATE_ON_WRITE( "replicate_on_write" ),
+    @Deprecated TYPE( "type" ),
+    @Deprecated VALUE_ALIAS( "value_alias" );
 
     private final String m_name;
 
@@ -255,15 +264,19 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
     // default validator and comparator (full composite key type that
     // allows us to get the decoders for the additional part(s) of the key
     String cqlQ = "select " + CFMetaDataElements.COMPARATOR + ", " + CFMetaDataElements.DEFAULT_VALIDATOR + "," //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-        + CFMetaDataElements.COLUMN_ALIASES + ", " + CFMetaDataElements.KEY_ALIASES + ", " //$NON-NLS-1$ //$NON-NLS-2$
-        + CFMetaDataElements.KEY_VALIDATOR + ", " + CFMetaDataElements.BLOOM_FILTER_FP_CHANCE + ", " //$NON-NLS-1$ //$NON-NLS-2$
+        + CFMetaDataElements.COLUMN_ALIASES + ", "
+        + CFMetaDataElements.KEY_ALIASES + ", " //$NON-NLS-1$ //$NON-NLS-2$
+        + CFMetaDataElements.KEY_VALIDATOR + ", "
+        + CFMetaDataElements.BLOOM_FILTER_FP_CHANCE + ", " //$NON-NLS-1$ //$NON-NLS-2$
         + CFMetaDataElements.CACHING + ", " + CFMetaDataElements.COMPACTION_STRATEGY_CLASS + ", " //$NON-NLS-1$ //$NON-NLS-2$
         + CFMetaDataElements.COMPACTION_STRATEGY_OPTIONS + ", " + CFMetaDataElements.COMPRESSION_PARAMETERS + ", " //$NON-NLS-1$ //$NON-NLS-2$
         + CFMetaDataElements.GC_GRACE_SECONDS + ", " + CFMetaDataElements.LOCAL_READ_REPAIR_CHANCE + ", " //$NON-NLS-1$ //$NON-NLS-2$
         + CFMetaDataElements.MAX_COMPACTION_THRESHOLD + ", " + CFMetaDataElements.MIN_COMPACTION_THRESHOLD + ", " //$NON-NLS-1$ //$NON-NLS-2$
-        + CFMetaDataElements.POPULATE_IO_CACHE_ON_FLUSH + ", " + CFMetaDataElements.READ_REPAIR_CHANCE + ", " //$NON-NLS-1$ //$NON-NLS-2$
+        + CFMetaDataElements.POPULATE_IO_CACHE_ON_FLUSH + ", "
+        + CFMetaDataElements.READ_REPAIR_CHANCE // + ", " //$NON-NLS-1$ //$NON-NLS-2$
         + CFMetaDataElements.REPLICATE_ON_WRITE + ", " + CFMetaDataElements.TYPE + ", " //$NON-NLS-1$ //$NON-NLS-2$
-        + CFMetaDataElements.VALUE_ALIAS + " from system.schema_columnfamilies where keyspace_name='" //$NON-NLS-1$
+        + CFMetaDataElements.VALUE_ALIAS
+        + " from system.schema_columnfamilies where keyspace_name='" //$NON-NLS-1$
         + conn.m_keyspaceName + "' and columnfamily_name='" + m_columnFamilyName + "';"; //$NON-NLS-1$ //$NON-NLS-2$
 
     byte[] data = cqlQ.getBytes( Charset.forName( "UTF-8" ) ); //$NON-NLS-1$
@@ -1844,7 +1857,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
    * @throws Exception
    *           if a problem occurs
    */
-  private Map<String, String> extractFunctionMeta( CassandraConnection conn, ConsistencyLevel c, Compression z )
+  protected Map<String, String> extractFunctionMeta( CassandraConnection conn, ConsistencyLevel c, Compression z )
     throws Exception {
     Map<String, String> meta = new HashMap<String, String>();
     for ( CQLFunctions f : CQLFunctions.values() ) {

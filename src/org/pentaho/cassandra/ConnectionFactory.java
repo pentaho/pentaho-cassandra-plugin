@@ -2,7 +2,7 @@
 *
 * Pentaho Big Data
 *
-* Copyright (C) 2002-2013 by Pentaho : http://www.pentaho.com
+* Copyright (C) 2002-2017 by Pentaho : http://www.pentaho.com
 *
 *******************************************************************************
 *
@@ -22,6 +22,7 @@
 
 package org.pentaho.cassandra;
 
+import org.pentaho.cassandra.driverimpl.DriverConnection;
 import org.pentaho.cassandra.legacy.CassandraConnection;
 import org.pentaho.cassandra.spi.Connection;
 
@@ -43,7 +44,11 @@ public class ConnectionFactory {
     switch ( d ) {
       case LEGACY_THRIFT:
         return new CassandraConnection();
+      case BINARY_CQL3_PROTOCOL:
+        return new DriverConnection();
+      default:
+        return null;
     }
-    return null;
   }
+
 }

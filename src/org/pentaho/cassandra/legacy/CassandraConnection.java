@@ -2,7 +2,7 @@
  *
  * Pentaho Big Data
  *
- * Copyright (C) 2002-2013 by Pentaho : http://www.pentaho.com
+ * Copyright (C) 2002-2017 by Pentaho : http://www.pentaho.com
  *
  *******************************************************************************
  *
@@ -36,7 +36,7 @@ import org.apache.thrift.transport.TTransport;
 import org.pentaho.cassandra.CassandraUtils;
 import org.pentaho.cassandra.spi.Connection;
 import org.pentaho.cassandra.spi.Keyspace;
-import org.pentaho.di.core.Const;
+import org.pentaho.di.core.util.Utils;
 import org.pentaho.di.i18n.BaseMessages;
 
 /**
@@ -267,7 +267,7 @@ public class CassandraConnection implements Connection {
     m_client = new Cassandra.Client( protocol );
     m_transport.open();
 
-    if ( !Const.isEmpty( m_username ) && !Const.isEmpty( m_password ) ) {
+    if ( !Utils.isEmpty( m_username ) && !Utils.isEmpty( m_password ) ) {
       Map<String, String> creds = new HashMap<String, String>();
       creds.put( "username", m_username ); //$NON-NLS-1$
       creds.put( "password", m_password ); //$NON-NLS-1$
@@ -304,4 +304,5 @@ public class CassandraConnection implements Connection {
 
     return ks;
   }
+
 }

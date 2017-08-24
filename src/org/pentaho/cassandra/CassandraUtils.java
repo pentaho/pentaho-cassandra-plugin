@@ -2,7 +2,7 @@
  *
  * Pentaho Big Data
  *
- * Copyright (C) 2002-2013 by Pentaho : http://www.pentaho.com
+ * Copyright (C) 2002-2017 by Pentaho : http://www.pentaho.com
  *
  *******************************************************************************
  *
@@ -44,14 +44,15 @@ import org.apache.cassandra.db.marshal.UTF8Type;
 import org.apache.cassandra.thrift.Compression;
 import org.pentaho.cassandra.spi.ColumnFamilyMetaData;
 import org.pentaho.cassandra.spi.Connection;
-import org.pentaho.di.core.Const;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.exception.KettleValueException;
 import org.pentaho.di.core.logging.LogChannelInterface;
 import org.pentaho.di.core.row.RowMetaInterface;
 import org.pentaho.di.core.row.ValueMetaInterface;
+import org.pentaho.di.core.util.Utils;
 import org.pentaho.di.i18n.BaseMessages;
 
+import com.datastax.driver.core.DataType;
 import com.google.common.base.Joiner;
 
 /**
@@ -66,6 +67,7 @@ public class CassandraUtils {
   public static class ConnectionOptions {
     public static final String SOCKET_TIMEOUT = "socketTimeout"; //$NON-NLS-1$
     public static final String MAX_LENGTH = "maxLength"; //$NON-NLS-1$
+    public static final String COMPRESSION = "compression";
   }
 
   public static class CQLOptions {
@@ -81,6 +83,7 @@ public class CassandraUtils {
 
   public static class BatchOptions {
     public static final String BATCH_TIMEOUT = "batchTimeout"; //$NON-NLS-1$
+    public static final String TTL = "TTL";
   }
 
   /**
@@ -117,6 +120,27 @@ public class CassandraUtils {
     return "blob"; //$NON-NLS-1$
   }
 
+  public static DataType getCassandraDataTypeFromValueMeta( ValueMetaInterface vm ) {
+    switch ( vm.getType() ) {
+      case ValueMetaInterface.TYPE_STRING:
+        return DataType.varchar();
+      case ValueMetaInterface.TYPE_BIGNUMBER:
+        return DataType.decimal();
+      case ValueMetaInterface.TYPE_BOOLEAN:
+        return DataType.cboolean();
+      case ValueMetaInterface.TYPE_INTEGER:
+        return DataType.bigint();
+      case ValueMetaInterface.TYPE_NUMBER:
+        return DataType.cdouble();
+      case ValueMetaInterface.TYPE_DATE:
+      case ValueMetaInterface.TYPE_TIMESTAMP:
+        return DataType.timestamp();
+      case ValueMetaInterface.TYPE_BINARY:
+      case ValueMetaInterface.TYPE_SERIALIZABLE:
+      default:
+        return DataType.blob();
+    }
+  }
   /**
    * Split a script containing one or more CQL statements (terminated by ;'s) into a list of individual statements.
    * 
@@ -185,7 +209,7 @@ public class CassandraUtils {
 
     String result = null;
 
-    if ( Const.isEmpty( subQ ) ) {
+    if ( Utils.isEmpty( subQ ) ) {
       return null;
     }
 
@@ -404,7 +428,7 @@ public class CassandraUtils {
       batch.append( "BEGIN BATCH" ); //$NON-NLS-1$
     }
 
-    if ( !cql3 && !Const.isEmpty( consistency ) ) {
+    if ( !cql3 && !Utils.isEmpty( consistency ) ) {
       batch.append( " USING CONSISTENCY " ).append( consistency ); //$NON-NLS-1$
     }
 
@@ -511,7 +535,7 @@ public class CassandraUtils {
       columnOrder = columnValues.keySet();
     } else {
       // Key column has to be listed first for CQL 2
-      columnOrder = new LinkedHashSet();
+      columnOrder = new LinkedHashSet<String>();
       for ( String keyColName : keyColNames ) {
         // Add keys in given order
         if ( columnValues.containsKey( keyColName ) ) {
@@ -789,4 +813,13 @@ public class CassandraUtils {
 
     return conn;
   }
+
+  public static String[] getColumnNames( RowMetaInterface inputMeta ) {
+    String[] columns = new String[inputMeta.size()];
+    for ( int i = 0; i < inputMeta.size(); i++ ) {
+      columns[i] = inputMeta.getValueMeta( i ).getName();
+    }
+    return columns;
+  }
+
 }

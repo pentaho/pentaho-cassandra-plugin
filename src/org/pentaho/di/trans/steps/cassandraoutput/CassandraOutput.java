@@ -2,7 +2,7 @@
  *
  * Pentaho Big Data
  *
- * Copyright (C) 2002-2013 by Pentaho : http://www.pentaho.com
+ * Copyright (C) 2002-2017 by Pentaho : http://www.pentaho.com
  *
  *******************************************************************************
  *
@@ -29,13 +29,14 @@ import java.util.Map;
 
 import org.pentaho.cassandra.CassandraUtils;
 import org.pentaho.cassandra.ConnectionFactory;
+import org.pentaho.cassandra.driverimpl.DriverCQLRowHandler;
 import org.pentaho.cassandra.spi.CQLRowHandler;
 import org.pentaho.cassandra.spi.ColumnFamilyMetaData;
 import org.pentaho.cassandra.spi.Connection;
 import org.pentaho.cassandra.spi.Keyspace;
 import org.pentaho.cassandra.spi.NonCQLRowHandler;
-import org.pentaho.di.core.Const;
 import org.pentaho.di.core.exception.KettleException;
+import org.pentaho.di.core.util.Utils;
 import org.pentaho.di.i18n.BaseMessages;
 import org.pentaho.di.trans.Trans;
 import org.pentaho.di.trans.TransMeta;
@@ -130,14 +131,14 @@ public class CassandraOutput extends BaseStep implements StepInterface {
     String batchSplitFactor = environmentSubstitute( m_meta.getCQLSubBatchSize() );
     String schemaHostS = environmentSubstitute( m_meta.getSchemaHost() );
     String schemaPortS = environmentSubstitute( m_meta.getSchemaPort() );
-    if ( Const.isEmpty( schemaHostS ) ) {
+    if ( Utils.isEmpty( schemaHostS ) ) {
       schemaHostS = hostS;
     }
-    if ( Const.isEmpty( schemaPortS ) ) {
+    if ( Utils.isEmpty( schemaPortS ) ) {
       schemaPortS = portS;
     }
 
-    if ( !Const.isEmpty( userS ) && !Const.isEmpty( passS ) ) {
+    if ( !Utils.isEmpty( userS ) && !Utils.isEmpty( passS ) ) {
       userS = environmentSubstitute( userS );
       passS = environmentSubstitute( passS );
     }
@@ -152,7 +153,7 @@ public class CassandraOutput extends BaseStep implements StepInterface {
 
     try {
 
-      if ( !Const.isEmpty( batchTimeoutS ) ) {
+      if ( !Utils.isEmpty( batchTimeoutS ) ) {
         try {
           m_cqlBatchInsertTimeout = Integer.parseInt( batchTimeoutS );
           if ( m_cqlBatchInsertTimeout < 500 ) {
@@ -165,7 +166,7 @@ public class CassandraOutput extends BaseStep implements StepInterface {
         }
       }
 
-      if ( !Const.isEmpty( batchSplitFactor ) ) {
+      if ( !Utils.isEmpty( batchSplitFactor ) ) {
         try {
           m_batchSplitFactor = Integer.parseInt( batchSplitFactor );
         } catch ( NumberFormatException e ) {
@@ -173,17 +174,17 @@ public class CassandraOutput extends BaseStep implements StepInterface {
         }
       }
 
-      if ( Const.isEmpty( hostS ) || Const.isEmpty( portS ) || Const.isEmpty( m_keyspaceName ) ) {
+      if ( Utils.isEmpty( hostS ) || Utils.isEmpty( portS ) || Utils.isEmpty( m_keyspaceName ) ) {
         throw new KettleException( BaseMessages.getString( CassandraOutputMeta.PKG,
             "CassandraOutput.Error.MissingConnectionDetails" ) ); //$NON-NLS-1$
       }
 
-      if ( Const.isEmpty( m_columnFamilyName ) ) {
+      if ( Utils.isEmpty( m_columnFamilyName ) ) {
         throw new KettleException( BaseMessages.getString( CassandraOutputMeta.PKG,
             "CassandraOutput.Error.NoColumnFamilySpecified" ) ); //$NON-NLS-1$
       }
 
-      if ( Const.isEmpty( keyField ) ) {
+      if ( Utils.isEmpty( keyField ) ) {
         throw new KettleException( BaseMessages.getString( CassandraOutputMeta.PKG,
             "CassandraOutput.Error.NoIncomingKeySpecified" ) ); //$NON-NLS-1$
       }
@@ -218,7 +219,7 @@ public class CassandraOutput extends BaseStep implements StepInterface {
         Keyspace keyspace = connection.getKeyspace( m_keyspaceName );
 
         // Try to execute any apriori CQL commands?
-        if ( !Const.isEmpty( m_meta.getAprioriCQL() ) ) {
+        if ( !Utils.isEmpty( m_meta.getAprioriCQL() ) ) {
           String aprioriCQL = environmentSubstitute( m_meta.getAprioriCQL() );
           List<String> statements = CassandraUtils.splitCQLStatements( aprioriCQL );
 
@@ -284,7 +285,7 @@ public class CassandraOutput extends BaseStep implements StepInterface {
         m_data.setOutputRowMeta( getInputRowMeta() );
 
         String batchSize = environmentSubstitute( m_meta.getBatchSize() );
-        if ( !Const.isEmpty( batchSize ) ) {
+        if ( !Utils.isEmpty( batchSize ) ) {
           try {
             m_batchSize = Integer.parseInt( batchSize );
           } catch ( NumberFormatException e ) {
@@ -405,29 +406,34 @@ public class CassandraOutput extends BaseStep implements StepInterface {
                 ( m_meta.getUseUnloggedBatch() && m_meta.getUseCQL3() ) );
       }
       int rowsAdded = 0;
-      for ( Object[] r : batch ) {
-        // add the row to the batch
-        if ( m_useThriftIO ) {
-          if ( CassandraUtils.addRowToNonCQLBatch( m_nonCQLBatch, r, getInputRowMeta(), m_cassandraMeta, m_meta
-              .getInsertFieldsNotInMeta(), log ) ) {
-            rowsAdded++;
-          }
-        } else {
-          if ( CassandraUtils.addRowToCQLBatch( m_batchInsertCQL, m_columnFamilyName, getInputRowMeta(), r,
-              m_cassandraMeta, m_meta.getInsertFieldsNotInMeta(), ( m_meta.getUseCQL3() ? 3 : 2 ), m_opts, log ) ) {
-            rowsAdded++;
+      if ( !m_meta.isUseDriver() ) {
+        for ( Object[] r : batch ) {
+          // add the row to the batch
+          if ( m_useThriftIO ) {
+            if ( CassandraUtils.addRowToNonCQLBatch( m_nonCQLBatch, r, getInputRowMeta(), m_cassandraMeta, m_meta
+                .getInsertFieldsNotInMeta(), log ) ) {
+              rowsAdded++;
+            }
+          } else {
+            if ( CassandraUtils.addRowToCQLBatch( m_batchInsertCQL, m_columnFamilyName, getInputRowMeta(), r,
+                m_cassandraMeta, m_meta.getInsertFieldsNotInMeta(), ( m_meta.getUseCQL3() ? 3 : 2 ), m_opts, log ) ) {
+              rowsAdded++;
+            }
           }
         }
+        if ( rowsAdded == 0 ) {
+          logDebug( BaseMessages.getString( CassandraOutputMeta.PKG, "CassandraOutput.Message.SkippingEmptyBatch" ) ); //$NON-NLS-1$
+          return;
+        }
+        if ( !m_useThriftIO ) {
+          CassandraUtils.completeCQLBatch( m_batchInsertCQL );
+        }
+      } else {
+        DriverCQLRowHandler handler = (DriverCQLRowHandler) m_cqlHandler;
+        handler.setUnloggedBatch( m_meta.getUseUnloggedBatch() );
+        handler.batchInsert( getInputRowMeta(), batch, m_cassandraMeta, m_consistencyLevel, m_meta
+            .getInsertFieldsNotInMeta(), getLogChannel() );
       }
-      if ( rowsAdded == 0 ) {
-        logDebug( BaseMessages.getString( CassandraOutputMeta.PKG, "CassandraOutput.Message.SkippingEmptyBatch" ) ); //$NON-NLS-1$
-        return;
-      }
-
-      if ( !m_useThriftIO ) {
-        CassandraUtils.completeCQLBatch( m_batchInsertCQL );
-      }
-
       // commit
       if ( m_connection == null ) {
         openConnection( false );
@@ -437,15 +443,18 @@ public class CassandraOutput extends BaseStep implements StepInterface {
           "CassandraOutput.Message.CommittingBatch", m_columnFamilyName, "" //$NON-NLS-1$ //$NON-NLS-2$
               + rowsAdded ) );
 
-      if ( m_useThriftIO ) {
-        m_nonCqlHandler.commitNonCQLBatch( this, m_nonCQLBatch, getInputRowMeta(), m_keyIndexes.get( 0 ),
-            m_columnFamilyName, m_consistency, log );
-      } else {
-        String compress = m_meta.getUseCompression() ? "GZIP" : ""; //$NON-NLS-1$ //$NON-NLS-2$
-        m_cqlHandler.commitCQLBatch( this, m_batchInsertCQL, compress, m_consistencyLevel, log );
+      if ( !m_meta.isUseDriver() ) {
+        if ( m_useThriftIO ) {
+          m_nonCqlHandler.commitNonCQLBatch( this, m_nonCQLBatch, getInputRowMeta(), m_keyIndexes.get( 0 ),
+              m_columnFamilyName, m_consistency, log );
+        } else {
+          String compress = m_meta.getUseCompression() ? "GZIP" : ""; //$NON-NLS-1$ //$NON-NLS-2$
+          m_cqlHandler.commitCQLBatch( this, m_batchInsertCQL, compress, m_consistencyLevel, log );
+        }
       }
     } catch ( Exception e ) {
-      e.printStackTrace();
+      logError( e.getLocalizedMessage(), e );
+      setErrors( getErrors() + 1 );
       closeConnection( m_connection );
       m_connection = null;
       logDetailed( BaseMessages.getString( CassandraOutputMeta.PKG,
@@ -502,20 +511,20 @@ public class CassandraOutput extends BaseStep implements StepInterface {
     String timeoutS = environmentSubstitute( m_meta.getSocketTimeout() );
     String schemaHostS = environmentSubstitute( m_meta.getSchemaHost() );
     String schemaPortS = environmentSubstitute( m_meta.getSchemaPort() );
-    if ( Const.isEmpty( schemaHostS ) ) {
+    if ( Utils.isEmpty( schemaHostS ) ) {
       schemaHostS = hostS;
     }
-    if ( Const.isEmpty( schemaPortS ) ) {
+    if ( Utils.isEmpty( schemaPortS ) ) {
       schemaPortS = portS;
     }
 
-    if ( !Const.isEmpty( userS ) && !Const.isEmpty( passS ) ) {
+    if ( !Utils.isEmpty( userS ) && !Utils.isEmpty( passS ) ) {
       userS = environmentSubstitute( userS );
       passS = environmentSubstitute( passS );
     }
 
     m_opts = new HashMap<String, String>();
-    if ( !Const.isEmpty( timeoutS ) ) {
+    if ( !Utils.isEmpty( timeoutS ) ) {
       m_opts.put( CassandraUtils.ConnectionOptions.SOCKET_TIMEOUT, timeoutS );
     }
 
@@ -530,7 +539,7 @@ public class CassandraOutput extends BaseStep implements StepInterface {
     // Set TTL if specified
     String ttl = m_meta.getTTL();
     ttl = environmentSubstitute( ttl );
-    if ( !Const.isEmpty( ttl ) && !ttl.startsWith( "-" ) ) {
+    if ( !Utils.isEmpty( ttl ) && !ttl.startsWith( "-" ) ) {
       String ttlUnit = m_meta.getTTLUnit();
       CassandraOutputMeta.TTLUnits theUnit = CassandraOutputMeta.TTLUnits.NONE;
       for ( CassandraOutputMeta.TTLUnits u : CassandraOutputMeta.TTLUnits.values() ) {
@@ -543,7 +552,7 @@ public class CassandraOutput extends BaseStep implements StepInterface {
       try {
         value = Integer.parseInt( ttl );
         value = theUnit.convertToSeconds( value );
-        m_opts.put( "TTL", "" + value );
+        m_opts.put( CassandraUtils.BatchOptions.TTL, "" + value );
       } catch ( NumberFormatException e ) {
         logDebug( BaseMessages.getString( CassandraOutputMeta.PKG, "CassandraOutput.Error.CantParseTTL", ttl ) );
       }
@@ -562,7 +571,9 @@ public class CassandraOutput extends BaseStep implements StepInterface {
 
       connection =
           CassandraUtils.getCassandraConnection( actualHostToUse, Integer.parseInt( portS ), userS, passS,
-              ConnectionFactory.Driver.LEGACY_THRIFT, m_opts );
+              m_meta.isUseDriver()
+                ? ConnectionFactory.Driver.BINARY_CQL3_PROTOCOL
+                : ConnectionFactory.Driver.LEGACY_THRIFT, m_opts );
 
       // set the global connection only if this connection is not being used
       // just for schema changes
@@ -573,6 +584,7 @@ public class CassandraOutput extends BaseStep implements StepInterface {
           m_nonCqlHandler = m_keyspace.getNonCQLRowHandler();
         }
         m_cqlHandler = m_keyspace.getCQLRowHandler();
+
       }
     } catch ( Exception ex ) {
       closeConnection( connection );

@@ -2,7 +2,7 @@
  *
  * Pentaho Big Data
  *
- * Copyright (C) 2002-2013 by Pentaho : http://www.pentaho.com
+ * Copyright (C) 2002-2017 by Pentaho : http://www.pentaho.com
  *
  *******************************************************************************
  *
@@ -36,9 +36,9 @@ import org.pentaho.cassandra.spi.ColumnFamilyMetaData;
 import org.pentaho.cassandra.spi.Connection;
 import org.pentaho.cassandra.spi.Keyspace;
 import org.pentaho.cassandra.spi.NonCQLRowHandler;
-import org.pentaho.di.core.Const;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.row.RowMeta;
+import org.pentaho.di.core.util.Utils;
 import org.pentaho.di.i18n.BaseMessages;
 import org.pentaho.di.trans.Trans;
 import org.pentaho.di.trans.TransMeta;
@@ -124,13 +124,13 @@ public class CassandraInput extends BaseStep implements StepInterface {
         String maxLength = environmentSubstitute( m_meta.getMaxLength() );
         String userS = m_meta.getUsername();
         String passS = m_meta.getPassword();
-        if ( !Const.isEmpty( userS ) && !Const.isEmpty( passS ) ) {
+        if ( !Utils.isEmpty( userS ) && !Utils.isEmpty( passS ) ) {
           userS = environmentSubstitute( userS );
           passS = environmentSubstitute( passS );
         }
         String keyspaceS = environmentSubstitute( m_meta.getCassandraKeyspace() );
 
-        if ( Const.isEmpty( hostS ) || Const.isEmpty( portS ) || Const.isEmpty( keyspaceS ) ) {
+        if ( Utils.isEmpty( hostS ) || Utils.isEmpty( portS ) || Utils.isEmpty( keyspaceS ) ) {
           throw new KettleException( "Some connection details are missing!!" ); //$NON-NLS-1$
         }
 
@@ -139,16 +139,20 @@ public class CassandraInput extends BaseStep implements StepInterface {
 
         Map<String, String> opts = new HashMap<String, String>();
 
-        if ( !Const.isEmpty( timeoutS ) ) {
+        if ( !Utils.isEmpty( timeoutS ) ) {
           opts.put( CassandraUtils.ConnectionOptions.SOCKET_TIMEOUT, timeoutS );
         }
 
-        if ( !Const.isEmpty( maxLength ) ) {
+        if ( !Utils.isEmpty( maxLength ) ) {
           opts.put( CassandraUtils.ConnectionOptions.MAX_LENGTH, maxLength );
         }
 
         if ( m_meta.getUseCQL3() ) {
           opts.put( CassandraUtils.CQLOptions.CQLVERSION_OPTION, CassandraUtils.CQLOptions.CQL3_STRING );
+        }
+
+        if ( m_meta.getUseCompression() ) {
+          opts.put( CassandraUtils.ConnectionOptions.COMPRESSION, Boolean.TRUE.toString() );
         }
 
         if ( opts.size() > 0 ) {
@@ -159,7 +163,9 @@ public class CassandraInput extends BaseStep implements StepInterface {
         try {
           m_connection =
               CassandraUtils.getCassandraConnection( hostS, Integer.parseInt( portS ), userS, passS,
-                  ConnectionFactory.Driver.LEGACY_THRIFT, opts );
+                  m_meta.isUseDriver()
+                    ? ConnectionFactory.Driver.BINARY_CQL3_PROTOCOL
+                    : ConnectionFactory.Driver.LEGACY_THRIFT, opts );
 
           m_keyspace = m_connection.getKeyspace( keyspaceS );
         } catch ( Exception ex ) {
@@ -171,7 +177,7 @@ public class CassandraInput extends BaseStep implements StepInterface {
         m_colFamName =
             CassandraUtils.getColumnFamilyNameFromCQLSelectQuery( environmentSubstitute( m_meta.getCQLSelectQuery() ) );
 
-        if ( Const.isEmpty( m_colFamName ) ) {
+        if ( Utils.isEmpty( m_colFamName ) ) {
           throw new KettleException( BaseMessages.getString( CassandraInputMeta.PKG,
               "CassandraInput.Error.NonExistentColumnFamily" ) ); //$NON-NLS-1$
         }

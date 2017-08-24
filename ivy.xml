@@ -73,7 +73,6 @@
     </dependency>
     <dependency org="junit" name="junit" rev="4.11" conf="test->default" />
     <dependency org="org.mockito" name="mockito-all"   rev="1.9.5"   conf="test->default" transitive="false" />
-    <dependency org="pentaho-kettle" name="kettle-engine-test" rev="${dependency.kettle.revision}" transitive="false" conf="test->default"/>
     <dependency org="org.apache.commons" name="commons-vfs2" rev="2.1-20150824" conf="test->default" />
     <dependency org="org.slf4j" name="slf4j-api" rev="1.7.7" transitive="false" conf="test->default"  changing="false"/>
     <dependency org="org.slf4j" name="slf4j-log4j12" rev="1.7.7" transitive="false" conf="test->default"  changing="false"/>

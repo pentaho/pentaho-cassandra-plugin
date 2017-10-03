@@ -47,6 +47,7 @@ import org.pentaho.di.core.Const;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.row.RowMetaInterface;
 import org.pentaho.di.core.row.ValueMetaInterface;
+import org.pentaho.di.core.util.Utils;
 import org.pentaho.di.i18n.BaseMessages;
 import org.pentaho.di.trans.TransMeta;
 import org.pentaho.di.trans.step.BaseStepMeta;
@@ -324,6 +325,7 @@ public class SSTableOutputDialog extends BaseStepDialog implements StepDialogInt
     m_getFieldsBut = new Button( shell, SWT.PUSH | SWT.CENTER );
     props.setLook( m_getFieldsBut );
     m_getFieldsBut.setText( BaseMessages.getString( PKG, "SSTableOutputDialog.GetFields.Button" ) );
+
     fd = new FormData();
     fd.right = new FormAttachment( 100, 0 );
     fd.top = new FormAttachment( m_columnFamilyText, 0 );
@@ -339,6 +341,7 @@ public class SSTableOutputDialog extends BaseStepDialog implements StepDialogInt
         }
       }
     } );
+
 
     m_keyFieldCombo = new CCombo( shell, SWT.BORDER );
     m_keyFieldCombo.addModifyListener( new ModifyListener() {
@@ -373,14 +376,7 @@ public class SSTableOutputDialog extends BaseStepDialog implements StepDialogInt
     m_useCQL3Check.addSelectionListener( new SelectionAdapter() {
       @Override
       public void widgetSelected( SelectionEvent e ) {
-        if ( m_useCQL3Check.getSelection() ) {
-          m_getFieldsBut.setText( BaseMessages.getString( PKG, "SSTableOutputDialog.SelectFields.Button" ) ); //$NON-NLS-1$
-          m_keyFieldLab.setText( BaseMessages.getString( PKG, "SSTableOutputDialog.KeyFields.Label" ) ); //$NON-NLS-1$
-        } else {
-          m_getFieldsBut.setText( " " //$NON-NLS-1$
-              + BaseMessages.getString( PKG, "SSTableOutputDialog.GetFields.Button" ) + " " ); //$NON-NLS-1$ //$NON-NLS-2$
-          m_keyFieldLab.setText( BaseMessages.getString( PKG, "SSTableOutputDialog.KeyField.Label" ) ); //$NON-NLS-1$
-        }
+        onCql3CheckSelection();
       }
     } );
 
@@ -464,6 +460,17 @@ public class SSTableOutputDialog extends BaseStepDialog implements StepDialogInt
     return stepname;
   }
 
+
+  protected void onCql3CheckSelection() {
+    if ( m_useCQL3Check.getSelection() ) {
+      m_getFieldsBut.setText( BaseMessages.getString( PKG, "SSTableOutputDialog.SelectFields.Button" ) ); //$NON-NLS-1$
+      m_keyFieldLab.setText( BaseMessages.getString( PKG, "SSTableOutputDialog.KeyFields.Label" ) ); //$NON-NLS-1$
+    } else {
+      m_getFieldsBut.setText( BaseMessages.getString( PKG, "SSTableOutputDialog.GetFields.Button" ) ); //$NON-NLS-1$
+      m_keyFieldLab.setText( BaseMessages.getString( PKG, "SSTableOutputDialog.KeyField.Label" ) ); //$NON-NLS-1$
+    }
+  }
+
   protected void setupFieldsCombo() {
     // try and set up from incoming fields from previous step
 
@@ -495,7 +502,7 @@ public class SSTableOutputDialog extends BaseStepDialog implements StepDialogInt
   }
 
   protected void ok() {
-    if ( Const.isEmpty( m_stepnameText.getText() ) ) {
+    if ( Utils.isEmpty( m_stepnameText.getText() ) ) {
       return;
     }
 
@@ -525,39 +532,32 @@ public class SSTableOutputDialog extends BaseStepDialog implements StepDialogInt
 
   protected void getData() {
 
-    if ( !Const.isEmpty( m_currentMeta.getYamlPath() ) ) {
+    if ( !Utils.isEmpty( m_currentMeta.getYamlPath() ) ) {
       m_yamlText.setText( m_currentMeta.getYamlPath() );
     }
 
-    if ( !Const.isEmpty( m_currentMeta.getDirectory() ) ) {
+    if ( !Utils.isEmpty( m_currentMeta.getDirectory() ) ) {
       m_directoryText.setText( m_currentMeta.getDirectory() );
     }
 
-    if ( !Const.isEmpty( m_currentMeta.getCassandraKeyspace() ) ) {
+    if ( !Utils.isEmpty( m_currentMeta.getCassandraKeyspace() ) ) {
       m_keyspaceText.setText( m_currentMeta.getCassandraKeyspace() );
     }
 
-    if ( !Const.isEmpty( m_currentMeta.getColumnFamilyName() ) ) {
+    if ( !Utils.isEmpty( m_currentMeta.getColumnFamilyName() ) ) {
       m_columnFamilyText.setText( m_currentMeta.getColumnFamilyName() );
     }
 
-    if ( !Const.isEmpty( m_currentMeta.getKeyField() ) ) {
+    if ( !Utils.isEmpty( m_currentMeta.getKeyField() ) ) {
       m_keyFieldCombo.setText( m_currentMeta.getKeyField() );
     }
 
-    if ( !Const.isEmpty( m_currentMeta.getBufferSize() ) ) {
+    if ( !Utils.isEmpty( m_currentMeta.getBufferSize() ) ) {
       m_bufferSizeText.setText( m_currentMeta.getBufferSize() );
     }
 
     m_useCQL3Check.setSelection( m_currentMeta.getUseCQL3()   );
-
-    if ( m_useCQL3Check.getSelection() ) {
-      m_keyFieldLab.setText( BaseMessages.getString( PKG, "SSTableOutputDialog.KeyFields.Label" ) ); //$NON-NLS-1$
-      m_getFieldsBut.setText( BaseMessages.getString( PKG, "SSTableOutputDialog.GetFields.Button" ) ); //$NON-NLS-1$
-    } else {
-      m_keyFieldLab.setText( BaseMessages.getString( PKG, "SSTableOutputDialog.KeyField.Label" ) ); //$NON-NLS-1$
-      m_getFieldsBut.setText( BaseMessages.getString( PKG, "SSTableOutputDialog.GetFields.Button" ) ); //$NON-NLS-1$
-    }
+    onCql3CheckSelection();
   }
 
   protected void showEnterSelectionDialog() {
@@ -570,8 +570,8 @@ public class SSTableOutputDialog extends BaseStepDialog implements StepDialogInt
 
         if ( row.size() == 0 ) {
           MessageDialog.openError( shell, BaseMessages.getString( PKG,
-              "CassandraOutputData.Message.NoIncomingFields.Title" ), //$NON-NLS-1$
-              BaseMessages.getString( PKG, "CassandraOutputData.Message.NoIncomingFields" ) ); //$NON-NLS-1$
+              "SSTableOutputData.Message.NoIncomingFields.Title" ), //$NON-NLS-1$
+              BaseMessages.getString( PKG, "SSTableOutputData.Message.NoIncomingFields" ) ); //$NON-NLS-1$
 
           return;
         }
@@ -587,7 +587,7 @@ public class SSTableOutputDialog extends BaseStepDialog implements StepDialogInt
                 "CassandraOutputDialog.SelectKeyFieldsDialog.Title" ), //$NON-NLS-1$
                 BaseMessages.getString( PKG, "CassandraOutputDialog.SelectKeyFieldsDialog.Message" ) ); //$NON-NLS-1$
         dialog.setMulti( true );
-        if ( !Const.isEmpty( m_keyFieldCombo.getText() ) ) {
+        if ( !Utils.isEmpty( m_keyFieldCombo.getText() ) ) {
           String current = m_keyFieldCombo.getText();
           String[] parts = current.split( "," ); //$NON-NLS-1$
           int[] currentSelection = new int[parts.length];
@@ -626,4 +626,5 @@ public class SSTableOutputDialog extends BaseStepDialog implements StepDialogInt
       }
     }
   }
+
 }

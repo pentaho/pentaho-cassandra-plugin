@@ -1,5 +1,5 @@
 <!--===========================================================================
-  This is the build file for the Pentaho Cassandra Project
+  This is the build file for the Hitachi Vantara Cassandra Project
   
   This build file will use the subfloor.xml file as the default build
   process and should only override the tasks that need to differ from

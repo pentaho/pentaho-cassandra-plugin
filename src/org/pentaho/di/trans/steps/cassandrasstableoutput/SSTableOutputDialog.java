@@ -585,7 +585,7 @@ public class SSTableOutputDialog extends BaseStepDialog implements StepDialogInt
         EnterSelectionDialog dialog =
             new EnterSelectionDialog( shell, choices, BaseMessages.getString( PKG,
                 "CassandraOutputDialog.SelectKeyFieldsDialog.Title" ), //$NON-NLS-1$
-                BaseMessages.getString( PKG, "CassandraOutputDialog.SelectKeyFieldsDialog.Message" ) ); //$NON-NLS-1$
+                BaseMessages.getString( PKG, "CassandraOutputDialog.SelectKeyFieldsDialog.Message" ), 370, 280 ); //$NON-NLS-1$
         dialog.setMulti( true );
         if ( !Utils.isEmpty( m_keyFieldCombo.getText() ) ) {
           String current = m_keyFieldCombo.getText();

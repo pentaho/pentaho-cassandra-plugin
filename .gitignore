@@ -1,3 +1,5 @@
+.idea/
+.settings/
 bin/
 dist/
 lib/
@@ -5,8 +7,9 @@ lib-provided/
 stage-pmr/
 test-lib/
 eclipse-bin/
+dev-lib/
+pdi-null/
+pdi-bin/
+
 override.properties
-.settings/
-/dev-lib
-/pdi-null
-/pdi-bin
+*.iml

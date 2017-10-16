@@ -50,12 +50,9 @@ import org.w3c.dom.Node;
 
 /**
  * Provides metadata for the Cassandra SSTable output step.
- *
- * @author Rob Turner (robert{[at]}robertturner{[dot]}com{[dot]}au)
- * @author Mark Hall (mhall{[at]}pentaho{[dot]}com)
  */
 @Step( id = "SSTableOutput", image = "Cassandra.svg", name = "SSTable Output",
-    documentationUrl = "http://wiki.pentaho.com/display/EAI/SSTable+Output",
+    documentationUrl = "Products/Data_Integration/Transformation_Step_Reference/SSTable_Output",
     description = "Writes to a filesystem directory as a Cassandra SSTable", categoryDescription = "Big Data" )
 @InjectionSupported( localizationPrefix = "SSTableOutput.Injection." )
 @ParentFirst( patterns = { ".*" } )

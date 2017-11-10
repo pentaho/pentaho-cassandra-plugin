@@ -78,7 +78,5 @@
     <dependency org="org.slf4j" name="slf4j-log4j12" rev="1.7.7" transitive="false" conf="test->default"  changing="false"/>
     <dependency org="javax.servlet" name="javax.servlet-api" rev="3.0.1" transitive="false" conf="test->default" />
 
-    <dependency org="org.codehaus.jackson"             name="jackson-core-asl"     rev="1.9.2"           transitive="false" conf="test->default"/>
-    <dependency org="org.codehaus.jackson"             name="jackson-mapper-asl"   rev="1.9.2"           transitive="false" conf="test->default"/>
   </dependencies>
 </ivy-module>

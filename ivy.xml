@@ -19,13 +19,13 @@
     <dependency org="org.eclipse.swt" name="org.eclipse.swt.gtk.linux.x86_64" rev="4.6" transitive="false" />
     <dependency org="org.eclipse" name="jface" rev="3.3.0-I20070606-0010" transitive="false" />
 
-    <dependency org="pentaho-kettle" name="kettle-engine" rev="${dependency.kettle.revision}" transitive="false" conf="default->default"
+    <dependency org="pentaho-kettle" name="kettle-engine" rev="${pdi.version}" transitive="false" conf="default->default"
       changing="true" />
-    <dependency org="pentaho-kettle" name="kettle-core" rev="${dependency.kettle.revision}" transitive="false" conf="default->default"
+    <dependency org="pentaho-kettle" name="kettle-core" rev="${pdi.version}" transitive="false" conf="default->default"
       changing="true" />
-    <dependency org="pentaho-kettle" name="kettle-ui-swt" rev="${dependency.kettle.revision}" transitive="false" conf="default->default"
+    <dependency org="pentaho-kettle" name="kettle-ui-swt" rev="${pdi.version}" transitive="false" conf="default->default"
       changing="true" />
-    <dependency org="pentaho" name="pentaho-xul-core" rev="${dependency.pentaho-xul.revision}" transitive="false" changing="true" />
+    <dependency org="pentaho" name="pentaho-xul-core" rev="${pentaho-xul.version}" transitive="false" changing="true" />
 
 
     <!-- Third-party (external) dependencies -->
@@ -67,8 +67,8 @@
     <dependency org="log4j" name="log4j" rev="${dependency.log4j.revision}" transitive="false" />
 
     <!--  for testing -->
-    <dependency org="pentaho-kettle" name="kettle-core" rev="${dependency.kettle.revision}" transitive="true" conf="test->default" changing="true"/>
-    <dependency org="pentaho-kettle" name="kettle-engine" rev="${dependency.kettle.revision}" transitive="true" conf="test->default" changing="true">
+    <dependency org="pentaho-kettle" name="kettle-core" rev="${pdi.version}" transitive="true" conf="test->default" changing="true"/>
+    <dependency org="pentaho-kettle" name="kettle-engine" rev="${pdi.version}" transitive="true" conf="test->default" changing="true">
       <artifact name="kettle-engine" ext="jar" m:classifier="tests"/>
     </dependency>
     <dependency org="junit" name="junit" rev="4.11" conf="test->default" />

@@ -16,14 +16,10 @@ $ mvn clean install
 ```
 To skip tests, specify the `DskipTests` option.
 
-The `assemblies/plugin` module can be build with the `-Deula-wrap` option to generate a EULA-wrapped version of the assembly artifacts
-```
-$ mvn clean install -Drelease -Deula-wrap
-```
 
 ## Generated Artifacts
 
-The `assemblies/plugin` module generates the full plugin assemblies that can be extracted directly into the `{pdi-*-client/data-integration/plugin` folder on the pentaho server, in order to enable the cassandra steps on the PDI client:
+The `assemblies/plugin` module generates the full plugin assemblies that can be extracted directly into the `{pdi-*-client/data-integration/plugin` folder, in order to enable the cassandra steps on the PDI client:
 
 -------
 

@@ -14,12 +14,12 @@
 		<url>scm:git:git@github.com:pentaho/${project.artifactId}.git</url>
 	</scm>
 	<licenses>
-      <license>
-        <name>Apache License, Version 2.0</name>
-        <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
-        <distribution>repo</distribution>
-        </license>
-    </licenses>
+		<license>
+			<name>Apache License, Version 2.0</name>
+			<url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
 	<properties>
 		<license.licenseName>apache_v2</license.licenseName>
 		<pdi.version>8.1-SNAPSHOT</pdi.version>
@@ -59,7 +59,7 @@
 			</activation>
 			<modules>
 				<module>core</module>
-    		<module>assemblies</module>	
+				<module>assemblies</module>
 			</modules>
 		</profile>
 		<profile>
@@ -325,7 +325,7 @@
 					</exclusion>
 				</exclusions>
 			</dependency>
-			
+
 			<!-- Input/Output driver impl dependencies -->
 			<dependency>
 				<groupId>com.datastax.cassandra</groupId>

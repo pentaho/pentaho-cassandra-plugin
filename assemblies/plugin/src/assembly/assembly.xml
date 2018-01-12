@@ -48,6 +48,7 @@
 		<file>
 			<source>../../core/src/main/resources/version.xml</source>
 			<outputDirectory></outputDirectory>
+			<filtered>true</filtered>
 		</file>
 	</files>
 </assembly>

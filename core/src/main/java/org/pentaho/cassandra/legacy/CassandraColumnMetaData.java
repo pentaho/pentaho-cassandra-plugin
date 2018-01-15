@@ -2,7 +2,7 @@
  *
  * Pentaho Big Data
  *
- * Copyright (C) 2002-2017 by Hitachi Vantara : http://www.pentaho.com
+ * Copyright (C) 2002-2018 by Hitachi Vantara : http://www.pentaho.com
  *
  *******************************************************************************
  *
@@ -35,6 +35,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.cassandra.db.marshal.AbstractType;
 import org.apache.cassandra.db.marshal.AsciiType;
 import org.apache.cassandra.db.marshal.BooleanType;
@@ -241,10 +242,11 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
   protected void refreshCQL3( CassandraConnection conn ) throws Exception {
     List<String> colFamNames = m_keyspace.getColumnFamilyNames();
 
+    String keyspace = conn.m_keyspaceName;
     if ( !colFamNames.contains( m_columnFamilyName ) ) {
       throw new Exception( BaseMessages.getString( PKG,
-          "CassandraColumnMetaData.Error.UnableToFindRequestedColumnFamily", //$NON-NLS-1$
-          m_columnFamilyName, conn.m_keyspaceName ) );
+        "CassandraColumnMetaData.Error.UnableToFindRequestedColumnFamily", //$NON-NLS-1$
+        m_columnFamilyName, keyspace ) );
     }
 
     ConsistencyLevel c = ConsistencyLevel.ONE; // default for CQL
@@ -258,23 +260,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
     m_schemaDescription = new StringBuffer();
     String columnFamNameAdditionalInfo = ""; //$NON-NLS-1$
 
-    // first get key alias (if any), column aliases (tells us if
-    // there is a composite key and what the additional parts to the
-    // key are, since these are not listed as normal columns), key validator,
-    // default validator and comparator (full composite key type that
-    // allows us to get the decoders for the additional part(s) of the key
-    String cqlQ = "select " + CFMetaDataElements.COMPARATOR + ", " + CFMetaDataElements.DEFAULT_VALIDATOR + "," //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-        + CFMetaDataElements.COLUMN_ALIASES + ", "
-        + CFMetaDataElements.KEY_ALIASES + ", " //$NON-NLS-1$ //$NON-NLS-2$
-        + CFMetaDataElements.KEY_VALIDATOR + ", "
-        + CFMetaDataElements.BLOOM_FILTER_FP_CHANCE + ", " //$NON-NLS-1$ //$NON-NLS-2$
-        + CFMetaDataElements.CACHING + ", " + CFMetaDataElements.COMPACTION_STRATEGY_CLASS + ", " //$NON-NLS-1$ //$NON-NLS-2$
-        + CFMetaDataElements.COMPACTION_STRATEGY_OPTIONS + ", " + CFMetaDataElements.COMPRESSION_PARAMETERS + ", " //$NON-NLS-1$ //$NON-NLS-2$
-        + CFMetaDataElements.GC_GRACE_SECONDS + ", " + CFMetaDataElements.LOCAL_READ_REPAIR_CHANCE + ", " //$NON-NLS-1$ //$NON-NLS-2$
-        + CFMetaDataElements.MAX_COMPACTION_THRESHOLD + ", " + CFMetaDataElements.MIN_COMPACTION_THRESHOLD + ", " //$NON-NLS-1$ //$NON-NLS-2$
-        + CFMetaDataElements.TYPE + ", " + CFMetaDataElements.VALUE_ALIAS //$NON-NLS-1$ //$NON-NLS-2$
-        + " from system.schema_columnfamilies where keyspace_name='" //$NON-NLS-1$
-        + conn.m_keyspaceName + "' and columnfamily_name='" + m_columnFamilyName + "';"; //$NON-NLS-1$ //$NON-NLS-2$
+    String cqlQ = generateRefreshCQL3Query( keyspace );
 
     byte[] data = cqlQ.getBytes( Charset.forName( "UTF-8" ) ); //$NON-NLS-1$
 
@@ -289,7 +275,7 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
 
     // read the system.schema_columns table to get the rest of the columns
     cqlQ = "select column_name, validator, index_name from system.schema_columns where keyspace_name='" //$NON-NLS-1$
-        + conn.m_keyspaceName + "' AND columnfamily_name='" //$NON-NLS-1$
+        + keyspace + "' AND columnfamily_name='" //$NON-NLS-1$
         + m_columnFamilyName + "';"; //$NON-NLS-1$
 
     data = cqlQ.getBytes( Charset.forName( "UTF-8" ) ); //$NON-NLS-1$
@@ -718,6 +704,28 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
     }
   }
 
+  @VisibleForTesting
+  String generateRefreshCQL3Query( String keyspace ) {
+    // first get key alias (if any), column aliases (tells us if
+    // there is a composite key and what the additional parts to the
+    // key are, since these are not listed as normal columns), key validator,
+    // default validator and comparator (full composite key type that
+    // allows us to get the decoders for the additional part(s) of the key
+    String result = "select " + CFMetaDataElements.COMPARATOR + ", " + CFMetaDataElements.DEFAULT_VALIDATOR + "," //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+            + CFMetaDataElements.COLUMN_ALIASES + ", "
+            + CFMetaDataElements.KEY_ALIASES + ", " //$NON-NLS-1$ //$NON-NLS-2$
+            + CFMetaDataElements.KEY_VALIDATOR + ", "
+            + CFMetaDataElements.BLOOM_FILTER_FP_CHANCE + ", " //$NON-NLS-1$ //$NON-NLS-2$
+            + CFMetaDataElements.CACHING + ", " + CFMetaDataElements.COMPACTION_STRATEGY_CLASS + ", " //$NON-NLS-1$ //$NON-NLS-2$
+            + CFMetaDataElements.COMPACTION_STRATEGY_OPTIONS + ", " + CFMetaDataElements.COMPRESSION_PARAMETERS + ", " //$NON-NLS-1$ //$NON-NLS-2$
+            + CFMetaDataElements.GC_GRACE_SECONDS + ", " + CFMetaDataElements.LOCAL_READ_REPAIR_CHANCE + ", " //$NON-NLS-1$ //$NON-NLS-2$
+            + CFMetaDataElements.MAX_COMPACTION_THRESHOLD + ", " + CFMetaDataElements.MIN_COMPACTION_THRESHOLD + ", " //$NON-NLS-1$ //$NON-NLS-2$
+            + CFMetaDataElements.TYPE + ", " + CFMetaDataElements.VALUE_ALIAS //$NON-NLS-1$ //$NON-NLS-2$
+            + " from system.schema_columnfamilies where keyspace_name='" //$NON-NLS-1$
+            + keyspace + "' and columnfamily_name='" + m_columnFamilyName + "';";
+    return result;
+  }
+
   /**
    * Refreshes the encapsulated meta data for the column family.
    *
@@ -924,7 +932,6 @@ public class CassandraColumnMetaData implements ColumnFamilyMetaData {
   /**
    * Get a textual description of the named column family
    *
-   * @param keyspace
    * @return
    * @throws Exception
    */

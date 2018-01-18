@@ -30,7 +30,7 @@
 		<apache.commons.lang3.version>3.0</apache.commons.lang3.version>
 		<commons-lang.version>2.6</commons-lang.version>
 		<jface.version>3.3.0-I20070606-0010</jface.version>
-		<pentaho-xul.version>8.1.0.0-SNAPSHOT</pentaho-xul.version>
+		<commons-xul.version>8.1.0.0-SNAPSHOT</commons-xul.version>
 		<guava.version>17.0</guava.version>
 		<snakeyaml.version>1.11</snakeyaml.version>
 		<netty.version>4.0.44.Final</netty.version>
@@ -138,9 +138,9 @@
 				</exclusions>
 			</dependency>
 			<dependency>
-				<groupId>pentaho</groupId>
-				<artifactId>pentaho-xul-core</artifactId>
-				<version>${pentaho-xul.version}</version>
+				<groupId>org.pentaho</groupId>
+				<artifactId>commons-xul-core</artifactId>
+				<version>${commons-xul.version}</version>
 				<scope>compile</scope>
 				<exclusions>
 					<exclusion>

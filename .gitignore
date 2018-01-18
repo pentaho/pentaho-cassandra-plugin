@@ -13,3 +13,4 @@ pdi-bin/
 
 override.properties
 *.iml
+**/target/

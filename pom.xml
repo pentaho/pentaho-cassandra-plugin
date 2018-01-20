@@ -22,7 +22,7 @@
 	</licenses>
 	<properties>
 		<license.licenseName>apache_v2</license.licenseName>
-		<pdi.version>8.1-SNAPSHOT</pdi.version>
+		<pdi.version>8.1.0.0-SNAPSHOT</pdi.version>
 		<cassandra.version>2.2.9</cassandra.version>
 		<swt.version>4.6</swt.version>
 		<cassandra.driver.version>3.2.0</cassandra.driver.version>

@@ -2,7 +2,7 @@
  *
  * Pentaho Data Integration
  *
- * Copyright (C) 2002-2017 by Hitachi Vantara : http://www.pentaho.com
+ * Copyright (C) 2002-2018 by Hitachi Vantara : http://www.pentaho.com
  *
  *******************************************************************************
  *
@@ -19,7 +19,7 @@
  * limitations under the License.
  *
  ******************************************************************************/
-package org.pentaho.cassandra.cql;
+package org.pentaho.cassandra.util;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -27,8 +27,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
-
-import org.pentaho.di.core.Const;
 
 /**
  * @author Tatsiana_Kasiankova
@@ -131,7 +129,7 @@ public class CQLUtils {
    */
   public static String getSelectExpression( String cqlExpresssion ) {
     String selectExpression = null;
-    if ( !Const.isEmpty( cqlExpresssion ) ) {
+    if ( cqlExpresssion != null && !cqlExpresssion.isEmpty() ) {
       cqlExpresssion = clean( cqlExpresssion );
       int end = cqlExpresssion.toLowerCase().indexOf( FROM );
       int start = cqlExpresssion.toLowerCase().indexOf( SELECT ) + SELECT.length();
@@ -164,7 +162,7 @@ public class CQLUtils {
    * @return the array of selectors
    */
   public static Selector[] getColumnsInSelect( String selectExpression, boolean isCql3 ) {
-    if ( !Const.isEmpty( selectExpression ) ) {
+    if ( selectExpression != null && !selectExpression.isEmpty() ) {
       ArrayList<Selector> selectors = getSelectors( selectExpression.trim(), isCql3 );
       return selectors.toArray( new Selector[selectors.size()] );
     }

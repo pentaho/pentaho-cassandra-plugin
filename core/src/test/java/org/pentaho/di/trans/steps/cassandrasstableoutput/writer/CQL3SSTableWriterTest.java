@@ -1,5 +1,5 @@
 /*!
- * Copyright 2017 Hitachi Vantara.  All rights reserved.
+ * Copyright 2018 Hitachi Vantara.  All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,13 +32,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.fail;
+import static org.mockito.Matchers.anyMapOf;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+
 
 public class CQL3SSTableWriterTest {
 
   public static final String KEY_FIELD = "KEY_FIELD";
-  public static final String COLUMN_FAMILY = "COLUMN_FAMILY";
+  public static final String TABLE = "TABLE";
   public static final String KEY_SPACE = "KEY_SPACE";
   public static final String DIRECTORY_PATH = "directory_path";
   public static final int BUFFER_SIZE = 10;
@@ -49,9 +56,9 @@ public class CQL3SSTableWriterTest {
     @Override CQLSSTableWriter getCQLSSTableWriter() {
       assertEquals( DIRECTORY_PATH, getDirectory() );
       assertEquals( KEY_SPACE, getKeyspace() );
-      assertEquals( COLUMN_FAMILY, getColumnFamily() );
+      assertEquals( TABLE, getTable() );
       assertEquals( BUFFER_SIZE, getBufferSize() );
-      assertEquals( KEY_FIELD, getKeyField() );
+      assertEquals( KEY_FIELD, getPrimaryKey() );
       CQLSSTableWriter ssWriter = mock( CQLSSTableWriter.class );
       try {
         doAnswer( new Answer<Void>() {
@@ -87,7 +94,7 @@ public class CQL3SSTableWriterTest {
 
   private CQL3SSTableWriter getCql3SSTableWriter() {
     CQL3SSTableWriter writer = new CQL3SSTableWriterStub();
-    writer.setKeyField( KEY_FIELD );
+    writer.setPrimaryKey( KEY_FIELD );
     RowMetaInterface rmi = mock( RowMetaInterface.class );
     ValueMetaInterface one = new ValueMetaBase( KEY_FIELD, ValueMetaBase.TYPE_INTEGER );
     ValueMetaInterface two = new ValueMetaBase( COLUMN, ValueMetaBase.TYPE_STRING );
@@ -99,9 +106,10 @@ public class CQL3SSTableWriterTest {
     doReturn( fieldNames ).when( rmi ).getFieldNames();
     writer.setRowMeta( rmi );
     writer.setBufferSize( BUFFER_SIZE );
-    writer.setColumnFamily( COLUMN_FAMILY );
+    writer.setTable( TABLE );
     writer.setKeyspace( KEY_SPACE );
     writer.setDirectory( DIRECTORY_PATH );
+    writer.setPartitionerClass( "org.apache.cassandra.dht.Murmur3Partitioner" );
     return writer;
   }
 
@@ -127,17 +135,17 @@ public class CQL3SSTableWriterTest {
   }
 
   @Test
-  public void testBuildCreateColumnFamilyCQLStatement() throws Exception {
+  public void testBuildCreateTableCQLStatement() throws Exception {
     CQL3SSTableWriter writer = getCql3SSTableWriter();
     writer.init();
-    assertEquals( "CREATE TABLE KEY_SPACE.COLUMN_FAMILY (\"KEY_FIELD\" bigint,\"someColumn\" varchar,PRIMARY KEY "
-      + "(\"KEY_FIELD\"));", writer.buildCreateColumnFamilyCQLStatement() );
+    assertEquals( "CREATE TABLE KEY_SPACE.TABLE (\"KEY_FIELD\" bigint,\"someColumn\" varchar,PRIMARY KEY "
+      + "(\"KEY_FIELD\" ));", writer.buildCreateTableCQLStatement() );
   }
 
   @Test
   public void testBuildInsertCQLStatement() throws Exception {
     CQL3SSTableWriter writer = getCql3SSTableWriter();
     writer.init();
-    assertEquals( "INSERT INTO KEY_SPACE.COLUMN_FAMILY (\"key\",\"two\") VALUES (?,?);", writer.buildInsertCQLStatement() );
+    assertEquals( "INSERT INTO KEY_SPACE.TABLE (\"key\",\"two\") VALUES (?,?);", writer.buildInsertCQLStatement() );
   }
 }

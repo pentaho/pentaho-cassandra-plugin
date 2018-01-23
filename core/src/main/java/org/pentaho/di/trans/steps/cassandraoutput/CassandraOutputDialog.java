@@ -2,7 +2,7 @@
  *
  * Pentaho Big Data
  *
- * Copyright (C) 2002-2017 by Hitachi Vantara : http://www.pentaho.com
+ * Copyright (C) 2002-2018 by Hitachi Vantara : http://www.pentaho.com
  *
  *******************************************************************************
  *
@@ -26,7 +26,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.cassandra.thrift.InvalidRequestException;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CCombo;
@@ -49,9 +48,9 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
-import org.pentaho.cassandra.CassandraUtils;
+import org.pentaho.cassandra.util.CassandraUtils;
 import org.pentaho.cassandra.ConnectionFactory;
-import org.pentaho.cassandra.spi.ColumnFamilyMetaData;
+import org.pentaho.cassandra.spi.ITableMetaData;
 import org.pentaho.cassandra.spi.Connection;
 import org.pentaho.cassandra.spi.Keyspace;
 import org.pentaho.di.core.Const;
@@ -109,9 +108,9 @@ public class CassandraOutputDialog extends BaseStepDialog implements StepDialogI
   private Label m_keyspaceLab;
   private TextVar m_keyspaceText;
 
-  private Label m_columnFamilyLab;
-  private CCombo m_columnFamilyCombo;
-  private Button m_getColumnFamiliesBut;
+  private Label m_tableLab;
+  private CCombo m_tableCombo;
+  private Button m_getTablesBut;
 
   private Label m_consistencyLab;
   private TextVar m_consistencyText;
@@ -132,31 +131,25 @@ public class CassandraOutputDialog extends BaseStepDialog implements StepDialogI
 
   private Button m_getFieldsBut;
 
-  private Label m_useCQL3Lab;
-  private Button m_useCQL3Check;
-
-  private Label m_useThriftIOLab;
-  private Button m_useThriftIOCheck;
-
   private Label m_schemaHostLab;
   private TextVar m_schemaHostText;
   private Label m_schemaPortLab;
   private TextVar m_schemaPortText;
 
-  private Label m_createColumnFamilyLab;
-  private Button m_createColumnFamilyBut;
+  private Label m_createTableLab;
+  private Button m_createTableBut;
 
   private Label m_withClauseLab;
   private TextVar m_withClauseText;
 
-  private Label m_truncateColumnFamilyLab;
-  private Button m_truncateColumnFamilyBut;
+  private Label m_truncateTableLab;
+  private Button m_truncateTableBut;
 
-  private Label m_updateColumnFamilyMetaDataLab;
-  private Button m_updateColumnFamilyMetaDataBut;
+  private Label m_updateTableMetaDataLab;
+  private Button m_updateTableMetaDataBut;
 
-  private Label m_insertFieldsNotInColumnFamMetaLab;
-  private Button m_insertFieldsNotInColumnFamMetaBut;
+  private Label m_insertFieldsNotInTableMetaLab;
+  private Button m_insertFieldsNotInTableMetaBut;
 
   private Label m_compressionLab;
   private Button m_useCompressionBut;
@@ -408,44 +401,44 @@ public class CassandraOutputDialog extends BaseStepDialog implements StepDialogI
     writeLayout.marginHeight = 3;
     wWriteComp.setLayout( writeLayout );
 
-    // column family line
-    m_columnFamilyLab = new Label( wWriteComp, SWT.RIGHT );
-    props.setLook( m_columnFamilyLab );
-    m_columnFamilyLab.setText( BaseMessages.getString( PKG, "CassandraOutputDialog.ColumnFamily.Label" ) ); //$NON-NLS-1$
+    // table line
+    m_tableLab = new Label( wWriteComp, SWT.RIGHT );
+    props.setLook( m_tableLab );
+    m_tableLab.setText( BaseMessages.getString( PKG, "CassandraOutputDialog.Table.Label" ) ); //$NON-NLS-1$
     fd = new FormData();
     fd.left = new FormAttachment( 0, 0 );
     fd.top = new FormAttachment( 0, 0 );
     fd.right = new FormAttachment( middle, -margin );
-    m_columnFamilyLab.setLayoutData( fd );
+    m_tableLab.setLayoutData( fd );
 
-    m_getColumnFamiliesBut = new Button( wWriteComp, SWT.PUSH | SWT.CENTER );
-    props.setLook( m_getColumnFamiliesBut );
-    m_getColumnFamiliesBut.setText( BaseMessages.getString( PKG, "CassandraOutputDialog.GetColFam.Button" ) ); //$NON-NLS-1$
+    m_getTablesBut = new Button( wWriteComp, SWT.PUSH | SWT.CENTER );
+    props.setLook( m_getTablesBut );
+    m_getTablesBut.setText( BaseMessages.getString( PKG, "CassandraOutputDialog.GetTable.Button" ) ); //$NON-NLS-1$
     fd = new FormData();
     fd.right = new FormAttachment( 100, 0 );
     fd.top = new FormAttachment( 0, 0 );
-    m_getColumnFamiliesBut.setLayoutData( fd );
-    m_getColumnFamiliesBut.addSelectionListener( new SelectionAdapter() {
+    m_getTablesBut.setLayoutData( fd );
+    m_getTablesBut.addSelectionListener( new SelectionAdapter() {
       @Override
       public void widgetSelected( SelectionEvent e ) {
-        setupColumnFamiliesCombo();
+        setupTablesCombo();
       }
     } );
 
-    m_columnFamilyCombo = new CCombo( wWriteComp, SWT.BORDER );
-    props.setLook( m_columnFamilyCombo );
-    m_columnFamilyCombo.addModifyListener( new ModifyListener() {
+    m_tableCombo = new CCombo( wWriteComp, SWT.BORDER );
+    props.setLook( m_tableCombo );
+    m_tableCombo.addModifyListener( new ModifyListener() {
       @Override
       public void modifyText( ModifyEvent e ) {
-        m_columnFamilyCombo.setToolTipText( transMeta.environmentSubstitute( m_columnFamilyCombo.getText() ) );
+        m_tableCombo.setToolTipText( transMeta.environmentSubstitute( m_tableCombo.getText() ) );
       }
     } );
-    m_columnFamilyCombo.addModifyListener( lsMod );
+    m_tableCombo.addModifyListener( lsMod );
     fd = new FormData();
-    fd.right = new FormAttachment( m_getColumnFamiliesBut, -margin );
+    fd.right = new FormAttachment( m_getTablesBut, -margin );
     fd.top = new FormAttachment( 0, margin );
     fd.left = new FormAttachment( middle, 0 );
-    m_columnFamilyCombo.setLayoutData( fd );
+    m_tableCombo.setLayoutData( fd );
 
     // consistency line
     m_consistencyLab = new Label( wWriteComp, SWT.RIGHT );
@@ -453,7 +446,7 @@ public class CassandraOutputDialog extends BaseStepDialog implements StepDialogI
     m_consistencyLab.setText( BaseMessages.getString( PKG, "CassandraOutputDialog.Consistency.Label" ) ); //$NON-NLS-1$
     fd = new FormData();
     fd.left = new FormAttachment( 0, 0 );
-    fd.top = new FormAttachment( m_columnFamilyCombo, margin );
+    fd.top = new FormAttachment( m_tableCombo, margin );
     fd.right = new FormAttachment( middle, -margin );
     m_consistencyLab.setLayoutData( fd );
     m_consistencyLab.setToolTipText( BaseMessages.getString( PKG, "CassandraOutputDialog.Consistency.Label.TipText" ) ); //$NON-NLS-1$
@@ -469,7 +462,7 @@ public class CassandraOutputDialog extends BaseStepDialog implements StepDialogI
     m_consistencyText.addModifyListener( lsMod );
     fd = new FormData();
     fd.right = new FormAttachment( 100, 0 );
-    fd.top = new FormAttachment( m_columnFamilyCombo, margin );
+    fd.top = new FormAttachment( m_tableCombo, margin );
     fd.left = new FormAttachment( middle, 0 );
     m_consistencyText.setLayoutData( fd );
 
@@ -645,11 +638,7 @@ public class CassandraOutputDialog extends BaseStepDialog implements StepDialogI
     m_getFieldsBut.addSelectionListener( new SelectionAdapter() {
       @Override
       public void widgetSelected( SelectionEvent e ) {
-        if ( m_useCQL3Check.getSelection() ) {
-          showEnterSelectionDialog();
-        } else {
-          setupFieldsCombo();
-        }
+        showEnterSelectionDialog();
       }
     } );
 
@@ -666,72 +655,6 @@ public class CassandraOutputDialog extends BaseStepDialog implements StepDialogI
     fd.top = new FormAttachment( m_ttlValueText, margin );
     fd.left = new FormAttachment( middle, 0 );
     m_keyFieldCombo.setLayoutData( fd );
-
-    m_useCQL3Lab = new Label( wWriteComp, SWT.RIGHT );
-    props.setLook( m_useCQL3Lab );
-    m_useCQL3Lab.setText( BaseMessages.getString( PKG, "CassandraOutputDialog.UseCQL3.Label" ) ); //$NON-NLS-1$
-    fd = new FormData();
-    fd.left = new FormAttachment( 0, 0 );
-    fd.top = new FormAttachment( m_keyFieldCombo, margin );
-    fd.right = new FormAttachment( middle, -margin );
-    m_useCQL3Lab.setLayoutData( fd );
-
-    m_useCQL3Check = new Button( wWriteComp, SWT.CHECK );
-    props.setLook( m_useCQL3Check );
-    fd = new FormData();
-    fd.right = new FormAttachment( 100, 0 );
-    fd.top = new FormAttachment( m_keyFieldCombo, margin );
-    fd.left = new FormAttachment( middle, 0 );
-    m_useCQL3Check.setLayoutData( fd );
-
-    m_useCQL3Check.addSelectionListener( new SelectionAdapter() {
-      @Override
-      public void widgetSelected( SelectionEvent e ) {
-        m_useThriftIOCheck.setEnabled( !m_useCQL3Check.getSelection() );
-        m_unloggedBatchBut.setEnabled( m_useCQL3Check.getSelection() );
-        if ( m_useCQL3Check.getSelection() ) {
-          m_useThriftIOCheck.setSelection( false );
-          m_getFieldsBut.setText( BaseMessages.getString( PKG, "CassandraOutputDialog.SelectFields.Button" ) ); //$NON-NLS-1$
-          m_keyFieldLab.setText( BaseMessages.getString( PKG, "CassandraOutputDialog.KeyFields.Label" ) ); //$NON-NLS-1$
-        } else {
-          m_getFieldsBut.setText( " " //$NON-NLS-1$
-              + BaseMessages.getString( PKG, "CassandraOutputDialog.GetFields.Button" ) + " " ); //$NON-NLS-1$ //$NON-NLS-2$
-          m_keyFieldLab.setText( BaseMessages.getString( PKG, "CassandraOutputDialog.KeyField.Label" ) ); //$NON-NLS-1$
-          m_unloggedBatchBut.setSelection( false );
-        }
-        checkWidgetsWithRespectToDriver( ConnectionFactory.Driver.LEGACY_THRIFT );
-      }
-    } );
-
-    m_useThriftIOLab = new Label( wWriteComp, SWT.RIGHT );
-    props.setLook( m_useThriftIOLab );
-    m_useThriftIOLab.setText( BaseMessages.getString( PKG, "CassandraOutputDialog.UseThriftIO.Label" ) ); //$NON-NLS-1$
-    m_useThriftIOLab.setToolTipText( BaseMessages.getString( PKG, "CassandraOutputDialog.UseThriftIO.TipText" ) ); //$NON-NLS-1$
-    fd = new FormData();
-    fd.left = new FormAttachment( 0, 0 );
-    fd.top = new FormAttachment( m_useCQL3Check, margin );
-    fd.right = new FormAttachment( middle, -margin );
-    m_useThriftIOLab.setLayoutData( fd );
-
-    m_useThriftIOCheck = new Button( wWriteComp, SWT.CHECK );
-    m_useThriftIOCheck.setToolTipText( BaseMessages.getString( PKG, "CassandraOutputDialog.UseThriftIO.TipText" ) ); //$NON-NLS-1$
-    props.setLook( m_useThriftIOCheck );
-    fd = new FormData();
-    fd.right = new FormAttachment( 100, 0 );
-    fd.top = new FormAttachment( m_useCQL3Check, margin );
-    fd.left = new FormAttachment( middle, 0 );
-    m_useThriftIOCheck.setLayoutData( fd );
-
-    m_useThriftIOCheck.addSelectionListener( new SelectionAdapter() {
-      @Override
-      public void widgetSelected( SelectionEvent e ) {
-        m_useCQL3Check.setEnabled( !m_useThriftIOCheck.getSelection() );
-        if ( m_useThriftIOCheck.getSelection() ) {
-          m_useCQL3Check.setSelection( false );
-        }
-        checkWidgetsWithRespectToDriver( ConnectionFactory.Driver.LEGACY_THRIFT );
-      }
-    } );
 
     fd = new FormData();
     fd.left = new FormAttachment( 0, 0 );
@@ -821,28 +744,28 @@ public class CassandraOutputDialog extends BaseStepDialog implements StepDialogI
     fd.left = new FormAttachment( middle, 0 );
     m_schemaPortText.setLayoutData( fd );
 
-    // create column family line
-    m_createColumnFamilyLab = new Label( wSchemaComp, SWT.RIGHT );
-    props.setLook( m_createColumnFamilyLab );
-    m_createColumnFamilyLab.setText( BaseMessages.getString( PKG, "CassandraOutputDialog.CreateColumnFamily.Label" ) ); //$NON-NLS-1$
-    m_createColumnFamilyLab.setToolTipText( BaseMessages.getString( PKG,
-        "CassandraOutputDialog.CreateColumnFamily.TipText" ) ); //$NON-NLS-1$
+    // create table line
+    m_createTableLab = new Label( wSchemaComp, SWT.RIGHT );
+    props.setLook( m_createTableLab );
+    m_createTableLab.setText( BaseMessages.getString( PKG, "CassandraOutputDialog.CreateTable.Label" ) ); //$NON-NLS-1$
+    m_createTableLab.setToolTipText( BaseMessages.getString( PKG,
+        "CassandraOutputDialog.CreateTable.TipText" ) ); //$NON-NLS-1$
     fd = new FormData();
     fd.left = new FormAttachment( 0, 0 );
     fd.top = new FormAttachment( m_schemaPortText, margin );
     fd.right = new FormAttachment( middle, -margin );
-    m_createColumnFamilyLab.setLayoutData( fd );
+    m_createTableLab.setLayoutData( fd );
 
-    m_createColumnFamilyBut = new Button( wSchemaComp, SWT.CHECK );
-    m_createColumnFamilyBut.setToolTipText( BaseMessages.getString( PKG,
-        "CassandraOutputDialog.CreateColumnFamily.TipText" ) ); //$NON-NLS-1$
-    props.setLook( m_createColumnFamilyBut );
+    m_createTableBut = new Button( wSchemaComp, SWT.CHECK );
+    m_createTableBut.setToolTipText( BaseMessages.getString( PKG,
+        "CassandraOutputDialog.CreateTable.TipText" ) ); //$NON-NLS-1$
+    props.setLook( m_createTableBut );
     fd = new FormData();
     fd.right = new FormAttachment( 100, 0 );
     fd.top = new FormAttachment( m_schemaPortText, margin );
     fd.left = new FormAttachment( middle, 0 );
-    m_createColumnFamilyBut.setLayoutData( fd );
-    m_createColumnFamilyBut.addSelectionListener( new SelectionAdapter() {
+    m_createTableBut.setLayoutData( fd );
+    m_createTableBut.addSelectionListener( new SelectionAdapter() {
       @Override
       public void widgetSelected( SelectionEvent e ) {
         m_currentMeta.setChanged();
@@ -857,7 +780,7 @@ public class CassandraOutputDialog extends BaseStepDialog implements StepDialogI
     props.setLook( m_withClauseLab );
     fd = new FormData();
     fd.left = new FormAttachment( 0, 0 );
-    fd.top = new FormAttachment( m_createColumnFamilyBut, margin );
+    fd.top = new FormAttachment( m_createTableBut, margin );
     fd.right = new FormAttachment( middle, -margin );
     m_withClauseLab.setLayoutData( fd );
 
@@ -872,62 +795,62 @@ public class CassandraOutputDialog extends BaseStepDialog implements StepDialogI
     m_withClauseText.addModifyListener( lsMod );
     fd = new FormData();
     fd.right = new FormAttachment( 100, 0 );
-    fd.top = new FormAttachment( m_createColumnFamilyBut, margin );
+    fd.top = new FormAttachment( m_createTableBut, margin );
     fd.left = new FormAttachment( middle, 0 );
     m_withClauseText.setLayoutData( fd );
 
-    // truncate column family line
-    m_truncateColumnFamilyLab = new Label( wSchemaComp, SWT.RIGHT );
-    props.setLook( m_truncateColumnFamilyLab );
-    m_truncateColumnFamilyLab
-        .setText( BaseMessages.getString( PKG, "CassandraOutputDialog.TruncateColumnFamily.Label" ) ); //$NON-NLS-1$
-    m_truncateColumnFamilyLab.setToolTipText( BaseMessages.getString( PKG,
-        "CassandraOutputDialog.TruncateColumnFamily.TipText" ) ); //$NON-NLS-1$
+    // truncate table line
+    m_truncateTableLab = new Label( wSchemaComp, SWT.RIGHT );
+    props.setLook( m_truncateTableLab );
+    m_truncateTableLab
+        .setText( BaseMessages.getString( PKG, "CassandraOutputDialog.TruncateTable.Label" ) ); //$NON-NLS-1$
+    m_truncateTableLab.setToolTipText( BaseMessages.getString( PKG,
+        "CassandraOutputDialog.TruncateTable.TipText" ) ); //$NON-NLS-1$
     fd = new FormData();
     fd.left = new FormAttachment( 0, 0 );
     fd.top = new FormAttachment( m_withClauseText, margin );
     fd.right = new FormAttachment( middle, -margin );
-    m_truncateColumnFamilyLab.setLayoutData( fd );
+    m_truncateTableLab.setLayoutData( fd );
 
-    m_truncateColumnFamilyBut = new Button( wSchemaComp, SWT.CHECK );
-    m_truncateColumnFamilyBut.setToolTipText( BaseMessages.getString( PKG,
-        "CassandraOutputDialog.TruncateColumnFamily.TipText" ) ); //$NON-NLS-1$
-    props.setLook( m_truncateColumnFamilyBut );
+    m_truncateTableBut = new Button( wSchemaComp, SWT.CHECK );
+    m_truncateTableBut.setToolTipText( BaseMessages.getString( PKG,
+        "CassandraOutputDialog.TruncateTable.TipText" ) ); //$NON-NLS-1$
+    props.setLook( m_truncateTableBut );
     fd = new FormData();
     fd.right = new FormAttachment( 100, 0 );
     fd.top = new FormAttachment( m_withClauseText, margin );
     fd.left = new FormAttachment( middle, 0 );
-    m_truncateColumnFamilyBut.setLayoutData( fd );
-    m_truncateColumnFamilyBut.addSelectionListener( new SelectionAdapter() {
+    m_truncateTableBut.setLayoutData( fd );
+    m_truncateTableBut.addSelectionListener( new SelectionAdapter() {
       @Override
       public void widgetSelected( SelectionEvent e ) {
         m_currentMeta.setChanged();
       }
     } );
 
-    // update column family meta data line
-    m_updateColumnFamilyMetaDataLab = new Label( wSchemaComp, SWT.RIGHT );
-    props.setLook( m_updateColumnFamilyMetaDataLab );
-    m_updateColumnFamilyMetaDataLab.setText( BaseMessages.getString( PKG,
-        "CassandraOutputDialog.UpdateColumnFamilyMetaData.Label" ) ); //$NON-NLS-1$
-    m_updateColumnFamilyMetaDataLab.setToolTipText( BaseMessages.getString( PKG,
-        "CassandraOutputDialog.UpdateColumnFamilyMetaData.TipText" ) ); //$NON-NLS-1$
+    // update table meta data line
+    m_updateTableMetaDataLab = new Label( wSchemaComp, SWT.RIGHT );
+    props.setLook( m_updateTableMetaDataLab );
+    m_updateTableMetaDataLab.setText( BaseMessages.getString( PKG,
+        "CassandraOutputDialog.UpdateTableMetaData.Label" ) ); //$NON-NLS-1$
+    m_updateTableMetaDataLab.setToolTipText( BaseMessages.getString( PKG,
+        "CassandraOutputDialog.UpdateTableMetaData.TipText" ) ); //$NON-NLS-1$
     fd = new FormData();
     fd.left = new FormAttachment( 0, 0 );
-    fd.top = new FormAttachment( m_truncateColumnFamilyBut, margin );
+    fd.top = new FormAttachment( m_truncateTableBut, margin );
     fd.right = new FormAttachment( middle, -margin );
-    m_updateColumnFamilyMetaDataLab.setLayoutData( fd );
+    m_updateTableMetaDataLab.setLayoutData( fd );
 
-    m_updateColumnFamilyMetaDataBut = new Button( wSchemaComp, SWT.CHECK );
-    m_updateColumnFamilyMetaDataBut.setToolTipText( BaseMessages.getString( PKG,
-        "CassandraOutputDialog.UpdateColumnFamilyMetaData.TipText" ) ); //$NON-NLS-1$
-    props.setLook( m_updateColumnFamilyMetaDataBut );
+    m_updateTableMetaDataBut = new Button( wSchemaComp, SWT.CHECK );
+    m_updateTableMetaDataBut.setToolTipText( BaseMessages.getString( PKG,
+        "CassandraOutputDialog.UpdateTableMetaData.TipText" ) ); //$NON-NLS-1$
+    props.setLook( m_updateTableMetaDataBut );
     fd = new FormData();
     fd.right = new FormAttachment( 100, 0 );
-    fd.top = new FormAttachment( m_truncateColumnFamilyBut, margin );
+    fd.top = new FormAttachment( m_truncateTableBut, margin );
     fd.left = new FormAttachment( middle, 0 );
-    m_updateColumnFamilyMetaDataBut.setLayoutData( fd );
-    m_updateColumnFamilyMetaDataBut.addSelectionListener( new SelectionAdapter() {
+    m_updateTableMetaDataBut.setLayoutData( fd );
+    m_updateTableMetaDataBut.addSelectionListener( new SelectionAdapter() {
       @Override
       public void widgetSelected( SelectionEvent e ) {
         m_currentMeta.setChanged();
@@ -935,28 +858,28 @@ public class CassandraOutputDialog extends BaseStepDialog implements StepDialogI
     } );
 
     // insert fields not in meta line
-    m_insertFieldsNotInColumnFamMetaLab = new Label( wSchemaComp, SWT.RIGHT );
-    props.setLook( m_insertFieldsNotInColumnFamMetaLab );
-    m_insertFieldsNotInColumnFamMetaLab.setText( BaseMessages.getString( PKG,
-        "CassandraOutputDialog.InsertFieldsNotInColumnFamMetaData.Label" ) ); //$NON-NLS-1$
-    m_insertFieldsNotInColumnFamMetaLab.setToolTipText( BaseMessages.getString( PKG,
-        "CassandraOutputDialog.InsertFieldsNotInColumnFamMetaData.TipText" ) ); //$NON-NLS-1$
+    m_insertFieldsNotInTableMetaLab = new Label( wSchemaComp, SWT.RIGHT );
+    props.setLook( m_insertFieldsNotInTableMetaLab );
+    m_insertFieldsNotInTableMetaLab.setText( BaseMessages.getString( PKG,
+        "CassandraOutputDialog.InsertFieldsNotInTableMetaData.Label" ) ); //$NON-NLS-1$
+    m_insertFieldsNotInTableMetaLab.setToolTipText( BaseMessages.getString( PKG,
+        "CassandraOutputDialog.InsertFieldsNotInTableMetaData.TipText" ) ); //$NON-NLS-1$
     fd = new FormData();
     fd.left = new FormAttachment( 0, 0 );
-    fd.top = new FormAttachment( m_updateColumnFamilyMetaDataBut, margin );
+    fd.top = new FormAttachment( m_updateTableMetaDataBut, margin );
     fd.right = new FormAttachment( middle, -margin );
-    m_insertFieldsNotInColumnFamMetaLab.setLayoutData( fd );
+    m_insertFieldsNotInTableMetaLab.setLayoutData( fd );
 
-    m_insertFieldsNotInColumnFamMetaBut = new Button( wSchemaComp, SWT.CHECK );
-    m_insertFieldsNotInColumnFamMetaBut.setToolTipText( BaseMessages.getString( PKG,
-        "CassandraOutputDialog.InsertFieldsNotInColumnFamMetaData.TipText" ) ); //$NON-NLS-1$
-    props.setLook( m_insertFieldsNotInColumnFamMetaBut );
+    m_insertFieldsNotInTableMetaBut = new Button( wSchemaComp, SWT.CHECK );
+    m_insertFieldsNotInTableMetaBut.setToolTipText( BaseMessages.getString( PKG,
+        "CassandraOutputDialog.InsertFieldsNotInTableMetaData.TipText" ) ); //$NON-NLS-1$
+    props.setLook( m_insertFieldsNotInTableMetaBut );
     fd = new FormData();
     fd.right = new FormAttachment( 100, 0 );
-    fd.top = new FormAttachment( m_updateColumnFamilyMetaDataBut, margin );
+    fd.top = new FormAttachment( m_updateTableMetaDataBut, margin );
     fd.left = new FormAttachment( middle, 0 );
-    m_insertFieldsNotInColumnFamMetaBut.setLayoutData( fd );
-    m_insertFieldsNotInColumnFamMetaBut.addSelectionListener( new SelectionAdapter() {
+    m_insertFieldsNotInTableMetaBut.setLayoutData( fd );
+    m_insertFieldsNotInTableMetaBut.addSelectionListener( new SelectionAdapter() {
       @Override
       public void widgetSelected( SelectionEvent e ) {
         m_currentMeta.setChanged();
@@ -970,7 +893,7 @@ public class CassandraOutputDialog extends BaseStepDialog implements StepDialogI
     m_compressionLab.setToolTipText( BaseMessages.getString( PKG, "CassandraOutputDialog.UseCompression.TipText" ) ); //$NON-NLS-1$
     fd = new FormData();
     fd.left = new FormAttachment( 0, 0 );
-    fd.top = new FormAttachment( m_insertFieldsNotInColumnFamMetaBut, margin );
+    fd.top = new FormAttachment( m_insertFieldsNotInTableMetaBut, margin );
     fd.right = new FormAttachment( middle, -margin );
     m_compressionLab.setLayoutData( fd );
 
@@ -980,7 +903,7 @@ public class CassandraOutputDialog extends BaseStepDialog implements StepDialogI
     fd = new FormData();
     fd.right = new FormAttachment( 100, 0 );
     fd.left = new FormAttachment( middle, 0 );
-    fd.top = new FormAttachment( m_insertFieldsNotInColumnFamMetaBut, margin );
+    fd.top = new FormAttachment( m_insertFieldsNotInTableMetaBut, margin );
     m_useCompressionBut.setLayoutData( fd );
     m_useCompressionBut.addSelectionListener( new SelectionAdapter() {
       @Override
@@ -1080,7 +1003,7 @@ public class CassandraOutputDialog extends BaseStepDialog implements StepDialogI
     return stepname;
   }
 
-  protected void setupColumnFamiliesCombo() {
+  protected void setupTablesCombo() {
     Connection conn = null;
     Keyspace kSpace = null;
 
@@ -1097,30 +1020,26 @@ public class CassandraOutputDialog extends BaseStepDialog implements StepDialogI
 
       try {
         Map<String, String> opts = new HashMap<String, String>();
-        if ( m_useCQL3Check.getSelection() ) {
-          opts.put( CassandraUtils.CQLOptions.CQLVERSION_OPTION, CassandraUtils.CQLOptions.CQL3_STRING );
-        }
+        opts.put( CassandraUtils.CQLOptions.CQLVERSION_OPTION, CassandraUtils.CQLOptions.CQL3_STRING );
         conn =
             CassandraUtils.getCassandraConnection( hostS, Integer.parseInt( portS ), userS, passS,
-                m_currentMeta.isUseDriver()
-                  ? ConnectionFactory.Driver.BINARY_CQL3_PROTOCOL
-                  : ConnectionFactory.Driver.LEGACY_THRIFT, opts );
+                ConnectionFactory.Driver.BINARY_CQL3_PROTOCOL, opts );
 
         kSpace = conn.getKeyspace( keyspaceS );
-      } catch ( InvalidRequestException ire ) {
+      } catch ( Exception e ) {
         logError( BaseMessages.getString( PKG, "CassandraOutputDialog.Error.ProblemGettingSchemaInfo.Message" ) //$NON-NLS-1$
-            + ":\n\n" + ire.why, ire ); //$NON-NLS-1$
+            + ":\n\n" + e.getLocalizedMessage(), e ); //$NON-NLS-1$
         new ErrorDialog( shell, BaseMessages.getString( PKG,
             "CassandraOutputDialog.Error.ProblemGettingSchemaInfo.Title" ), //$NON-NLS-1$
             BaseMessages.getString( PKG, "CassandraOutputDialog.Error.ProblemGettingSchemaInfo.Message" ) //$NON-NLS-1$
-                + ":\n\n" + ire.why, ire ); //$NON-NLS-1$
+                + ":\n\n" + e.getLocalizedMessage(), e ); //$NON-NLS-1$
         return;
       }
 
-      List<String> colFams = kSpace.getColumnFamilyNames();
-      m_columnFamilyCombo.removeAll();
-      for ( String famName : colFams ) {
-        m_columnFamilyCombo.add( famName );
+      List<String> tables = kSpace.getTableNamesCQL3();
+      m_tableCombo.removeAll();
+      for ( String famName : tables ) {
+        m_tableCombo.add( famName );
       }
 
     } catch ( Exception ex ) {
@@ -1253,21 +1172,19 @@ public class CassandraOutputDialog extends BaseStepDialog implements StepDialogI
     m_currentMeta.setUsername( m_userText.getText() );
     m_currentMeta.setPassword( m_passText.getText() );
     m_currentMeta.setCassandraKeyspace( m_keyspaceText.getText() );
-    m_currentMeta.setColumnFamilyName( m_columnFamilyCombo.getText() );
+    m_currentMeta.setTableName( m_tableCombo.getText() );
     m_currentMeta.setConsistency( m_consistencyText.getText() );
     m_currentMeta.setBatchSize( m_batchSizeText.getText() );
     m_currentMeta.setCQLBatchInsertTimeout( m_batchInsertTimeoutText.getText() );
     m_currentMeta.setCQLSubBatchSize( m_subBatchSizeText.getText() );
     m_currentMeta.setKeyField( m_keyFieldCombo.getText() );
 
-    m_currentMeta.setCreateColumnFamily( m_createColumnFamilyBut.getSelection() );
-    m_currentMeta.setTruncateColumnFamily( m_truncateColumnFamilyBut.getSelection() );
-    m_currentMeta.setUpdateCassandraMeta( m_updateColumnFamilyMetaDataBut.getSelection() );
-    m_currentMeta.setInsertFieldsNotInMeta( m_insertFieldsNotInColumnFamMetaBut.getSelection() );
+    m_currentMeta.setCreateTable( m_createTableBut.getSelection() );
+    m_currentMeta.setTruncateTable( m_truncateTableBut.getSelection() );
+    m_currentMeta.setUpdateCassandraMeta( m_updateTableMetaDataBut.getSelection() );
+    m_currentMeta.setInsertFieldsNotInMeta( m_insertFieldsNotInTableMetaBut.getSelection() );
     m_currentMeta.setUseCompression( m_useCompressionBut.getSelection() );
     m_currentMeta.setAprioriCQL( m_aprioriCQL );
-    m_currentMeta.setUseThriftIO( m_useThriftIOCheck.getSelection() );
-    m_currentMeta.setUseCQL3( m_useCQL3Check.getSelection() );
     m_currentMeta.setCreateTableClause( m_withClauseText.getText() );
     m_currentMeta.setDontComplainAboutAprioriCQLFailing( m_dontComplain );
     m_currentMeta.setUseUnloggedBatches( m_unloggedBatchBut.getSelection() );
@@ -1317,12 +1234,10 @@ public class CassandraOutputDialog extends BaseStepDialog implements StepDialogI
 
       try {
         Map<String, String> opts = new HashMap<String, String>();
-        if ( m_useCQL3Check.getSelection() ) {
-          opts.put( CassandraUtils.CQLOptions.CQLVERSION_OPTION, CassandraUtils.CQLOptions.CQL3_STRING );
-        }
+        opts.put( CassandraUtils.CQLOptions.CQLVERSION_OPTION, CassandraUtils.CQLOptions.CQL3_STRING );
 
         conn = CassandraUtils.getCassandraConnection( hostS, Integer.parseInt( portS ), userS, passS,
-            m_currentMeta.isUseDriver() ? ConnectionFactory.Driver.BINARY_CQL3_PROTOCOL : ConnectionFactory.Driver.LEGACY_THRIFT,
+            ConnectionFactory.Driver.BINARY_CQL3_PROTOCOL,
             opts );
 
         conn.setHosts( hostS );
@@ -1331,31 +1246,31 @@ public class CassandraOutputDialog extends BaseStepDialog implements StepDialogI
         conn.setPassword( passS );
         kSpace = conn.getKeyspace( keyspaceS );
 
-      } catch ( InvalidRequestException ire ) {
+      } catch ( Exception e ) {
         logError( BaseMessages.getString( PKG, "CassandraOutputDialog.Error.ProblemGettingSchemaInfo.Message" ) //$NON-NLS-1$
-            + ":\n\n" + ire.why, ire ); //$NON-NLS-1$
+            + ":\n\n" + e.getLocalizedMessage(), e ); //$NON-NLS-1$
         new ErrorDialog( shell, BaseMessages.getString( PKG,
             "CassandraOutputDialog.Error.ProblemGettingSchemaInfo.Title" ), //$NON-NLS-1$
             BaseMessages.getString( PKG, "CassandraOutputDialog.Error.ProblemGettingSchemaInfo.Message" ) //$NON-NLS-1$
-                + ":\n\n" + ire.why, ire ); //$NON-NLS-1$
+                + ":\n\n" + e.getLocalizedMessage(), e ); //$NON-NLS-1$
         return;
       }
 
-      String colFam = transMeta.environmentSubstitute( m_columnFamilyCombo.getText() );
-      if ( Utils.isEmpty( colFam ) ) {
-        throw new Exception( "No colummn family (table) name specified!" ); //$NON-NLS-1$
+      String table = transMeta.environmentSubstitute( m_tableCombo.getText() );
+      if ( Utils.isEmpty( table ) ) {
+        throw new Exception( "No table name specified!" ); //$NON-NLS-1$
       }
-      colFam = m_useCQL3Check.getSelection() ? CassandraUtils.cql3MixedCaseQuote( colFam ) : colFam;
+      table = CassandraUtils.cql3MixedCaseQuote( table );
 
-      // if (!CassandraColumnMetaData.columnFamilyExists(conn, colFam)) {
-      if ( !kSpace.columnFamilyExists( colFam ) ) {
-        throw new Exception( "The column family '" + colFam + "' does not " //$NON-NLS-1$ //$NON-NLS-2$
+      // if (!CassandraColumnMetaData.tableExists(conn, table)) {
+      if ( !kSpace.tableExists( table ) ) {
+        throw new Exception( "The table '" + table + "' does not " //$NON-NLS-1$ //$NON-NLS-2$
             + "seem to exist in the keyspace '" + keyspaceS ); //$NON-NLS-1$
       }
 
-      ColumnFamilyMetaData cassMeta = kSpace.getColumnFamilyMetaData( colFam );
+      ITableMetaData cassMeta = kSpace.getTableMetaData( table );
       // CassandraColumnMetaData cassMeta = new CassandraColumnMetaData(conn,
-      // colFam);
+      // table);
       String schemaDescription = cassMeta.describe();
       ShowMessageDialog smd =
           new ShowMessageDialog( shell, SWT.ICON_INFORMATION | SWT.OK, "Schema info", schemaDescription, true ); //$NON-NLS-1$
@@ -1413,8 +1328,8 @@ public class CassandraOutputDialog extends BaseStepDialog implements StepDialogI
       m_keyspaceText.setText( m_currentMeta.getCassandraKeyspace() );
     }
 
-    if ( !Utils.isEmpty( m_currentMeta.getColumnFamilyName() ) ) {
-      m_columnFamilyCombo.setText( m_currentMeta.getColumnFamilyName() );
+    if ( !Utils.isEmpty( m_currentMeta.getTableName() ) ) {
+      m_tableCombo.setText( m_currentMeta.getTableName() );
     }
 
     if ( !Utils.isEmpty( m_currentMeta.getConsistency() ) ) {
@@ -1441,13 +1356,11 @@ public class CassandraOutputDialog extends BaseStepDialog implements StepDialogI
       m_withClauseText.setText( m_currentMeta.getCreateTableWithClause() );
     }
 
-    m_createColumnFamilyBut.setSelection( m_currentMeta.getCreateColumnFamily() );
-    m_truncateColumnFamilyBut.setSelection( m_currentMeta.getTruncateColumnFamily() );
-    m_updateColumnFamilyMetaDataBut.setSelection( m_currentMeta.getUpdateCassandraMeta() );
-    m_insertFieldsNotInColumnFamMetaBut.setSelection( m_currentMeta.getInsertFieldsNotInMeta() );
+    m_createTableBut.setSelection( m_currentMeta.getCreateTable() );
+    m_truncateTableBut.setSelection( m_currentMeta.getTruncateTable() );
+    m_updateTableMetaDataBut.setSelection( m_currentMeta.getUpdateCassandraMeta() );
+    m_insertFieldsNotInTableMetaBut.setSelection( m_currentMeta.getInsertFieldsNotInMeta() );
     m_useCompressionBut.setSelection( m_currentMeta.getUseCompression() );
-    m_useThriftIOCheck.setSelection( m_currentMeta.getUseThriftIO() );
-    m_useCQL3Check.setSelection( m_currentMeta.getUseCQL3() );
     m_unloggedBatchBut.setSelection( m_currentMeta.getUseUnloggedBatch() );
 
     m_dontComplain = m_currentMeta.getDontComplainAboutAprioriCQLFailing();
@@ -1457,44 +1370,13 @@ public class CassandraOutputDialog extends BaseStepDialog implements StepDialogI
       m_aprioriCQL = ""; //$NON-NLS-1$
     }
 
-    if ( m_useCQL3Check.getSelection() ) {
-      m_useThriftIOCheck.setSelection( false );
-      m_getFieldsBut.setText( BaseMessages.getString( PKG, "CassandraOutputDialog.SelectFields.Button" ) ); //$NON-NLS-1$
-      m_keyFieldLab.setText( BaseMessages.getString( PKG, "CassandraOutputDialog.KeyFields.Label" ) ); //$NON-NLS-1$
-    } else {
-      m_getFieldsBut.setText( " " //$NON-NLS-1$
-          + BaseMessages.getString( PKG, "CassandraOutputDialog.GetFields.Button" ) + " " ); //$NON-NLS-1$ //$NON-NLS-2$
-      m_keyFieldLab.setText( BaseMessages.getString( PKG, "CassandraOutputDialog.KeyField.Label" ) ); //$NON-NLS-1$
-
-      // unlogged batches is CQL 3 only
-      m_unloggedBatchBut.setSelection( false );
-      m_unloggedBatchBut.setEnabled( false );
-    }
+    m_getFieldsBut.setText( BaseMessages.getString( PKG, "CassandraOutputDialog.SelectFields.Button" ) ); //$NON-NLS-1$
+    m_keyFieldLab.setText( BaseMessages.getString( PKG, "CassandraOutputDialog.KeyFields.Label" ) ); //$NON-NLS-1$
 
     if ( !Utils.isEmpty( m_currentMeta.getTTL() ) ) {
       m_ttlValueText.setText( m_currentMeta.getTTL() );
       m_ttlUnitsCombo.setText( m_currentMeta.getTTLUnit() );
       m_ttlValueText.setEnabled( m_ttlUnitsCombo.getSelectionIndex() > 0 );
-    }
-
-    checkWidgetsWithRespectToDriver( ConnectionFactory.Driver.LEGACY_THRIFT );
-  }
-
-  private void checkWidgetsWithRespectToDriver( ConnectionFactory.Driver d ) {
-    Connection c = ConnectionFactory.getFactory().getConnection( d );
-
-    m_useCQL3Check.setEnabled( c.supportsCQL() );
-    if ( !c.supportsCQL() ) {
-      m_useCQL3Check.setSelection( false );
-      m_unloggedBatchBut.setSelection( false );
-      m_unloggedBatchBut.setEnabled( false );
-      m_useThriftIOCheck.setEnabled( true );
-      m_useThriftIOCheck.setSelection( true );
-    }
-
-    m_useThriftIOCheck.setEnabled( c.supportsNonCQL() );
-    if ( !c.supportsNonCQL() ) {
-      m_useThriftIOCheck.setSelection( false );
     }
   }
 }

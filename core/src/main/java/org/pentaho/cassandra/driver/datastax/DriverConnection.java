@@ -1,6 +1,6 @@
 /*******************************************************************************
  *
- * Copyright (C) 2017 by Hitachi Vantara : http://www.pentaho.com
+ * Copyright (C) 2018 by Hitachi Vantara : http://www.pentaho.com
  *
  *******************************************************************************
  *
@@ -18,14 +18,14 @@
  *
  ******************************************************************************/
 
-package org.pentaho.cassandra.driverimpl;
+package org.pentaho.cassandra.driver.datastax;
 
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
-import org.pentaho.cassandra.CassandraUtils;
+import org.pentaho.cassandra.util.CassandraUtils;
 import org.pentaho.cassandra.spi.Connection;
 import org.pentaho.cassandra.spi.Keyspace;
 import org.pentaho.di.core.util.Utils;
@@ -120,16 +120,6 @@ public class DriverConnection implements Connection, AutoCloseable {
   @Override
   public Session getUnderlyingConnection() {
     return session;
-  }
-
-  @Override
-  public boolean supportsCQL() {
-    return true;
-  }
-
-  @Override
-  public boolean supportsNonCQL() {
-    return false;
   }
 
   public void setUseCompression( boolean useCompression ) {

@@ -2,7 +2,7 @@
  *
  * Pentaho Big Data
  *
- * Copyright (C) 2002-2017 by Hitachi Vantara : http://www.pentaho.com
+ * Copyright (C) 2002-2018 by Hitachi Vantara : http://www.pentaho.com
  *
  *******************************************************************************
  *
@@ -28,14 +28,13 @@ import java.util.List;
 import java.util.Map;
 
 import org.eclipse.swt.widgets.Shell;
-import org.pentaho.cassandra.CassandraUtils;
+import org.pentaho.cassandra.util.CassandraUtils;
 import org.pentaho.cassandra.ConnectionFactory;
-import org.pentaho.cassandra.cql.CQLUtils;
-import org.pentaho.cassandra.cql.Selector;
-import org.pentaho.cassandra.spi.ColumnFamilyMetaData;
+import org.pentaho.cassandra.util.CQLUtils;
+import org.pentaho.cassandra.util.Selector;
+import org.pentaho.cassandra.spi.ITableMetaData;
 import org.pentaho.cassandra.spi.Connection;
 import org.pentaho.cassandra.spi.Keyspace;
-import org.pentaho.di.core.CheckResultInterface;
 import org.pentaho.di.core.Counter;
 import org.pentaho.di.core.annotations.Step;
 import org.pentaho.di.core.database.DatabaseMeta;
@@ -47,8 +46,6 @@ import org.pentaho.di.core.injection.Injection;
 import org.pentaho.di.core.injection.InjectionSupported;
 import org.pentaho.di.core.row.RowMetaInterface;
 import org.pentaho.di.core.row.ValueMetaInterface;
-import org.pentaho.di.core.row.value.ValueMetaInteger;
-import org.pentaho.di.core.row.value.ValueMetaString;
 import org.pentaho.di.core.util.Utils;
 import org.pentaho.di.core.variables.VariableSpace;
 import org.pentaho.di.core.xml.XMLHandler;
@@ -66,7 +63,7 @@ import org.pentaho.di.trans.step.StepMetaInterface;
 import org.w3c.dom.Node;
 
 /**
- * Class providing an input step for reading data from an Cassandra column family (table).
+ * Class providing an input step for reading data from an Cassandra table
  */
 @Step( id = "CassandraInput", image = "Cassandrain.svg", name = "Cassandra Input",
     description = "Reads data from a Cassandra table",
@@ -87,7 +84,7 @@ public class CassandraInputMeta extends BaseStepMeta implements StepMetaInterfac
    * The port that cassandra is listening on
    */
   @Injection( name = "CASSANDRA_PORT" )
-  protected String m_cassandraPort = "9160"; //$NON-NLS-1$
+  protected String m_cassandraPort = "9042"; //$NON-NLS-1$
 
   /**
    * Username for authentication
@@ -117,25 +114,7 @@ public class CassandraInputMeta extends BaseStepMeta implements StepMetaInterfac
    * The select query to execute
    */
   @Injection( name = "CQL_QUERY" )
-  protected String m_cqlSelectQuery = "SELECT <fields> FROM <column family> WHERE <condition>;"; //$NON-NLS-1$
-
-  /**
-   * Output in tuple mode?
-   */
-  @Injection( name = "OUTPUT_KEY_VALUE_TIMESTAMP_TUPLES" )
-  protected boolean m_outputKeyValueTimestampTuples;
-
-  /**
-   * Use thrift IO for tuple mode?
-   */
-  @Injection( name = "USE_THRIFT_IO" )
-  protected boolean m_useThriftIO = false;
-
-  /**
-   * Whether to use CQL version 3
-   */
-  @Injection( name = "USE_CQL_VERSION_3" )
-  protected boolean m_useCQL3 = false;
+  protected String m_cqlSelectQuery = "SELECT <fields> FROM <table> WHERE <condition>;"; //$NON-NLS-1$
 
   /**
    * Whether to execute the query for each incoming row
@@ -165,8 +144,7 @@ public class CassandraInputMeta extends BaseStepMeta implements StepMetaInterfac
    */
   protected boolean m_isSelectStarQuery = false;
 
-  // these are set based on the parsed CQL when executing tuple mode using
-  // thrift
+  // these are set based on the parsed CQL when executing tuple mode using thrift
   protected int m_rowLimit = -1; // no limit - otherwise we look for LIMIT in
   // CQL
   protected int m_colLimit = -1; // no limit - otherwise we look for FIRST N in
@@ -213,42 +191,6 @@ public class CassandraInputMeta extends BaseStepMeta implements StepMetaInterfac
    */
   public String getSocketTimeout() {
     return m_socketTimeout;
-  }
-
-  /**
-   * Set whether to use pure thrift IO for the <key,value> tuple mode.
-   *
-   * @param useThrift true if thrift IO is to be used
-   */
-  public void setUseThriftIO( boolean useThrift ) {
-    m_useThriftIO = useThrift;
-  }
-
-  /**
-   * Get whether to use pure thrift IO for the <key,value> tuple mode.
-   *
-   * @return true if thrift IO is to be used
-   */
-  public boolean getUseThriftIO() {
-    return m_useThriftIO;
-  }
-
-  /**
-   * Set whether to use CQL version 3 is to be used for CQL IO mode
-   *
-   * @param cql3 true if CQL version 3 is to be used
-   */
-  public void setUseCQL3( boolean cql3 ) {
-    m_useCQL3 = cql3;
-  }
-
-  /**
-   * Get whether to use CQL version 3 is to be used for CQL IO mode
-   *
-   * @return true if CQL version 3 is to be used
-   */
-  public boolean getUseCQL3() {
-    return m_useCQL3;
   }
 
   /**
@@ -378,24 +320,6 @@ public class CassandraInputMeta extends BaseStepMeta implements StepMetaInterfac
   }
 
   /**
-   * Set whether to output key, column, timestamp tuples as rows rather than standard row format.
-   *
-   * @param o true if tuples are to be output
-   */
-  public void setOutputKeyValueTimestampTuples( boolean o ) {
-    m_outputKeyValueTimestampTuples = o;
-  }
-
-  /**
-   * Get whether to output key, column, timestamp tuples as rows rather than standard row format.
-   *
-   * @return true if tuples are to be output
-   */
-  public boolean getOutputKeyValueTimestampTuples() {
-    return m_outputKeyValueTimestampTuples;
-  }
-
-  /**
    * Set whether the query should be executed for each incoming row
    *
    * @param e true if the query should be executed for each incoming row
@@ -449,12 +373,6 @@ public class CassandraInputMeta extends BaseStepMeta implements StepMetaInterfac
         .append( XMLHandler.addTagValue( "cql_select_query", m_cqlSelectQuery ) ); //$NON-NLS-1$ //$NON-NLS-2$
     }
 
-    retval.append( "\n    " ).append( //$NON-NLS-1$
-      XMLHandler.addTagValue( "output_key_value_timestamp_tuples", m_outputKeyValueTimestampTuples ) ); //$NON-NLS-1$
-
-    retval.append( "\n    " )
-      .append( XMLHandler.addTagValue( "use_thrift_io", m_useThriftIO ) ); //$NON-NLS-1$ //$NON-NLS-2$
-
     if ( !Utils.isEmpty( m_socketTimeout ) ) {
       retval.append( "\n    " )
         .append( XMLHandler.addTagValue( "socket_timeout", m_socketTimeout ) ); //$NON-NLS-1$ //$NON-NLS-2$
@@ -464,8 +382,6 @@ public class CassandraInputMeta extends BaseStepMeta implements StepMetaInterfac
       retval.append( "\n    " )
         .append( XMLHandler.addTagValue( "max_length", m_maxLength ) ); //$NON-NLS-1$ //$NON-NLS-2$
     }
-
-    retval.append( "\n    " ).append( XMLHandler.addTagValue( "use_cql3", m_useCQL3 ) ); //$NON-NLS-1$ //$NON-NLS-2$
 
     retval.append( "    " ).append( //$NON-NLS-1$
       XMLHandler.addTagValue( "execute_for_each_row", m_executeForEachIncomingRow ) ); //$NON-NLS-1$
@@ -487,22 +403,6 @@ public class CassandraInputMeta extends BaseStepMeta implements StepMetaInterfac
     m_cqlSelectQuery = XMLHandler.getTagValue( stepnode, "cql_select_query" ); //$NON-NLS-1$
     m_useCompression =
       XMLHandler.getTagValue( stepnode, "use_compression" ).equalsIgnoreCase( "Y" ); //$NON-NLS-1$ //$NON-NLS-2$
-
-    String kV = XMLHandler.getTagValue( stepnode, "output_key_value_timestamp_tuples" ); //$NON-NLS-1$
-
-    if ( kV != null ) {
-      m_outputKeyValueTimestampTuples = kV.equalsIgnoreCase( "Y" ); //$NON-NLS-1$
-    }
-
-    String thrift = XMLHandler.getTagValue( stepnode, "use_thrift_io" ); //$NON-NLS-1$
-    if ( thrift != null ) {
-      m_useThriftIO = thrift.equalsIgnoreCase( "Y" ); //$NON-NLS-1$
-    }
-
-    String useCQL3 = XMLHandler.getTagValue( stepnode, "use_cql3" ); //$NON-NLS-1$
-    if ( !Utils.isEmpty( useCQL3 ) ) {
-      m_useCQL3 = useCQL3.equalsIgnoreCase( "Y" ); //$NON-NLS-1$
-    }
 
     String executeForEachR = XMLHandler.getTagValue( stepnode, "execute_for_each_row" ); //$NON-NLS-1$
     if ( !Utils.isEmpty( executeForEachR ) ) {
@@ -526,12 +426,6 @@ public class CassandraInputMeta extends BaseStepMeta implements StepMetaInterfac
     m_cassandraKeyspace = rep.getStepAttributeString( id_step, 0, "cassandra_keyspace" ); //$NON-NLS-1$
     m_cqlSelectQuery = rep.getStepAttributeString( id_step, 0, "cql_select_query" ); //$NON-NLS-1$
     m_useCompression = rep.getStepAttributeBoolean( id_step, 0, "use_compression" ); //$NON-NLS-1$
-
-    m_outputKeyValueTimestampTuples =
-      rep.getStepAttributeBoolean( id_step, 0, "output_key_value_timestamp_tuples" ); //$NON-NLS-1$
-    m_useThriftIO = rep.getStepAttributeBoolean( id_step, 0, "use_thrift_io" ); //$NON-NLS-1$
-    m_useCQL3 = rep.getStepAttributeBoolean( id_step, 0, "use_cql3" ); //$NON-NLS-1$
-
     m_executeForEachIncomingRow = rep.getStepAttributeBoolean( id_step, "execute_for_each_row" ); //$NON-NLS-1$
 
     m_socketTimeout = rep.getStepAttributeString( id_step, 0, "socket_timeout" ); //$NON-NLS-1$
@@ -567,13 +461,6 @@ public class CassandraInputMeta extends BaseStepMeta implements StepMetaInterfac
       rep.saveStepAttribute( id_transformation, id_step, 0, "cql_select_query", m_cqlSelectQuery ); //$NON-NLS-1$
     }
 
-    rep.saveStepAttribute( id_transformation, id_step, 0, "output_key_value_timestamp_tuples", //$NON-NLS-1$
-      m_outputKeyValueTimestampTuples );
-
-    rep.saveStepAttribute( id_transformation, id_step, 0, "use_thrift_io", m_useThriftIO ); //$NON-NLS-1$
-
-    rep.saveStepAttribute( id_transformation, id_step, 0, "use_cql3", m_useCQL3 ); //$NON-NLS-1$
-
     rep.saveStepAttribute( id_transformation, id_step, 0, "execute_for_each_row", //$NON-NLS-1$
       m_executeForEachIncomingRow );
 
@@ -584,13 +471,6 @@ public class CassandraInputMeta extends BaseStepMeta implements StepMetaInterfac
     if ( !Utils.isEmpty( m_maxLength ) ) {
       rep.saveStepAttribute( id_transformation, id_step, 0, "max_length", m_maxLength ); //$NON-NLS-1$
     }
-  }
-
-  @Override
-  public void check( List<CheckResultInterface> remarks, TransMeta transMeta, StepMeta stepMeta, RowMetaInterface prev,
-                     String[] input, String[] output, RowMetaInterface info ) {
-    // TODO Auto-generated method stub
-
   }
 
   @Override
@@ -609,11 +489,10 @@ public class CassandraInputMeta extends BaseStepMeta implements StepMetaInterfac
   public void setDefault() {
     m_cassandraHost = "localhost"; //$NON-NLS-1$
     m_cassandraPort = "9042"; //$NON-NLS-1$
-    m_cqlSelectQuery = "SELECT <fields> FROM <column family> WHERE <condition>;"; //$NON-NLS-1$
+    m_cqlSelectQuery = "SELECT <fields> FROM <table> WHERE <condition>;"; //$NON-NLS-1$
     m_useCompression = false;
     m_socketTimeout = ""; //$NON-NLS-1$
     m_maxLength = ""; //$NON-NLS-1$
-    m_useCQL3 = true;
   }
 
   @Override
@@ -631,7 +510,7 @@ public class CassandraInputMeta extends BaseStepMeta implements StepMetaInterfac
       return;
     }
 
-    String colFamName = null;
+    String tableName = null;
     if ( !Utils.isEmpty( m_cqlSelectQuery ) ) {
       String subQ = space.environmentSubstitute( m_cqlSelectQuery );
 
@@ -666,7 +545,7 @@ public class CassandraInputMeta extends BaseStepMeta implements StepMetaInterfac
         subQ = subQ.substring( 0, subQ.toLowerCase().lastIndexOf( "where" ) ); //$NON-NLS-1$
       }
 
-      // first determine the source column family
+      // first determine the source table
       // look for a FROM that is surrounded by space
       int fromIndex = subQ.toLowerCase().indexOf( "from" ); //$NON-NLS-1$
       String tempS = subQ.toLowerCase();
@@ -680,19 +559,19 @@ public class CassandraInputMeta extends BaseStepMeta implements StepMetaInterfac
 
       fromIndex = offset;
       if ( fromIndex < 0 ) {
-        logError( BaseMessages.getString( PKG, "CassandraInput.Error.MustSpecifyAColumnFamily" ) ); //$NON-NLS-1$
+        logError( BaseMessages.getString( PKG, "CassandraInput.Error.MustSpecifyATable" ) ); //$NON-NLS-1$
         return; // no from clause
       }
 
-      colFamName = subQ.substring( fromIndex + 4, subQ.length() ).trim();
-      if ( colFamName.indexOf( ' ' ) > 0 ) {
-        colFamName = colFamName.substring( 0, colFamName.indexOf( ' ' ) );
+      tableName = subQ.substring( fromIndex + 4, subQ.length() ).trim();
+      if ( tableName.indexOf( ' ' ) > 0 ) {
+        tableName = tableName.substring( 0,  tableName.indexOf( ' ' ) );
       } else {
-        colFamName = colFamName.replace( ";", "" ); //$NON-NLS-1$ //$NON-NLS-2$
+        tableName = tableName.replace( ";", "" ); //$NON-NLS-1$ //$NON-NLS-2$
       }
 
-      if ( colFamName.length() == 0 ) {
-        return; // no column family specified
+      if ( tableName.length() == 0 ) {
+        return; // no table specified
       }
 
       // is there a FIRST clause?
@@ -727,7 +606,7 @@ public class CassandraInputMeta extends BaseStepMeta implements StepMetaInterfac
         // String colsS = subQ.substring(subQ.indexOf('\''), fromIndex);
         String colsS = subQ.substring( 0, fromIndex );
         //Parse select expression to get selectors: columns and functions
-        cols = CQLUtils.getColumnsInSelect( colsS, getUseCQL3() ); //$NON-NLS-1$
+        cols = CQLUtils.getColumnsInSelect( colsS, true ); //$NON-NLS-1$
       }
 
       // try and connect to get meta data
@@ -745,15 +624,11 @@ public class CassandraInputMeta extends BaseStepMeta implements StepMetaInterfac
       try {
 
         Map<String, String> opts = new HashMap<String, String>();
-        if ( m_useCQL3 ) {
-          opts.put( CassandraUtils.CQLOptions.CQLVERSION_OPTION, CassandraUtils.CQLOptions.CQL3_STRING );
-        }
+        opts.put( CassandraUtils.CQLOptions.CQLVERSION_OPTION, CassandraUtils.CQLOptions.CQL3_STRING );
 
         conn =
           CassandraUtils.getCassandraConnection( hostS, Integer.parseInt( portS ), userS, passS,
-            isUseDriver()
-              ? ConnectionFactory.Driver.BINARY_CQL3_PROTOCOL
-              : ConnectionFactory.Driver.LEGACY_THRIFT,
+              ConnectionFactory.Driver.BINARY_CQL3_PROTOCOL,
             opts );
 
         /*
@@ -768,55 +643,9 @@ public class CassandraInputMeta extends BaseStepMeta implements StepMetaInterfac
       }
       try {
         /*
-         * CassandraColumnMetaData colMeta = new CassandraColumnMetaData(conn, colFamName);
+         * CassandraColumnMetaData colMeta = new CassandraColumnMetaData(conn, tableName);
          */
-        ColumnFamilyMetaData colMeta = kSpace.getColumnFamilyMetaData( colFamName );
-
-        if ( getOutputKeyValueTimestampTuples() ) {
-
-          // Do the key first
-          ValueMetaInterface km = colMeta.getValueMetaForKey();
-          rowMeta.addValueMeta( km );
-
-          // special case where user has asked for all row keys, columns and
-          // timestamps output as separate rows.
-          ValueMetaInterface vm = new ValueMetaString( "ColumnName" ); //$NON-NLS-1$
-          rowMeta.addValueMeta( vm );
-          vm = new ValueMetaString( "ColumnValue" ); //$NON-NLS-1$
-
-          // ValueMetaInterface tvm = colMeta.getValueMetaForDefaultValidator();
-          // if (tvm != null) {
-          // if (tvm.isBinary()) {
-          // vm = new ValueMeta("ColumnValue", ValueMeta.TYPE_BINARY);
-          // }
-          // }
-
-          /*
-           * String defaultColumnValidator = colMeta.getDefaultValidationClass(); if
-           * (!Const.isEmpty(defaultColumnValidator)) { if (defaultColumnValidator.indexOf('(') > 0) {
-           * defaultColumnValidator = defaultColumnValidator.substring(0, defaultColumnValidator.indexOf(')')); } if
-           * (defaultColumnValidator.endsWith("BytesType")) { vm = new ValueMeta("ColumnValue", ValueMeta.TYPE_BINARY);
-           * } }
-           */
-
-          // if (vm == null) {
-          // vm = new ValueMeta("ColumnValue", ValueMetaInterface.TYPE_STRING);
-          // }
-          rowMeta.addValueMeta( vm );
-          vm = new ValueMetaInteger( "Timestamp" ); //$NON-NLS-1$
-          rowMeta.addValueMeta( vm );
-
-          conn.closeConnection();
-
-          // specific columns requested
-          if ( cols != null ) {
-            m_specificCols = new ArrayList<String>();
-            for ( Selector col : cols ) {
-              m_specificCols.add( col.getColumnName() );
-            }
-          }
-          return;
-        }
+        ITableMetaData colMeta = kSpace.getTableMetaData( tableName );
 
         if ( cols == null ) {
           // select * - use all the columns that are defined in the schema
@@ -839,7 +668,7 @@ public class CassandraInputMeta extends BaseStepMeta implements StepMetaInterfac
           }
         }
       } catch ( Exception ex ) {
-        logBasic( BaseMessages.getString( PKG, "CassandraInput.Info.UnableToRetrieveColumnMetaData", colFamName ),
+        logBasic( BaseMessages.getString( PKG, "CassandraInput.Info.UnableToRetrieveColumnMetaData", tableName ),
           ex ); //$NON-NLS-1$
         return;
       } finally {
@@ -855,7 +684,7 @@ public class CassandraInputMeta extends BaseStepMeta implements StepMetaInterfac
   }
 
   public boolean isUseDriver() {
-    return useDriver && !m_useThriftIO && m_useCQL3;
+    return useDriver;
   }
 
   /**

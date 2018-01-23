@@ -2,7 +2,7 @@
  *
  * Pentaho Big Data
  *
- * Copyright (C) 2002-2017 by Hitachi Vantara : http://www.pentaho.com
+ * Copyright (C) 2002-2018 by Hitachi Vantara : http://www.pentaho.com
  *
  *******************************************************************************
  *
@@ -51,8 +51,8 @@ import org.pentaho.di.trans.step.StepMetaInterface;
 import org.w3c.dom.Node;
 
 /**
- * Class providing an output step for writing data to a cassandra table (column family). Can create the specified column
- * family (if it doesn't already exist) and can update column family meta data.
+ * Class providing an output step for writing data to a cassandra table. Can create the specified
+ * table (if it doesn't already exist) and can update table meta data.
  */
 @Step( id = "CassandraOutput", image = "Cassandraout.svg", name = "Cassandra Output",
     description = "Writes to a Cassandra table",
@@ -69,7 +69,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
 
   /** The port that cassandra is listening on */
   @Injection( name = "CASSANDRA_PORT" )
-  protected String m_cassandraPort = "9160"; //$NON-NLS-1$
+  protected String m_cassandraPort = "9042"; //$NON-NLS-1$
 
   /** The username to use for authentication */
   @Injection( name = "USER_NAME" )
@@ -91,9 +91,9 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
   @Injection( name = "SCHEMA_PORT" )
   protected String m_schemaPort;
 
-  /** The column family (table) to write to */
-  @Injection( name = "COLUMN_FAMILY" )
-  protected String m_columnFamily = ""; //$NON-NLS-1$
+  /** The table to write to */
+  @Injection( name = "TABLE" )
+  protected String m_table = ""; //$NON-NLS-1$
 
   /** The consistency level to use - null or empty string result in the default */
   @Injection( name = "CONSISTENCY_LEVEL" )
@@ -113,9 +113,9 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
   @Injection( name = "USE_QUERY_COMPRESSION" )
   protected boolean m_useCompression = false;
 
-  /** Whether to create the specified column family (table) if it doesn't exist */
-  @Injection( name = "CREATE_COLUMN_FAMILY" )
-  protected boolean m_createColumnFamily = true;
+  /** Whether to create the specified table if it doesn't exist */
+  @Injection( name = "CREATE_TABLE" )
+  protected boolean m_createTable = true;
 
   /** Anything to include in the WITH clause at table creation time? */
   @Injection( name = "CREATE_TABLE_WITH_CLAUSE" )
@@ -154,18 +154,18 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
   protected boolean m_insertFieldsNotInMeta = false;
 
   /**
-   * Whether or not to initially update the column family meta data with any unknown incoming fields
+   * Whether or not to initially update the table meta data with any unknown incoming fields
    */
   @Injection( name = "UPDATE_CASSANDRA_META" )
   protected boolean m_updateCassandraMeta = false;
 
-  /** Whether to truncate the column family (table) before inserting */
-  @Injection( name = "TRUNCATE_COLUMN_FAMILY" )
-  protected boolean m_truncateColumnFamily = false;
+  /** Whether to truncate the table before inserting */
+  @Injection( name = "TRUNCATE_TABLE" )
+  protected boolean m_truncateTable = false;
 
   /**
    * Any CQL statements to execute before inserting the first row. Can be used, for example, to create secondary indexes
-   * on columns in a column family.
+   * on columns in a table.
    */
   @Injection( name = "APRIORI_CQL" )
   protected String m_aprioriCQL = ""; //$NON-NLS-1$
@@ -175,10 +175,6 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
    */
   @Injection( name = "DONT_COMPLAIN_IF_APRIORI_CQL_FAILS" )
   protected boolean m_dontComplainAboutAprioriCQLFailing;
-
-  /** Use thrift IO-based batch mutate instead of CQL? */
-  @Injection( name = "USE_THRIFT_IO" )
-  protected boolean m_useThriftIO = false;
 
   /** Whether to use CQL version 3 */
   @Injection( name = "USE_CQL_VERSION_3" )
@@ -194,7 +190,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
   private boolean useDriver = true;
 
   public boolean isUseDriver() {
-    return useDriver && !m_useThriftIO && !m_useCQL3;
+    return useDriver && !m_useCQL3;
   }
 
   public enum TTLUnits {
@@ -434,41 +430,41 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
   }
 
   /**
-   * Set the column family (table) to write to
+   * Set the table to write to
    *
-   * @param colFam
-   *          the name of the column family to write to
+   * @param table
+   *          the name of the table to write to
    */
-  public void setColumnFamilyName( String colFam ) {
-    m_columnFamily = colFam;
+  public void setTableName( String table ) {
+    m_table = table;
   }
 
   /**
-   * Get the name of the column family to write to
+   * Get the name of the table to write to
    *
-   * @return the name of the columm family to write to
+   * @return the name of the table to write to
    */
-  public String getColumnFamilyName() {
-    return m_columnFamily;
+  public String getTableName() {
+    return m_table;
   }
 
   /**
-   * Set whether to create the specified column family (table) if it doesn't already exist
+   * Set whether to create the specified table if it doesn't already exist
    *
    * @param create
-   *          true if the specified column family is to be created if it doesn't already exist
+   *          true if the specified table is to be created if it doesn't already exist
    */
-  public void setCreateColumnFamily( boolean create ) {
-    m_createColumnFamily = create;
+  public void setCreateTable( boolean create ) {
+    m_createTable = create;
   }
 
   /**
-   * Get whether to create the specified column family (table) if it doesn't already exist
+   * Get whether to create the specified table if it doesn't already exist
    *
-   * @return true if the specified column family is to be created if it doesn't already exist
+   * @return true if the specified table is to be created if it doesn't already exist
    */
-  public boolean getCreateColumnFamily() {
-    return m_createColumnFamily;
+  public boolean getCreateTable() {
+    return m_createTable;
   }
 
   public void setCreateTableClause( String w ) {
@@ -598,7 +594,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
   }
 
   /**
-   * Set whether to update the column family meta data with any unknown incoming columns
+   * Set whether to update the table meta data with any unknown incoming columns
    *
    * @param u
    *          true if the meta data is to be updated with any unknown incoming columns
@@ -608,7 +604,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
   }
 
   /**
-   * Get whether to update the column family meta data with any unknown incoming columns
+   * Get whether to update the table meta data with any unknown incoming columns
    *
    * @return true if the meta data is to be updated with any unknown incoming columns
    */
@@ -617,26 +613,26 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
   }
 
   /**
-   * Set whether to first truncate (remove all data) the column family (table) before inserting.
+   * Set whether to first truncate (remove all data) the table before inserting.
    *
    * @param t
-   *          true if the column family is to be initially truncated.
+   *          true if the table is to be initially truncated.
    */
-  public void setTruncateColumnFamily( boolean t ) {
-    m_truncateColumnFamily = t;
+  public void setTruncateTable( boolean t ) {
+    m_truncateTable = t;
   }
 
   /**
-   * Get whether to first truncate (remove all data) the column family (table) before inserting.
+   * Get whether to first truncate (remove all data) the table before inserting.
    *
-   * @return true if the column family is to be initially truncated.
+   * @return true if the table is to be initially truncated.
    */
-  public boolean getTruncateColumnFamily() {
-    return m_truncateColumnFamily;
+  public boolean getTruncateTable() {
+    return m_truncateTable;
   }
 
   /**
-   * Set any cql statements (separated by ;'s) to execute before inserting the first row into the column family. Can be
+   * Set any cql statements (separated by ;'s) to execute before inserting the first row into the table. Can be
    * used to do tasks like creating secondary indexes on columns in the table.
    *
    * @param cql
@@ -647,7 +643,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
   }
 
   /**
-   * Get any cql statements (separated by ;'s) to execute before inserting the first row into the column family. Can be
+   * Get any cql statements (separated by ;'s) to execute before inserting the first row into the table. Can be
    * used to do tasks like creating secondary indexes on columns in the table.
    *
    * @return cql statements (separated by ;'s) to execute
@@ -673,25 +669,6 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
    */
   public boolean getDontComplainAboutAprioriCQLFailing() {
     return m_dontComplainAboutAprioriCQLFailing;
-  }
-
-  /**
-   * Set whether to use Thrift IO-based batch mutate instead of batch CQL.
-   *
-   * @param useThrift
-   *          true if Thrift IO is to be used rather than CQL.
-   */
-  public void setUseThriftIO( boolean useThrift ) {
-    m_useThriftIO = useThrift;
-  }
-
-  /**
-   * Get whether to use Thrift IO-based batch mutate instead of batch CQL.
-   *
-   * @return true if Thrift IO is to be used rather than CQL.
-   */
-  public boolean getUseThriftIO() {
-    return m_useThriftIO;
   }
 
   /**
@@ -801,9 +778,9 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
           XMLHandler.addTagValue( "cassandra_keyspace", m_cassandraKeyspace ) ); //$NON-NLS-1$
     }
 
-    if ( !Utils.isEmpty( m_columnFamily ) ) {
+    if ( !Utils.isEmpty( m_table ) ) {
       retval.append( "\n    " ).append( //$NON-NLS-1$
-          XMLHandler.addTagValue( "column_family", m_columnFamily ) ); //$NON-NLS-1$
+          XMLHandler.addTagValue( "table", m_table ) ); //$NON-NLS-1$
     }
 
     if ( !Utils.isEmpty( m_keyField ) ) {
@@ -832,7 +809,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
     }
 
     retval.append( "\n    " ).append( //$NON-NLS-1$
-        XMLHandler.addTagValue( "create_column_family", m_createColumnFamily ) ); //$NON-NLS-1$
+        XMLHandler.addTagValue( "create_table", m_createTable ) ); //$NON-NLS-1$
 
     retval.append( "\n    " ).append( //$NON-NLS-1$
         XMLHandler.addTagValue( "use_compression", m_useCompression ) ); //$NON-NLS-1$
@@ -845,7 +822,7 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
         XMLHandler.addTagValue( "update_cassandra_meta", m_updateCassandraMeta ) ); //$NON-NLS-1$
 
     retval.append( "\n    " ).append( //$NON-NLS-1$
-        XMLHandler.addTagValue( "truncate_column_family", m_truncateColumnFamily ) ); //$NON-NLS-1$
+        XMLHandler.addTagValue( "truncate_table", m_truncateTable ) ); //$NON-NLS-1$
 
     retval.append( "\n    " ).append( //$NON-NLS-1$
         XMLHandler.addTagValue( "unlogged_batch", m_unloggedBatch ) ); //$NON-NLS-1$
@@ -864,9 +841,6 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
           XMLHandler.addTagValue( "create_table_with_clause", //$NON-NLS-1$
               m_createTableWithClause ) );
     }
-
-    retval.append( "\n    " ).append( //$NON-NLS-1$
-        XMLHandler.addTagValue( "use_thrift_io", m_useThriftIO ) ); //$NON-NLS-1$
 
     retval.append( "\n    " ).append( //$NON-NLS-1$
         XMLHandler.addTagValue( "use_cql3", m_useCQL3 ) ); //$NON-NLS-1$
@@ -895,28 +869,23 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
       m_password = Encr.decryptPasswordOptionallyEncrypted( m_password );
     }
     m_cassandraKeyspace = XMLHandler.getTagValue( stepnode, "cassandra_keyspace" ); //$NON-NLS-1$
-    m_columnFamily = XMLHandler.getTagValue( stepnode, "column_family" ); //$NON-NLS-1$
+    m_table = XMLHandler.getTagValue( stepnode, "table" ); //$NON-NLS-1$
     m_keyField = XMLHandler.getTagValue( stepnode, "key_field" ); //$NON-NLS-1$
     m_consistency = XMLHandler.getTagValue( stepnode, "consistency" ); //$NON-NLS-1$
     m_batchSize = XMLHandler.getTagValue( stepnode, "batch_size" ); //$NON-NLS-1$
     m_cqlBatchTimeout = XMLHandler.getTagValue( stepnode, "cql_batch_timeout" ); //$NON-NLS-1$
     m_cqlSubBatchSize = XMLHandler.getTagValue( stepnode, "cql_sub_batch_size" ); //$NON-NLS-1$
 
-    m_createColumnFamily = XMLHandler.getTagValue( stepnode, "create_column_family" ).equalsIgnoreCase( "Y" ); //$NON-NLS-1$ //$NON-NLS-2$
+    m_createTable = XMLHandler.getTagValue( stepnode, "create_table" ).equalsIgnoreCase( "Y" ); //$NON-NLS-1$ //$NON-NLS-2$
     m_useCompression = XMLHandler.getTagValue( stepnode, "use_compression" ) //$NON-NLS-1$
         .equalsIgnoreCase( "Y" ); //$NON-NLS-1$
     m_insertFieldsNotInMeta = XMLHandler.getTagValue( stepnode, "insert_fields_not_in_meta" ).equalsIgnoreCase( "Y" ); //$NON-NLS-1$ //$NON-NLS-2$
     m_updateCassandraMeta = XMLHandler.getTagValue( stepnode, "update_cassandra_meta" ).equalsIgnoreCase( "Y" ); //$NON-NLS-1$ //$NON-NLS-2$
-    m_truncateColumnFamily = XMLHandler.getTagValue( stepnode, "truncate_column_family" ).equalsIgnoreCase( "Y" ); //$NON-NLS-1$ //$NON-NLS-2$
+    m_truncateTable = XMLHandler.getTagValue( stepnode, "truncate_table" ).equalsIgnoreCase( "Y" ); //$NON-NLS-1$ //$NON-NLS-2$
 
     m_aprioriCQL = XMLHandler.getTagValue( stepnode, "apriori_cql" ); //$NON-NLS-1$
 
     m_createTableWithClause = XMLHandler.getTagValue( stepnode, "create_table_with_clause" ); //$NON-NLS-1$
-
-    String useThrift = XMLHandler.getTagValue( stepnode, "use_thrift_io" ); //$NON-NLS-1$
-    if ( !Utils.isEmpty( useThrift ) ) {
-      m_useThriftIO = useThrift.equalsIgnoreCase( "Y" ); //$NON-NLS-1$
-    }
 
     String useCQL3 = XMLHandler.getTagValue( stepnode, "use_cql3" ); //$NON-NLS-1$
     if ( !Utils.isEmpty( useCQL3 ) ) {
@@ -955,25 +924,23 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
       m_password = Encr.decryptPasswordOptionallyEncrypted( m_password );
     }
     m_cassandraKeyspace = rep.getStepAttributeString( id_step, 0, "cassandra_keyspace" ); //$NON-NLS-1$
-    m_columnFamily = rep.getStepAttributeString( id_step, 0, "column_family" ); //$NON-NLS-1$
+    m_table = rep.getStepAttributeString( id_step, 0, "table" ); //$NON-NLS-1$
     m_keyField = rep.getStepAttributeString( id_step, 0, "key_field" ); //$NON-NLS-1$
     m_consistency = rep.getStepAttributeString( id_step, 0, "consistency" ); //$NON-NLS-1$
     m_batchSize = rep.getStepAttributeString( id_step, 0, "batch_size" ); //$NON-NLS-1$
     m_cqlBatchTimeout = rep.getStepAttributeString( id_step, 0, "cql_batch_timeout" ); //$NON-NLS-1$
     m_cqlSubBatchSize = rep.getStepAttributeString( id_step, 0, "cql_sub_batch_size" ); //$NON-NLS-1$
 
-    m_createColumnFamily = rep.getStepAttributeBoolean( id_step, 0, "create_column_family" ); //$NON-NLS-1$
+    m_createTable = rep.getStepAttributeBoolean( id_step, 0, "create_table" ); //$NON-NLS-1$
     m_useCompression = rep.getStepAttributeBoolean( id_step, 0, "use_compression" ); //$NON-NLS-1$
     m_insertFieldsNotInMeta = rep.getStepAttributeBoolean( id_step, 0, "insert_fields_not_in_meta" ); //$NON-NLS-1$
     m_updateCassandraMeta = rep.getStepAttributeBoolean( id_step, 0, "update_cassandra_meta" ); //$NON-NLS-1$
-    m_truncateColumnFamily = rep.getStepAttributeBoolean( id_step, 0, "truncate_column_family" ); //$NON-NLS-1$
+    m_truncateTable = rep.getStepAttributeBoolean( id_step, 0, "truncate_table" ); //$NON-NLS-1$
     m_unloggedBatch = rep.getStepAttributeBoolean( id_step, 0, "unlogged_batch" ); //$NON-NLS-1$
 
     m_aprioriCQL = rep.getStepAttributeString( id_step, 0, "apriori_cql" ); //$NON-NLS-1$
 
     m_createTableWithClause = rep.getStepAttributeString( id_step, 0, "create_table_with_clause" ); //$NON-NLS-1$
-
-    m_useThriftIO = rep.getStepAttributeBoolean( id_step, 0, "use_thrift_io" ); //$NON-NLS-1$
 
     m_dontComplainAboutAprioriCQLFailing = rep.getStepAttributeBoolean( id_step, 0, "dont_complain_aprior_cql" ); //$NON-NLS-1$
 
@@ -1027,9 +994,9 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
       rep.saveStepAttribute( id_transformation, id_step, 0, "cassandra_keyspace", m_cassandraKeyspace ); //$NON-NLS-1$
     }
 
-    if ( !Utils.isEmpty( m_columnFamily ) ) {
-      rep.saveStepAttribute( id_transformation, id_step, 0, "column_family", //$NON-NLS-1$
-          m_columnFamily );
+    if ( !Utils.isEmpty( m_table ) ) {
+      rep.saveStepAttribute( id_transformation, id_step, 0, "table", //$NON-NLS-1$
+          m_table );
     }
 
     if ( !Utils.isEmpty( m_keyField ) ) {
@@ -1056,12 +1023,12 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
       rep.saveStepAttribute( id_transformation, id_step, 0, "cql_sub_batch_size", m_cqlSubBatchSize ); //$NON-NLS-1$
     }
 
-    rep.saveStepAttribute( id_transformation, id_step, 0, "create_column_family", m_createColumnFamily ); //$NON-NLS-1$
+    rep.saveStepAttribute( id_transformation, id_step, 0, "create_table", m_createTable ); //$NON-NLS-1$
     rep.saveStepAttribute( id_transformation, id_step, 0, "use_compression", //$NON-NLS-1$
         m_useCompression );
     rep.saveStepAttribute( id_transformation, id_step, 0, "insert_fields_not_in_meta", m_insertFieldsNotInMeta ); //$NON-NLS-1$
     rep.saveStepAttribute( id_transformation, id_step, 0, "update_cassandra_meta", m_updateCassandraMeta ); //$NON-NLS-1$
-    rep.saveStepAttribute( id_transformation, id_step, 0, "truncate_column_family", m_truncateColumnFamily ); //$NON-NLS-1$
+    rep.saveStepAttribute( id_transformation, id_step, 0, "truncate_table", m_truncateTable ); //$NON-NLS-1$
     rep.saveStepAttribute( id_transformation, id_step, 0, "unlogged_batch", //$NON-NLS-1$
         m_unloggedBatch );
 
@@ -1079,9 +1046,6 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
     }
 
     rep.saveStepAttribute( id_transformation, id_step, 0, "ttl_unit", m_ttlUnit ); //$NON-NLS-1$
-
-    rep.saveStepAttribute( id_transformation, id_step, 0, "use_thrift_io", //$NON-NLS-1$
-        m_useThriftIO );
 
     rep.saveStepAttribute( id_transformation, id_step, 0, "use_cql3", m_useCQL3 ); //$NON-NLS-1$
     rep.saveStepAttribute( id_transformation, id_step, 0,
@@ -1128,15 +1092,15 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
   @Override
   public void setDefault() {
     m_cassandraHost = "localhost"; //$NON-NLS-1$
-    m_cassandraPort = "9160"; //$NON-NLS-1$
+    m_cassandraPort = "9042"; //$NON-NLS-1$
     m_schemaHost = "localhost"; //$NON-NLS-1$
-    m_schemaPort = "9160"; //$NON-NLS-1$
-    m_columnFamily = ""; //$NON-NLS-1$
+    m_schemaPort = "9042"; //$NON-NLS-1$
+    m_table = ""; //$NON-NLS-1$
     m_batchSize = "100"; //$NON-NLS-1$
     m_useCompression = false;
     m_insertFieldsNotInMeta = false;
     m_updateCassandraMeta = false;
-    m_truncateColumnFamily = false;
+    m_truncateTable = false;
     m_aprioriCQL = ""; //$NON-NLS-1$
   }
 

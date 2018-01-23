@@ -2,7 +2,7 @@
  *
  * Pentaho Big Data
  *
- * Copyright (C) 2002-2017 by Hitachi Vantara : http://www.pentaho.com
+ * Copyright (C) 2002-2018 by Hitachi Vantara : http://www.pentaho.com
  *
  *******************************************************************************
  *
@@ -87,8 +87,8 @@ public class SSTableOutputDialog extends BaseStepDialog implements StepDialogInt
   private Label m_keyspaceLab;
   private TextVar m_keyspaceText;
 
-  private Label m_columnFamilyLab;
-  private TextVar m_columnFamilyText;
+  private Label m_tableLab;
+  private TextVar m_tableText;
 
   private Label m_keyFieldLab;
   private CCombo m_keyFieldCombo;
@@ -97,9 +97,6 @@ public class SSTableOutputDialog extends BaseStepDialog implements StepDialogInt
   private TextVar m_bufferSizeText;
 
   private Button m_getFieldsBut;
-
-  private Label m_useCQL3Lab;
-  private Button m_useCQL3Check;
 
   public SSTableOutputDialog( Shell parent, Object in, TransMeta tr, String name ) {
 
@@ -288,29 +285,29 @@ public class SSTableOutputDialog extends BaseStepDialog implements StepDialogInt
     fd.left = new FormAttachment( middle, 0 );
     m_keyspaceText.setLayoutData( fd );
 
-    // column family line
-    m_columnFamilyLab = new Label( shell, SWT.RIGHT );
-    props.setLook( m_columnFamilyLab );
-    m_columnFamilyLab.setText( BaseMessages.getString( PKG, "SSTableOutputDialog.ColumnFamily.Label" ) );
+    // table line
+    m_tableLab = new Label( shell, SWT.RIGHT );
+    props.setLook( m_tableLab );
+    m_tableLab.setText( BaseMessages.getString( PKG, "SSTableOutputDialog.Table.Label" ) );
     fd = new FormData();
     fd.left = new FormAttachment( 0, 0 );
     fd.top = new FormAttachment( m_keyspaceText, margin );
     fd.right = new FormAttachment( middle, -margin );
-    m_columnFamilyLab.setLayoutData( fd );
+    m_tableLab.setLayoutData( fd );
 
-    m_columnFamilyText = new TextVar( transMeta, shell, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
-    props.setLook( m_columnFamilyText );
-    m_columnFamilyText.addModifyListener( new ModifyListener() {
+    m_tableText = new TextVar( transMeta, shell, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
+    props.setLook( m_tableText );
+    m_tableText.addModifyListener( new ModifyListener() {
       public void modifyText( ModifyEvent e ) {
-        m_columnFamilyText.setToolTipText( transMeta.environmentSubstitute( m_columnFamilyText.getText() ) );
+        m_tableText.setToolTipText( transMeta.environmentSubstitute( m_tableText.getText() ) );
       }
     } );
-    m_columnFamilyText.addModifyListener( lsMod );
+    m_tableText.addModifyListener( lsMod );
     fd = new FormData();
     fd.right = new FormAttachment( 100, 0 );
     fd.top = new FormAttachment( m_keyspaceText, margin );
     fd.left = new FormAttachment( middle, 0 );
-    m_columnFamilyText.setLayoutData( fd );
+    m_tableText.setLayoutData( fd );
 
     // key field line
     m_keyFieldLab = new Label( shell, SWT.RIGHT );
@@ -318,7 +315,7 @@ public class SSTableOutputDialog extends BaseStepDialog implements StepDialogInt
     m_keyFieldLab.setText( BaseMessages.getString( PKG, "SSTableOutputDialog.KeyField.Label" ) );
     fd = new FormData();
     fd.left = new FormAttachment( 0, 0 );
-    fd.top = new FormAttachment( m_columnFamilyText, margin );
+    fd.top = new FormAttachment( m_tableText, margin );
     fd.right = new FormAttachment( middle, -margin );
     m_keyFieldLab.setLayoutData( fd );
 
@@ -328,17 +325,13 @@ public class SSTableOutputDialog extends BaseStepDialog implements StepDialogInt
 
     fd = new FormData();
     fd.right = new FormAttachment( 100, 0 );
-    fd.top = new FormAttachment( m_columnFamilyText, 0 );
+    fd.top = new FormAttachment( m_tableText, 0 );
     m_getFieldsBut.setLayoutData( fd );
 
     m_getFieldsBut.addSelectionListener( new SelectionAdapter() {
       @Override
       public void widgetSelected( SelectionEvent e ) {
-        if ( m_useCQL3Check.getSelection() ) {
-          showEnterSelectionDialog();
-        } else {
-          setupFieldsCombo();
-        }
+        showEnterSelectionDialog();
       }
     } );
 
@@ -352,33 +345,9 @@ public class SSTableOutputDialog extends BaseStepDialog implements StepDialogInt
     m_keyFieldCombo.addModifyListener( lsMod );
     fd = new FormData();
     fd.right = new FormAttachment( m_getFieldsBut, -margin );
-    fd.top = new FormAttachment( m_columnFamilyText, margin );
+    fd.top = new FormAttachment( m_tableText, margin );
     fd.left = new FormAttachment( middle, 0 );
     m_keyFieldCombo.setLayoutData( fd );
-
-    m_useCQL3Lab = new Label( shell, SWT.RIGHT );
-    props.setLook( m_useCQL3Lab );
-    m_useCQL3Lab.setText( BaseMessages.getString( PKG, "SSTableOutputDialog.UseCQL3.Label" ) ); //$NON-NLS-1$
-    fd = new FormData();
-    fd.left = new FormAttachment( 0, 0 );
-    fd.top = new FormAttachment( m_keyFieldCombo, margin );
-    fd.right = new FormAttachment( middle, -margin );
-    m_useCQL3Lab.setLayoutData( fd );
-
-    m_useCQL3Check = new Button( shell, SWT.CHECK );
-    props.setLook( m_useCQL3Check );
-    fd = new FormData();
-    fd.right = new FormAttachment( 100, 0 );
-    fd.top = new FormAttachment( m_keyFieldCombo, margin );
-    fd.left = new FormAttachment( middle, 0 );
-    m_useCQL3Check.setLayoutData( fd );
-
-    m_useCQL3Check.addSelectionListener( new SelectionAdapter() {
-      @Override
-      public void widgetSelected( SelectionEvent e ) {
-        onCql3CheckSelection();
-      }
-    } );
 
     // buffer size
     m_bufferSizeLab = new Label( shell, SWT.RIGHT );
@@ -386,7 +355,7 @@ public class SSTableOutputDialog extends BaseStepDialog implements StepDialogInt
     m_bufferSizeLab.setText( BaseMessages.getString( PKG, "SSTableOutputDialog.BufferSize.Label" ) );
     fd = new FormData();
     fd.left = new FormAttachment( 0, 0 );
-    fd.top = new FormAttachment( m_useCQL3Check, margin );
+    fd.top = new FormAttachment( m_keyFieldCombo, margin );
     fd.right = new FormAttachment( middle, -margin );
     m_bufferSizeLab.setLayoutData( fd );
 
@@ -400,7 +369,7 @@ public class SSTableOutputDialog extends BaseStepDialog implements StepDialogInt
     m_bufferSizeText.addModifyListener( lsMod );
     fd = new FormData();
     fd.right = new FormAttachment( 100, 0 );
-    fd.top = new FormAttachment( m_useCQL3Check, margin );
+    fd.top = new FormAttachment( m_keyFieldCombo, margin );
     fd.left = new FormAttachment( middle, 0 );
     m_bufferSizeText.setLayoutData( fd );
 
@@ -462,13 +431,8 @@ public class SSTableOutputDialog extends BaseStepDialog implements StepDialogInt
 
 
   protected void onCql3CheckSelection() {
-    if ( m_useCQL3Check.getSelection() ) {
-      m_getFieldsBut.setText( BaseMessages.getString( PKG, "SSTableOutputDialog.SelectFields.Button" ) ); //$NON-NLS-1$
-      m_keyFieldLab.setText( BaseMessages.getString( PKG, "SSTableOutputDialog.KeyFields.Label" ) ); //$NON-NLS-1$
-    } else {
-      m_getFieldsBut.setText( BaseMessages.getString( PKG, "SSTableOutputDialog.GetFields.Button" ) ); //$NON-NLS-1$
-      m_keyFieldLab.setText( BaseMessages.getString( PKG, "SSTableOutputDialog.KeyField.Label" ) ); //$NON-NLS-1$
-    }
+    m_getFieldsBut.setText( BaseMessages.getString( PKG, "SSTableOutputDialog.SelectFields.Button" ) ); //$NON-NLS-1$
+    m_keyFieldLab.setText( BaseMessages.getString( PKG, "SSTableOutputDialog.KeyFields.Label" ) ); //$NON-NLS-1$
   }
 
   protected void setupFieldsCombo() {
@@ -510,10 +474,9 @@ public class SSTableOutputDialog extends BaseStepDialog implements StepDialogInt
     m_currentMeta.setYamlPath( m_yamlText.getText() );
     m_currentMeta.setDirectory( m_directoryText.getText() );
     m_currentMeta.setCassandraKeyspace( m_keyspaceText.getText() );
-    m_currentMeta.setColumnFamilyName( m_columnFamilyText.getText() );
+    m_currentMeta.setTableName( m_tableText.getText() );
     m_currentMeta.setKeyField( m_keyFieldCombo.getText() );
     m_currentMeta.setBufferSize( m_bufferSizeText.getText() );
-    m_currentMeta.setUseCQL3( m_useCQL3Check.getSelection() );
 
     if ( !m_originalMeta.equals( m_currentMeta ) ) {
       m_currentMeta.setChanged();
@@ -544,8 +507,8 @@ public class SSTableOutputDialog extends BaseStepDialog implements StepDialogInt
       m_keyspaceText.setText( m_currentMeta.getCassandraKeyspace() );
     }
 
-    if ( !Utils.isEmpty( m_currentMeta.getColumnFamilyName() ) ) {
-      m_columnFamilyText.setText( m_currentMeta.getColumnFamilyName() );
+    if ( !Utils.isEmpty( m_currentMeta.getTableName() ) ) {
+      m_tableText.setText( m_currentMeta.getTableName() );
     }
 
     if ( !Utils.isEmpty( m_currentMeta.getKeyField() ) ) {
@@ -556,7 +519,6 @@ public class SSTableOutputDialog extends BaseStepDialog implements StepDialogInt
       m_bufferSizeText.setText( m_currentMeta.getBufferSize() );
     }
 
-    m_useCQL3Check.setSelection( m_currentMeta.getUseCQL3()   );
     onCql3CheckSelection();
   }
 

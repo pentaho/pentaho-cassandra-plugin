@@ -2,7 +2,7 @@
  *
  * Pentaho Data Integration
  *
- * Copyright (C) 2002-2017 by Hitachi Vantara : http://www.pentaho.com
+ * Copyright (C) 2002-2018 by Hitachi Vantara : http://www.pentaho.com
  *
  *******************************************************************************
  *
@@ -53,14 +53,14 @@ public class SSTableWriterBuilder {
   private String keyspace;
 
   /**
-   * The name of the column family (table) to write to
+   * The name of the table to write to
    */
-  private String columnFamily;
+  private String table;
 
   /**
-   * The key field used to determine unique keys (IDs) for rows
+   * The primary key used to determine unique keys (IDs) for rows
    */
-  private String keyField;
+  private String primaryKey;
 
   /**
    * Size (MB) of write buffer
@@ -91,13 +91,13 @@ public class SSTableWriterBuilder {
     return this;
   }
 
-  public SSTableWriterBuilder withColumnFamily( String columnFamilyName ) {
-    this.columnFamily = columnFamilyName;
+  public SSTableWriterBuilder withTable( String tableName ) {
+    this.table = tableName;
     return this;
   }
 
-  public SSTableWriterBuilder withKeyField( String keyField ) {
-    this.keyField = keyField;
+  public SSTableWriterBuilder withPrimaryKey( String primaryKey ) {
+    this.primaryKey = primaryKey;
     return this;
   }
 
@@ -120,34 +120,21 @@ public class SSTableWriterBuilder {
     System.setProperty( "cassandra.config", configFilePath );
     AbstractSSTableWriter result;
 
-    if ( cqlVersion == 3 ) {
-      CQL3SSTableWriter writer = getCql3SSTableWriter();
-
-      writer.setRowMeta( rowMeta );
-
-      result = writer;
-    } else {
-      CQL2SSTableWriter writer = getCql2SSTableWriter();
-
-      writer.setPartitionerClassName( getPartitionerClass() );
-
-      result = writer;
-    }
+    CQL3SSTableWriter writer = getCql3SSTableWriter();
+    writer.setRowMeta( rowMeta );
+    result = writer;
     result.setDirectory( directory );
     result.setKeyspace( keyspace );
-    result.setColumnFamily( columnFamily );
-    result.setKeyField( keyField );
+    result.setTable( table );
+    result.setPrimaryKey( primaryKey );
     result.setBufferSize( bufferSize );
+    result.setPartitionerClass( getPartitionerClass() );
 
     return result;
   }
 
   String getPartitionerClass() throws ConfigurationException {
     return new YamlConfigurationLoader().loadConfig().partitioner;
-  }
-
-  CQL2SSTableWriter getCql2SSTableWriter() {
-    return new CQL2SSTableWriter();
   }
 
   CQL3SSTableWriter getCql3SSTableWriter() {

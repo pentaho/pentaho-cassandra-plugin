@@ -2,7 +2,7 @@
 *
 * Pentaho Big Data
 *
-* Copyright (C) 2002-2017 by Hitachi Vantara : http://www.pentaho.com
+* Copyright (C) 2002-2018 by Hitachi Vantara : http://www.pentaho.com
 *
 *******************************************************************************
 *
@@ -28,8 +28,8 @@ import org.pentaho.di.trans.step.StepDataInterface;
 
 /**
  * Data class for the CassandraOutput step. Contains methods for obtaining a
- * connection to cassandra, creating a new column family, updating a column
- * family's meta data and constructing a batch insert CQL statement.
+ * connection to cassandra, creating a new table, updating a table's
+ * meta data and constructing a batch insert CQL statement.
  * 
  * @author Mark Hall (mhall{[at]}pentaho{[dot]}com)
  */

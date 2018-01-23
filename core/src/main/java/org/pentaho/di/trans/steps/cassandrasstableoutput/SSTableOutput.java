@@ -2,7 +2,7 @@
  *
  * Pentaho Big Data
  *
- * Copyright (C) 2002-2017 by Hitachi Vantara : http://www.pentaho.com
+ * Copyright (C) 2002-2018 by Hitachi Vantara : http://www.pentaho.com
  *
  *******************************************************************************
  *
@@ -76,7 +76,7 @@ public class SSTableOutput extends BaseStep implements StepInterface {
     String yamlPath = environmentSubstitute( smi.getYamlPath() );
     String directory = environmentSubstitute( smi.getDirectory() );
     String keyspace = environmentSubstitute( smi.getCassandraKeyspace() );
-    String columnFamily = environmentSubstitute( smi.getColumnFamilyName() );
+    String table = environmentSubstitute( smi.getTableName() );
     String keyField = environmentSubstitute( smi.getKeyField() );
     String bufferSize = environmentSubstitute( smi.getBufferSize() );
 
@@ -99,9 +99,9 @@ public class SSTableOutput extends BaseStep implements StepInterface {
       }
     }
 
-    if ( Utils.isEmpty( columnFamily ) ) {
+    if ( Utils.isEmpty( table ) ) {
       throw new KettleException( BaseMessages.getString( SSTableOutputMeta.PKG,
-          "SSTableOutput.Error.NoColumnFamilySpecified" ) );
+          "SSTableOutput.Error.NoTableSpecified" ) );
     }
 
     if ( Utils.isEmpty( keyField ) ) {
@@ -121,7 +121,7 @@ public class SSTableOutput extends BaseStep implements StepInterface {
 
     SSTableWriterBuilder builder =
         new SSTableWriterBuilder().withConfig( yamlPath ).withDirectory( outputDir.getAbsolutePath() ).withKeyspace(
-            keyspace ).withColumnFamily( columnFamily ).withRowMeta( getInputRowMeta() ).withKeyField( keyField )
+            keyspace ).withTable( table ).withRowMeta( getInputRowMeta() ).withPrimaryKey( keyField )
             .withCqlVersion( smi.getUseCQL3() ? 3 : 2 );
     try {
       builder.withBufferSize( Integer.parseInt( bufferSize ) );

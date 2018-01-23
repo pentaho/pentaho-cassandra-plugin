@@ -1,5 +1,5 @@
 /*!
- * Copyright 2017 Hitachi Vantara.  All rights reserved.
+ * Copyright 2018 Hitachi Vantara.  All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 
 package org.pentaho.di.trans.steps.cassandrasstableoutput;
 
-import junit.framework.Assert;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
@@ -37,7 +37,11 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.*;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 
 public class SSTableOutputIT {
   private static StepMockHelper<SSTableOutputMeta, SSTableOutputData> helper;
@@ -125,7 +129,7 @@ public class SSTableOutputIT {
     meta.setDirectory( tempFile.getParentFile().toURI().toString() );
     meta.setCassandraKeyspace( "key" );
     meta.setYamlPath( getClass().getResource( "cassandra.yaml" ).getFile() );
-    meta.setColumnFamilyName( "cfq" );
+    meta.setTableName( "cfq" );
     if ( v3 ) {
       meta.setKeyField( "key,two" );
     } else {

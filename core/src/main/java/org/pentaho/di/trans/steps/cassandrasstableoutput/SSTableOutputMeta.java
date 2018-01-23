@@ -2,7 +2,7 @@
  *
  * Pentaho Big Data
  *
- * Copyright (C) 2002-2017 by Hitachi Vantara : http://www.pentaho.com
+ * Copyright (C) 2002-2018 by Hitachi Vantara : http://www.pentaho.com
  *
  *******************************************************************************
  *
@@ -72,9 +72,9 @@ public class SSTableOutputMeta extends BaseStepMeta implements StepMetaInterface
   @Injection( name = "CASSANDRA_KEYSPACE" )
   protected String cassandraKeyspace;
 
-  /** The column family (table) to write to */
-  @Injection( name = "COLUMN_FAMILY" )
-  protected String columnFamily = "";
+  /** The table to write to */
+  @Injection( name = "TABLE" )
+  protected String table = "";
 
   /** The field in the incoming data to use as the key for inserts */
   @Injection( name = "KEY_FIELD" )
@@ -87,7 +87,7 @@ public class SSTableOutputMeta extends BaseStepMeta implements StepMetaInterface
   /**
    * Whether to use CQL version 3
    */
-  protected boolean m_useCQL3 = false;
+  protected boolean m_useCQL3 = true;
 
   /**
    * Get the path the the yaml file
@@ -147,22 +147,22 @@ public class SSTableOutputMeta extends BaseStepMeta implements StepMetaInterface
   }
 
   /**
-   * Set the column family (table) to write to
+   * Set the table to write to
    *
-   * @param colFam
-   *          the name of the column family to write to
+   * @param table
+   *          the name of the table to write to
    */
-  public void setColumnFamilyName( String colFam ) {
-    columnFamily = colFam;
+  public void setTableName( String table ) {
+    this.table = table;
   }
 
   /**
-   * Get the name of the column family to write to
+   * Get the name of the table to write to
    *
-   * @return the name of the columm family to write to
+   * @return the name of the table to write to
    */
-  public String getColumnFamilyName() {
-    return columnFamily;
+  public String getTableName() {
+    return table;
   }
 
   /**
@@ -246,9 +246,9 @@ public class SSTableOutputMeta extends BaseStepMeta implements StepMetaInterface
         XMLHandler.addTagValue( "cassandra_keyspace", cassandraKeyspace ) );
     }
 
-    if ( !Utils.isEmpty( columnFamily ) ) {
+    if ( !Utils.isEmpty( table ) ) {
       retval.append( "\n    " ).append(
-        XMLHandler.addTagValue( "column_family", columnFamily ) );
+        XMLHandler.addTagValue( "table", table ) );
     }
 
     if ( !Utils.isEmpty( keyField ) ) {
@@ -272,7 +272,7 @@ public class SSTableOutputMeta extends BaseStepMeta implements StepMetaInterface
     m_yamlPath = XMLHandler.getTagValue( stepnode, "yaml_path" );
     directory = XMLHandler.getTagValue( stepnode, "output_directory" );
     cassandraKeyspace = XMLHandler.getTagValue( stepnode, "cassandra_keyspace" );
-    columnFamily = XMLHandler.getTagValue( stepnode, "column_family" );
+    table = XMLHandler.getTagValue( stepnode, "table" );
     keyField = XMLHandler.getTagValue( stepnode, "key_field" );
     bufferSize = XMLHandler.getTagValue( stepnode, "buffer_size_mb" );
 
@@ -289,7 +289,7 @@ public class SSTableOutputMeta extends BaseStepMeta implements StepMetaInterface
     directory = rep.getStepAttributeString( id_step, 0, "output_directory" );
     cassandraKeyspace = rep.getStepAttributeString( id_step, 0,
       "cassandra_keyspace" );
-    columnFamily = rep.getStepAttributeString( id_step, 0, "column_family" );
+    table = rep.getStepAttributeString( id_step, 0, "table" );
     keyField = rep.getStepAttributeString( id_step, 0, "key_field" );
     bufferSize = rep.getStepAttributeString( id_step, 0, "buffer_size_mb" );
     m_useCQL3 = rep.getStepAttributeBoolean( id_step, 0, "use_cql3" ); //$NON-NLS-1$
@@ -312,9 +312,9 @@ public class SSTableOutputMeta extends BaseStepMeta implements StepMetaInterface
         cassandraKeyspace );
     }
 
-    if ( !Utils.isEmpty( columnFamily ) ) {
-      rep.saveStepAttribute( id_transformation, id_step, "column_family",
-        columnFamily );
+    if ( !Utils.isEmpty( table ) ) {
+      rep.saveStepAttribute( id_transformation, id_step, "table",
+        table );
     }
 
     if ( !Utils.isEmpty( keyField ) ) {
@@ -373,7 +373,7 @@ public class SSTableOutputMeta extends BaseStepMeta implements StepMetaInterface
   public void setDefault() {
     directory = System.getProperty( "java.io.tmpdir" );
     bufferSize = "16";
-    columnFamily = "";
+    table = "";
   }
 
   /*

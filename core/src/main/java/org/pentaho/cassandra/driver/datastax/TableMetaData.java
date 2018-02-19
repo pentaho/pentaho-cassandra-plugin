@@ -1,6 +1,6 @@
 /*******************************************************************************
  *
- * Copyright (C) 2017 by Hitachi Vantara : http://www.pentaho.com
+ * Copyright (C) 2018 by Hitachi Vantara : http://www.pentaho.com
  *
  *******************************************************************************
  *
@@ -18,14 +18,13 @@
  *
  ******************************************************************************/
 
-package org.pentaho.cassandra.driverimpl;
+package org.pentaho.cassandra.driver.datastax;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang.NotImplementedException;
-import org.pentaho.cassandra.cql.Selector;
-import org.pentaho.cassandra.spi.ColumnFamilyMetaData;
+import org.pentaho.cassandra.util.Selector;
+import org.pentaho.cassandra.spi.ITableMetaData;
 import org.pentaho.cassandra.spi.Keyspace;
 import org.pentaho.di.core.row.ValueMetaInterface;
 import org.pentaho.di.core.row.value.ValueMetaBigNumber;
@@ -40,7 +39,7 @@ import com.datastax.driver.core.ColumnMetadata;
 import com.datastax.driver.core.DataType;
 import com.datastax.driver.core.TableMetadata;
 
-public class TableColumnFamilyMetaData implements ColumnFamilyMetaData {
+public class TableMetaData implements ITableMetaData {
 
   private DriverKeyspace keyspace;
   private TableMetadata meta;
@@ -50,7 +49,7 @@ public class TableColumnFamilyMetaData implements ColumnFamilyMetaData {
   // expand collection values into multiple rows (behaviour of other implementation)
   private boolean expandCollection = true;
 
-  public TableColumnFamilyMetaData( DriverKeyspace keyspace, TableMetadata metadata ) {
+  public TableMetaData( DriverKeyspace keyspace, TableMetadata metadata ) {
     meta = metadata;
     name = meta.getName();
     setKeyspace( keyspace );
@@ -63,11 +62,11 @@ public class TableColumnFamilyMetaData implements ColumnFamilyMetaData {
   }
 
   @Override
-  public void setColumnFamilyName( String colFamName ) {
-    this.name = colFamName;
+  public void setTableName( String tableName ) {
+    this.name = tableName;
   }
   @Override
-  public String getColumnFamilyName() {
+  public String getTableName() {
     return name;
   }
   @Override
@@ -105,11 +104,6 @@ public class TableColumnFamilyMetaData implements ColumnFamilyMetaData {
       return toValueMeta( column.getName(), column.getType() );
     }
     return new ValueMetaString( name );
-  }
-
-  @Override
-  public ValueMetaInterface getValueMetaForDefaultValidator() {
-    throw new NotImplementedException();
   }
 
   @Override

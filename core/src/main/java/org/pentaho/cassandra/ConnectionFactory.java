@@ -2,7 +2,7 @@
 *
 * Pentaho Big Data
 *
-* Copyright (C) 2002-2017 by Hitachi Vantara : http://www.pentaho.com
+* Copyright (C) 2002-2018 by Hitachi Vantara : http://www.pentaho.com
 *
 *******************************************************************************
 *
@@ -22,15 +22,14 @@
 
 package org.pentaho.cassandra;
 
-import org.pentaho.cassandra.driverimpl.DriverConnection;
-import org.pentaho.cassandra.legacy.CassandraConnection;
+import org.pentaho.cassandra.driver.datastax.DriverConnection;
 import org.pentaho.cassandra.spi.Connection;
 
 public class ConnectionFactory {
   private static ConnectionFactory s_singleton = new ConnectionFactory();
 
   public static enum Driver {
-    LEGACY_THRIFT, ASTYANAX, BINARY_CQL3_PROTOCOL;
+    ASTYANAX, BINARY_CQL3_PROTOCOL;
   }
 
   private ConnectionFactory() {
@@ -42,8 +41,6 @@ public class ConnectionFactory {
 
   public Connection getConnection( Driver d ) {
     switch ( d ) {
-      case LEGACY_THRIFT:
-        return new CassandraConnection();
       case BINARY_CQL3_PROTOCOL:
         return new DriverConnection();
       default:

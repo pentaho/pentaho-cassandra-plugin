@@ -1,6 +1,6 @@
 /*******************************************************************************
  *
- * Copyright (C) 2017 by Hitachi Vantara : http://www.pentaho.com
+ * Copyright (C) 2018 by Hitachi Vantara : http://www.pentaho.com
  *
  *******************************************************************************
  *
@@ -18,10 +18,10 @@
  *
  ******************************************************************************/
 
-package org.pentaho.cassandra.driverimpl;
+package org.pentaho.cassandra.driver.datastax;
 
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -29,10 +29,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.apache.commons.lang.NotImplementedException;
-import org.pentaho.cassandra.CassandraUtils;
-import org.pentaho.cassandra.legacy.LegacyCQLRowHandler;
+import org.pentaho.cassandra.util.CassandraUtils;
 import org.pentaho.cassandra.spi.CQLRowHandler;
-import org.pentaho.cassandra.spi.ColumnFamilyMetaData;
+import org.pentaho.cassandra.spi.ITableMetaData;
 import org.pentaho.cassandra.spi.Keyspace;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.logging.LogChannelInterface;
@@ -78,7 +77,6 @@ public class DriverCQLRowHandler implements CQLRowHandler {
     this( keyspace, keyspace.getConnection().getSession( keyspace.getName() ), true );
   }
 
-  @Override
   public boolean supportsCQLVersion( int cqMajorlVersion ) {
     return cqMajorlVersion >= 3 && cqMajorlVersion <= 3;
   }
@@ -100,8 +98,8 @@ public class DriverCQLRowHandler implements CQLRowHandler {
   }
 
   @Override
-  public void newRowQuery( StepInterface requestingStep, String colFamName, String cqlQuery, String compress,
-    String consistencyLevel, boolean outputTuples, LogChannelInterface log ) throws Exception {
+  public void newRowQuery( StepInterface requestingStep, String tableName, String cqlQuery, String compress,
+    String consistencyLevel, LogChannelInterface log ) throws Exception {
     result = getSession().execute( cqlQuery );
     columns = result.getColumnDefinitions();
     if ( expandCollection ) {
@@ -109,10 +107,10 @@ public class DriverCQLRowHandler implements CQLRowHandler {
         if ( columns.getType( i ).isCollection() ) {
           if ( primaryCollectionOutputIndex < 0 ) {
             primaryCollectionOutputIndex = i;
-          } else if ( !keyspace.getColumnFamilyMetaData( colFamName ).getValueMetaForColumn( columns.getName( i ) )
+          } else if ( !keyspace.getTableMetaData( tableName ).getValueMetaForColumn( columns.getName( i ) )
               .isString() ) {
-            throw new KettleException( BaseMessages.getString( LegacyCQLRowHandler.class,
-                "LegacyCQLRowHandler.Error.CantHandleAdditionalCollectionsThatAreNotOfTypeText" ) );
+            throw new KettleException( BaseMessages.getString( DriverCQLRowHandler.class,
+                "DriverCQLRowHandler.Error.CantHandleAdditionalCollectionsThatAreNotOfTypeText" ) );
           }
         }
       }
@@ -166,7 +164,7 @@ public class DriverCQLRowHandler implements CQLRowHandler {
     }
   }
 
-  public void batchInsert( RowMetaInterface inputMeta, Iterable<Object[]> rows, ColumnFamilyMetaData familyMeta,
+  public void batchInsert( RowMetaInterface inputMeta, Iterable<Object[]> rows, ITableMetaData tableMeta,
       String consistencyLevel, boolean insertFieldsNotInMetadata, LogChannelInterface log ) throws Exception {
     String[] columnNames = getColumnNames( inputMeta );
     Batch batch = unloggedBatch ? QueryBuilder.unloggedBatch() : QueryBuilder.batch();
@@ -181,7 +179,7 @@ public class DriverCQLRowHandler implements CQLRowHandler {
     List<Integer> toRemove = new ArrayList<>();
     if ( !insertFieldsNotInMetadata ) {
       for ( int i = 0; i < columnNames.length; i++ ) {
-        if ( !familyMeta.columnExistsInSchema( columnNames[i] ) ) {
+        if ( !tableMeta.columnExistsInSchema( columnNames[i] ) ) {
           toRemove.add( i );
         }
       }
@@ -194,7 +192,7 @@ public class DriverCQLRowHandler implements CQLRowHandler {
       Object[] values = toRemove.size() == 0
           ? Arrays.copyOf( row, columnNames.length )
           : copyExcluding( row, new Object[ columnNames.length ], toRemove );
-      Insert insert = QueryBuilder.insertInto( keyspace.getName(), familyMeta.getColumnFamilyName() );
+      Insert insert = QueryBuilder.insertInto( keyspace.getName(), tableMeta.getTableName() );
       insert = ttlSec > 0
           ? insert.using( QueryBuilder.ttl( ttlSec ) ).values( columnNames, values )
           : insert.values( columnNames, values );
@@ -204,7 +202,7 @@ public class DriverCQLRowHandler implements CQLRowHandler {
       try {
         getSession().executeAsync( batch ).getUninterruptibly( batchInsertTimeout, TimeUnit.MILLISECONDS );
       } catch ( TimeoutException e ) {
-        log.logError( BaseMessages.getString( LegacyCQLRowHandler.class, "LegacyCQLRowHandler.Error.TimeoutReached" ) );
+        log.logError( BaseMessages.getString( DriverCQLRowHandler.class, "DriverCQLRowHandler.Error.TimeoutReached" ) );
       }
     } else {
       getSession().execute( batch );
@@ -240,12 +238,6 @@ public class DriverCQLRowHandler implements CQLRowHandler {
   @Override
   public void commitCQLBatch( StepInterface requestingStep, StringBuilder batch, String compress,
       String consistencyLevel, LogChannelInterface log ) throws Exception {
-    throw new NotImplementedException();
-  }
-
-  @Override
-  public boolean addRowToCQLBatch( StringBuilder batch, String colFamilyName, RowMetaInterface inputMeta, Object[] row,
-      boolean insertFieldsNotInMetaData, LogChannelInterface log ) throws Exception {
     throw new NotImplementedException();
   }
 

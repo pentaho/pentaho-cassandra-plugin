@@ -1,6 +1,6 @@
 /*******************************************************************************
  *
- * Copyright (C) 2017 by Hitachi Vantara : http://www.pentaho.com
+ * Copyright (C) 2018 by Hitachi Vantara : http://www.pentaho.com
  *
  *******************************************************************************
  *
@@ -18,10 +18,7 @@
  *
  ******************************************************************************/
 
-package org.pentaho.cassandra.driverimpl;
-
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+package org.pentaho.cassandra.driver.datastax;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -44,6 +41,16 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.Statement;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.mockito.Matchers.argThat;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class DriverCQLRowHandlerTest {
 
@@ -92,7 +99,7 @@ public class DriverCQLRowHandlerTest {
     rowMeta.addValueMeta( new ValueMetaString( "b" ) );
     rowMeta.addValueMeta( new ValueMetaNumber( "c" ) );
 
-    rowHandler.newRowQuery( mock( StepInterface.class ), "tab", "select * from tab", null, null, false, mock(
+    rowHandler.newRowQuery( mock( StepInterface.class ), "tab", "select * from tab", null, null, mock(
         LogChannelInterface.class ) );
 
     List<Object[]> resultRows = getNextOutputRows( rowHandler, rowMeta );
@@ -133,7 +140,7 @@ public class DriverCQLRowHandlerTest {
     rowMeta.addValueMeta( new ValueMetaInteger( "id" ) );
     rowMeta.addValueMeta( new ValueMetaNumber( "nums" ) );
 
-    rowHandler.newRowQuery( mock( StepInterface.class ), "tab", "select * from tab", null, null, false, mock(
+    rowHandler.newRowQuery( mock( StepInterface.class ), "tab", "select * from tab", null, null, mock(
         LogChannelInterface.class ) );
     List<Object[]> resultRows = getNextOutputRows( rowHandler, rowMeta );
     assertEquals( 4, resultRows.size() );
@@ -147,7 +154,7 @@ public class DriverCQLRowHandlerTest {
     DriverKeyspace keyspace = mock( DriverKeyspace.class );
     when( keyspace.getName() ).thenReturn( "ks" );
     Session session = mock( Session.class );
-    TableColumnFamilyMetaData familyMeta = mock( TableColumnFamilyMetaData.class );
+    TableMetaData familyMeta = mock( TableMetaData.class );
 
     ArrayList<Object[]> batch = new ArrayList<>();
     batch.add( new Object[] { 1L, "a" } );
@@ -156,7 +163,7 @@ public class DriverCQLRowHandlerTest {
     rowMeta.addValueMeta( new ValueMetaInteger( "id" ) );
     rowMeta.addValueMeta( new ValueMetaString( "a spaced name" ) );
 
-    when( familyMeta.getColumnFamilyName() ).thenReturn( "tab tab" );
+    when( familyMeta.getTableName() ).thenReturn( "tab tab" );
     when( familyMeta.columnExistsInSchema( anyString() ) ).thenReturn( true );
     DriverCQLRowHandler rowHandler = new DriverCQLRowHandler( keyspace, session, true );
     rowHandler.batchInsert( rowMeta, batch, familyMeta, null, true, null );
@@ -176,8 +183,8 @@ public class DriverCQLRowHandlerTest {
     DriverKeyspace keyspace = mock( DriverKeyspace.class );
     when( keyspace.getName() ).thenReturn( "ks" );
     Session session = mock( Session.class );
-    TableColumnFamilyMetaData familyMeta = mock( TableColumnFamilyMetaData.class );
-    when( familyMeta.getColumnFamilyName() ).thenReturn( "tab" );
+    TableMetaData familyMeta = mock( TableMetaData.class );
+    when( familyMeta.getTableName() ).thenReturn( "tab" );
     ArrayList<Object[]> batch = new ArrayList<>();
     batch.add( new Object[] { 1, 1L, 2L, 3L, 4L } );
     batch.add( new Object[] { 2, 5L, 6L, 7L, 8L } );

@@ -2,7 +2,7 @@
  *
  * Pentaho Data Integration
  *
- * Copyright (C) 2002-2017 by Hitachi Vantara : http://www.pentaho.com
+ * Copyright (C) 2002-2018 by Hitachi Vantara : http://www.pentaho.com
  *
  *******************************************************************************
  *
@@ -70,9 +70,9 @@ public class CassandraOutputMetaInjectionTest extends BaseMetadataInjectionTest<
         return meta.getSchemaPort();
       }
     } );
-    check( "COLUMN_FAMILY", new StringGetter() {
+    check( "TABLE", new StringGetter() {
       public String get() {
-        return meta.getColumnFamilyName();
+        return meta.getTableName();
       }
     } );
     check( "CONSISTENCY_LEVEL", new StringGetter() {
@@ -95,9 +95,9 @@ public class CassandraOutputMetaInjectionTest extends BaseMetadataInjectionTest<
         return meta.getUseCompression();
       }
     } );
-    check( "CREATE_COLUMN_FAMILY", new BooleanGetter() {
+    check( "CREATE_TABLE", new BooleanGetter() {
       public boolean get() {
-        return meta.getCreateColumnFamily();
+        return meta.getCreateTable();
       }
     } );
     check( "CREATE_TABLE_WITH_CLAUSE", new StringGetter() {
@@ -130,9 +130,9 @@ public class CassandraOutputMetaInjectionTest extends BaseMetadataInjectionTest<
         return meta.getUpdateCassandraMeta();
       }
     } );
-    check( "TRUNCATE_COLUMN_FAMILY", new BooleanGetter() {
+    check( "TRUNCATE_TABLE", new BooleanGetter() {
       public boolean get() {
-        return meta.getTruncateColumnFamily();
+        return meta.getTruncateTable();
       }
     } );
     check( "APRIORI_CQL", new StringGetter() {
@@ -143,11 +143,6 @@ public class CassandraOutputMetaInjectionTest extends BaseMetadataInjectionTest<
     check( "DONT_COMPLAIN_IF_APRIORI_CQL_FAILS", new BooleanGetter() {
       public boolean get() {
         return meta.getDontComplainAboutAprioriCQLFailing();
-      }
-    } );
-    check( "USE_THRIFT_IO", new BooleanGetter() {
-      public boolean get() {
-        return meta.getUseThriftIO();
       }
     } );
     check( "USE_CQL_VERSION_3", new BooleanGetter() {

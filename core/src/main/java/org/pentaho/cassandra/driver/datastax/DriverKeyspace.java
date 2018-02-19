@@ -1,6 +1,6 @@
 /*******************************************************************************
  *
- * Copyright (C) 2017 by Hitachi Vantara : http://www.pentaho.com
+ * Copyright (C) 2018 by Hitachi Vantara : http://www.pentaho.com
  *
  *******************************************************************************
  *
@@ -18,18 +18,17 @@
  *
  ******************************************************************************/
 
-package org.pentaho.cassandra.driverimpl;
+package org.pentaho.cassandra.driver.datastax;
 
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.pentaho.cassandra.CassandraUtils;
+import org.pentaho.cassandra.util.CassandraUtils;
 import org.pentaho.cassandra.spi.CQLRowHandler;
-import org.pentaho.cassandra.spi.ColumnFamilyMetaData;
+import org.pentaho.cassandra.spi.ITableMetaData;
 import org.pentaho.cassandra.spi.Connection;
 import org.pentaho.cassandra.spi.Keyspace;
-import org.pentaho.cassandra.spi.NonCQLRowHandler;
 import org.pentaho.di.core.logging.LogChannelInterface;
 import org.pentaho.di.core.row.RowMetaInterface;
 import org.pentaho.di.core.row.ValueMetaInterface;
@@ -76,42 +75,41 @@ public class DriverKeyspace implements Keyspace {
 
   @Override
   public void setOptions( Map<String, String> options ) {
-    // TODO ??
     conn.setAdditionalOptions( options );
   }
 
   @Override
   public void executeCQL( String cql, String compresson, String consistencyLevel, LogChannelInterface log )
-    throws UnsupportedOperationException, Exception {
+    throws Exception {
     conn.getSession( name ).execute( cql );
   }
 
   @Override
   public void createKeyspace( String keyspaceName, Map<String, Object> options, LogChannelInterface log )
-    throws UnsupportedOperationException, Exception {
+    throws Exception {
     SchemaBuilder.createKeyspace( keyspaceName );
   }
 
   @Override
-  public List<String> getColumnFamilyNames() throws Exception {
+  public List<String> getTableNamesCQL3() throws Exception {
     return meta.getTables().stream().map( tab -> tab.getName() ).collect( Collectors.toList() );
   }
 
   @Override
-  public boolean columnFamilyExists( String colFamName ) throws Exception {
-    return meta.getTable( colFamName ) != null;
+  public boolean tableExists( String tableName ) throws Exception {
+    return meta.getTable( tableName ) != null;
   }
 
   @Override
-  public ColumnFamilyMetaData getColumnFamilyMetaData( String familyName ) throws Exception {
+  public ITableMetaData getTableMetaData( String familyName ) throws Exception {
     TableMetadata tableMeta = meta.getTable( familyName );
-    return new TableColumnFamilyMetaData( this, tableMeta );
+    return new TableMetaData( this, tableMeta );
   }
 
   @Override
-  public boolean createColumnFamily( String colFamName, RowMetaInterface rowMeta, List<Integer> keyIndexes,
+  public boolean createTable( String tableName, RowMetaInterface rowMeta, List<Integer> keyIndexes,
       String createTableWithClause, LogChannelInterface log ) throws Exception {
-    Create createTable = SchemaBuilder.createTable( colFamName );
+    Create createTable = SchemaBuilder.createTable( tableName );
     for ( int i = 0; i < rowMeta.size(); i++ ) {
       if ( !keyIndexes.contains( i ) ) {
         ValueMetaInterface valueMeta = rowMeta.getValueMeta( i );
@@ -131,29 +129,28 @@ public class DriverKeyspace implements Keyspace {
     } else {
       getSession().execute( createTable );
     }
-    return true; // TODO:?..
+    return true;
   }
 
   /**
    * Actually an ALTER to add columns, not UPDATE. Purpose of keyIndexes yet to be determined
    */
   @Override
-  public void updateColumnFamily( String colFamName, RowMetaInterface rowMeta, List<Integer> keyIndexes,
-      LogChannelInterface log ) throws UnsupportedOperationException, Exception {
+  public void updateTableCQL3( String tableName, RowMetaInterface rowMeta, List<Integer> keyIndexes,
+      LogChannelInterface log ) throws Exception {
     Session session = getSession();
-    ColumnFamilyMetaData colFamily = getColumnFamilyMetaData( colFamName );
+    ITableMetaData table = getTableMetaData( tableName );
     for ( ValueMetaInterface valueMeta : rowMeta.getValueMetaList() ) {
-      if ( !colFamily.columnExistsInSchema( valueMeta.getName() ) ) {
-        session.execute( SchemaBuilder.alterTable( colFamName ).alterColumn( valueMeta.getName() ).type(
+      if ( !table.columnExistsInSchema( valueMeta.getName() ) ) {
+        session.execute( SchemaBuilder.alterTable( tableName ).alterColumn( valueMeta.getName() ).type(
             getDataType( valueMeta ) ) );
       }
     }
   }
 
   @Override
-  public void truncateColumnFamily( String colFamName, LogChannelInterface log ) throws UnsupportedOperationException,
-    Exception {
-    getSession().execute( QueryBuilder.truncate( colFamName ) );
+  public void truncateTable( String tableName, LogChannelInterface log ) throws Exception {
+    getSession().execute( QueryBuilder.truncate( tableName ) );
   }
 
   protected Session getSession() {
@@ -168,10 +165,4 @@ public class DriverKeyspace implements Keyspace {
   public CQLRowHandler getCQLRowHandler() {
     return new DriverCQLRowHandler( this, getSession(), getConnection().isExpandCollection() );
   }
-
-  @Override
-  public NonCQLRowHandler getNonCQLRowHandler() {
-    throw new UnsupportedOperationException();
-  }
-
 }

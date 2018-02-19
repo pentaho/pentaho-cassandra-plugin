@@ -2,7 +2,7 @@
  *
  * Pentaho Big Data
  *
- * Copyright (C) 2002-2017 by Hitachi Vantara : http://www.pentaho.com
+ * Copyright (C) 2002-2018 by Hitachi Vantara : http://www.pentaho.com
  *
  *******************************************************************************
  *
@@ -20,7 +20,7 @@
  *
  ******************************************************************************/
 
-package org.pentaho.cassandra;
+package org.pentaho.cassandra.util;
 
 import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
@@ -30,19 +30,23 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.zip.Deflater;
 
 import org.apache.cassandra.db.marshal.BooleanType;
-import org.apache.cassandra.db.marshal.DateType;
 import org.apache.cassandra.db.marshal.DecimalType;
 import org.apache.cassandra.db.marshal.DoubleType;
 import org.apache.cassandra.db.marshal.LongType;
+import org.apache.cassandra.db.marshal.TimestampType;
 import org.apache.cassandra.db.marshal.UTF8Type;
-import org.apache.cassandra.thrift.Compression;
-import org.pentaho.cassandra.spi.ColumnFamilyMetaData;
+import org.apache.cassandra.dht.ByteOrderedPartitioner;
+import org.apache.cassandra.dht.IPartitioner;
+import org.apache.cassandra.dht.Murmur3Partitioner;
+import org.apache.cassandra.dht.RandomPartitioner;
+import org.apache.cassandra.dht.OrderPreservingPartitioner;
+import org.pentaho.cassandra.ConnectionFactory;
+import org.pentaho.cassandra.spi.ITableMetaData;
 import org.pentaho.cassandra.spi.Connection;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.exception.KettleValueException;
@@ -74,11 +78,9 @@ public class CassandraUtils {
     public static final String CQLVERSION_OPTION = "cqlVersion"; //$NON-NLS-1$
 
     /**
-     * The highest release of CQL 3 supported by Datastax Cassandra v1.2.3 at time of coding
+     * The highest release of CQL 3 supported by Datastax Cassandra v3.4.0 at time of coding
      */
-    public static final String CQL3_STRING = "3.0.1"; //$NON-NLS-1$
-
-    public static final String CQL2_STRING = "2.0.0"; //$NON-NLS-1$
+    public static final String CQL3_STRING = "3.11.1"; //$NON-NLS-1$
   }
 
   public static class BatchOptions {
@@ -87,7 +89,7 @@ public class CassandraUtils {
   }
 
   /**
-   * Return the Cassandra CQL column/key type for the given Kettle column. We use this type for CQL create column family
+   * Return the Cassandra CQL column/key type for the given Kettle column. We use this type for CQL create table
    * statements since, for some reason, the internal type isn't recognized for the key. Internal types *are* recognized
    * for column definitions. The CQL reference guide states that fully qualified (or relative to
    * org.apache.cassandra.db.marshal) class names can be used instead of CQL types - however, using these when defining
@@ -198,14 +200,14 @@ public class CassandraUtils {
   }
 
   /**
-   * Extract the column family name (table name) from a CQL SELECT query. Assumes that any kettle variables have been
+   * Extract the table name from a CQL SELECT query. Assumes that any kettle variables have been
    * already substituted in the query
    * 
    * @param subQ
    *          the query with vars substituted
-   * @return the column family name or null if the query is malformed
+   * @return the table name or null if the query is malformed
    */
-  public static String getColumnFamilyNameFromCQLSelectQuery( String subQ ) {
+  public static String getTableNameFromCQLSelectQuery( String subQ ) {
 
     String result = null;
 
@@ -230,7 +232,7 @@ public class CassandraUtils {
       subQ = subQ.substring( 0, subQ.toLowerCase().lastIndexOf( "where" ) ); //$NON-NLS-1$
     }
 
-    // determine the source column family
+    // determine the source table
     // look for a FROM that is surrounded by space
     int fromIndex = subQ.toLowerCase().indexOf( "from" ); //$NON-NLS-1$
     String tempS = subQ.toLowerCase();
@@ -256,7 +258,7 @@ public class CassandraUtils {
     }
 
     if ( result.length() == 0 ) {
-      return null; // no column family specified
+      return null; // no table specified
     }
 
     return result;
@@ -369,9 +371,9 @@ public class CassandraUtils {
    * @param inputMeta
    *          the row format
    * @param familyMeta
-   *          meta data on the columns in the cassandra column family (table)
+   *          meta data on the columns in the cassandra table
    * @param insertFieldsNotInMetaData
-   *          true if any Kettle fields that are not in the Cassandra column family (table) meta data are to be
+   *          true if any Kettle fields that are not in the Cassandra table meta data are to be
    *          inserted. This is irrelevant if the user has opted to have the step initially update the Cassandra meta
    *          data for incoming fields that are not known about.
    * @param log
@@ -381,7 +383,7 @@ public class CassandraUtils {
    *           if a problem occurs
    */
   public static boolean addRowToNonCQLBatch( List<Object[]> batch, Object[] row, RowMetaInterface inputMeta,
-      ColumnFamilyMetaData familyMeta, boolean insertFieldsNotInMetaData, LogChannelInterface log ) throws Exception {
+      ITableMetaData familyMeta, boolean insertFieldsNotInMetaData, LogChannelInterface log ) throws Exception {
 
     if ( !preAddChecks( inputMeta, familyMeta.getKeyColumnNames(), row, log ) ) {
       return false;
@@ -409,16 +411,11 @@ public class CassandraUtils {
    * 
    * @param numRows
    *          the number of rows to be inserted in this batch
-   * @param consistency
-   *          the consistency (e.g. ONE, QUORUM etc.) to use, or null to use the default.
-   * @param cql3
-   *          true if this is a CQL 3 batch (CQL 3 does not use "WITH CONSISTENCY", and this is now set programatically
-   *          at the driver level)
    * @param unloggedBatch
    *          true if this is to be an unlogged batch (CQL 3 only)
    * @return a StringBuilder initialized for the batch.
    */
-  public static StringBuilder newCQLBatch( int numRows, String consistency, boolean cql3, boolean unloggedBatch ) {
+  public static StringBuilder newCQLBatch( int numRows, boolean unloggedBatch ) {
 
     // make a stab at a reasonable initial capacity
     StringBuilder batch = new StringBuilder( numRows * 80 );
@@ -426,10 +423,6 @@ public class CassandraUtils {
       batch.append( "BEGIN UNLOGGED BATCH" ); //$NON-NLS-1$
     } else {
       batch.append( "BEGIN BATCH" ); //$NON-NLS-1$
-    }
-
-    if ( !cql3 && !Utils.isEmpty( consistency ) ) {
-      batch.append( " USING CONSISTENCY " ).append( consistency ); //$NON-NLS-1$
     }
 
     batch.append( "\n" ); //$NON-NLS-1$
@@ -467,16 +460,16 @@ public class CassandraUtils {
    * 
    * @param batch
    *          StringBuilder for collecting the batch CQL
-   * @param colFamilyName
-   *          the name of the column family (table) to insert into
+   * @param tableName
+   *          the name of the table to insert into
    * @param inputMeta
    *          Kettle input row meta data inserting
    * @param row
    *          the Kettle row
    * @param familyMeta
-   *          meta data on the columns in the cassandra column family (table)
+   *          meta data on the columns in the cassandra table
    * @param insertFieldsNotInMetaData
-   *          true if any Kettle fields that are not in the Cassandra column family (table) meta data are to be
+   *          true if any Kettle fields that are not in the Cassandra table meta data are to be
    *          inserted. This is irrelevant if the user has opted to have the step initially update the Cassandra meta
    *          data for incoming fields that are not known about.
    * @param cqlMajVersion
@@ -489,8 +482,8 @@ public class CassandraUtils {
    * @throws Exception
    *           if a problem occurs
    */
-  public static boolean addRowToCQLBatch( StringBuilder batch, String colFamilyName, RowMetaInterface inputMeta,
-      Object[] row, ColumnFamilyMetaData familyMeta, boolean insertFieldsNotInMetaData, int cqlMajVersion,
+  public static boolean addRowToCQLBatch( StringBuilder batch, String tableName, RowMetaInterface inputMeta,
+      Object[] row, ITableMetaData familyMeta, boolean insertFieldsNotInMetaData, int cqlMajVersion,
       Map<String, String> additionalOpts, LogChannelInterface log ) throws Exception {
 
     if ( !preAddChecks( inputMeta, familyMeta.getKeyColumnNames(), row, log ) ) {
@@ -499,22 +492,12 @@ public class CassandraUtils {
 
     // ValueMetaInterface keyMeta = inputMeta.getValueMeta(keyIndex);
     final String quoteChar = identifierQuoteChar( cqlMajVersion );
-    List<String> keyColNames = familyMeta.getKeyColumnNames();
 
     Map<String, String> columnValues = new HashMap<String, String>();
     for ( int i = 0; i < inputMeta.size(); i++ ) {
       ValueMetaInterface colMeta = inputMeta.getValueMeta( i );
       String colName = colMeta.getName();
-      if ( cqlMajVersion < 3 && colName.equals( "KEY" ) ) { //$NON-NLS-1$
-        // key is a reserved work in CQL2 and is stored in lower case
-        // in Cassandra's table metadata, but returned as upper case
-        // in a thrift Column object. If our incoming Kettle field is
-        // KEY then we need to lower case it or we won't find it in
-        // our familyMeta
-        if ( keyColNames.get( 0 ).equalsIgnoreCase( "key" ) ) {
-          colName = "key";
-        }
-      }
+
       if ( !familyMeta.columnExistsInSchema( colName ) && !insertFieldsNotInMetaData ) {
         continue;
       }
@@ -527,24 +510,9 @@ public class CassandraUtils {
     }
 
     Collection<String> columnOrder;
-    if ( cqlMajVersion >= 3 ) {
-      // Quote column family name if version >=3 to enforce case sensitivity
-      // http://www.datastax.com/documentation/cql/3.0/cql/cql_reference/ucase-lcase_r.html
-      colFamilyName = cql3MixedCaseQuote( colFamilyName );
-      // Column order does not matter
-      columnOrder = columnValues.keySet();
-    } else {
-      // Key column has to be listed first for CQL 2
-      columnOrder = new LinkedHashSet<String>();
-      for ( String keyColName : keyColNames ) {
-        // Add keys in given order
-        if ( columnValues.containsKey( keyColName ) ) {
-          columnOrder.add( keyColName );
-        }
-      }
-      // Add remaining values
-      columnOrder.addAll( columnValues.keySet() );
-    }
+    tableName = cql3MixedCaseQuote( tableName );
+    // Column order does not matter
+    columnOrder = columnValues.keySet();
 
     List<String> columns = new ArrayList<String>( columnOrder.size() );
     List<String> values = new ArrayList<String>( columnOrder.size() );
@@ -554,7 +522,7 @@ public class CassandraUtils {
     }
 
     Joiner joiner = Joiner.on( ',' ).skipNulls();
-    batch.append( "INSERT INTO " ).append( colFamilyName ).append( " (" );
+    batch.append( "INSERT INTO " ).append( tableName ).append( " (" );
     joiner.appendTo( batch, columns );
     batch.append( ") VALUES (" ); //$NON-NLS-1$
     joiner.appendTo( batch, values );
@@ -706,13 +674,13 @@ public class CassandraUtils {
 
         // Use a formatted date string here instead of inserting the
         // long number of seconds since epoch. The reason for this is
-        // that if we are inserting into a dynamic CQL2 column family
+        // that if we are inserting into a dynamic CQL2 table
         // with default column validator that is text then we want the
         // actual date string stored rather than a long value
-        DateType d = DateType.instance;
+        TimestampType t = TimestampType.instance;
         Date toConvert = vm.getDate( value );
-        ByteBuffer decomposed = d.decompose( toConvert );
-        String cassandraFormattedDateString = d.getString( decomposed );
+        ByteBuffer decomposed = t.decompose( toConvert );
+        String cassandraFormattedDateString = t.getString( decomposed );
         return "'" + escapeSingleQuotes( cassandraFormattedDateString ) + "'"; //$NON-NLS-1$ //$NON-NLS-2$
       case ValueMetaInterface.TYPE_BINARY:
       case ValueMetaInterface.TYPE_SERIALIZABLE:
@@ -755,13 +723,13 @@ public class CassandraUtils {
    * @param keyIndex
    *          the index(es) of the key field in the incoming row format
    * @param cassandraMeta
-   *          column family meta data
+   *          table meta data
    * @param insertFieldsNotInMetaData
-   *          true if incoming fields not explicitly defined in the column family schema are to be inserted
+   *          true if incoming fields not explicitly defined in the table schema are to be inserted
    * @return
    */
   public static int numFieldsToBeWritten( RowMetaInterface inputMeta, List<Integer> keyIndex,
-      ColumnFamilyMetaData cassandraMeta, boolean insertFieldsNotInMetaData ) {
+      ITableMetaData cassandraMeta, boolean insertFieldsNotInMetaData ) {
 
     // check how many fields will actually be inserted - we must insert at least
     // one field
@@ -803,7 +771,7 @@ public class CassandraUtils {
    *           if a problem occurs during connection
    */
   public static Connection getCassandraConnection( String host, int port, String username, String password,
-      ConnectionFactory.Driver driver, Map<String, String> opts ) throws Exception {
+                                                  ConnectionFactory.Driver driver, Map<String, String> opts ) throws Exception {
     Connection conn = ConnectionFactory.getFactory().getConnection( driver );
     conn.setHosts( host );
     conn.setDefaultPort( port );
@@ -820,6 +788,60 @@ public class CassandraUtils {
       columns[i] = inputMeta.getValueMeta( i ).getName();
     }
     return columns;
+  }
+
+  /**
+   * Translates string literal to partitioner class instance
+   *
+   * @param partitionerClass the string name of the partitioner class
+   * @return the partitioner class instance
+   */
+  public static IPartitioner getPartitionerClassInstance( String partitionerClass ) {
+    switch ( partitionerClass ) {
+      case "org.apache.cassandra.dht.Murmur3Partitioner":
+        return Murmur3Partitioner.instance;
+      case "org.apache.cassandra.dht.ByteOrderedPartitioner":
+        return ByteOrderedPartitioner.instance;
+      case "org.apache.cassandra.dht.RandomPartitioner":
+        return RandomPartitioner.instance;
+      case "org.apache.cassandra.dht.OrderPreservingPartitioner":
+        return OrderPreservingPartitioner.instance;
+      default:
+        return null;
+    }
+  }
+
+  public static String getPartitionKey( String primaryKey ) {
+    String partitionKey = null;
+
+    if ( primaryKey != null && !primaryKey.isEmpty() ) {
+      if ( !primaryKey.contains( "(" ) && !primaryKey.contains( ")" ) ) {
+        if ( primaryKey.contains( "," ) ) {
+          partitionKey = primaryKey.substring( 0, primaryKey.indexOf( ',' ) );
+        } else {
+          partitionKey = primaryKey;
+        }
+      } else {
+        partitionKey = getPartitionKeyIter( primaryKey, "", 0 );
+      }
+    }
+
+    return partitionKey;
+  }
+
+  private static String getPartitionKeyIter( String primaryKey, String partitionKey, int parenLevel ) {
+    if ( parenLevel == 0 && !partitionKey.isEmpty() ) {
+      return partitionKey;
+    } else if ( primaryKey.charAt( 0 ) == '(' ) {
+      return getPartitionKeyIter( primaryKey.substring( 1, primaryKey.length() ),
+          partitionKey + primaryKey.charAt( 0 ), ++parenLevel );
+    } else if ( primaryKey.charAt( 0 ) == ')' ) {
+      return getPartitionKeyIter( primaryKey.substring( 1, primaryKey.length() ),
+          partitionKey + primaryKey.charAt( 0 ), --parenLevel );
+    } else {
+      return getPartitionKeyIter( primaryKey.substring( 1, primaryKey.length() ),
+          partitionKey + primaryKey.charAt( 0 ), parenLevel );
+    }
   }
 
 }

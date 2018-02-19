@@ -2,7 +2,7 @@
  *
  * Pentaho Data Integration
  *
- * Copyright (C) 2002-2017 by Hitachi Vantara : http://www.pentaho.com
+ * Copyright (C) 2002-2018 by Hitachi Vantara : http://www.pentaho.com
  *
  *******************************************************************************
  *
@@ -22,6 +22,8 @@
 
 package org.pentaho.di.trans.steps.cassandrasstableoutput.writer;
 
+import org.pentaho.cassandra.util.CassandraUtils;
+
 import java.util.Map;
 
 public abstract class AbstractSSTableWriter {
@@ -29,8 +31,9 @@ public abstract class AbstractSSTableWriter {
   private int bufferSize = DEFAULT_BUFFER_SIZE_MB;
   private String directory = System.getProperty( "java.io.tmpdir" );
   private String keyspace;
-  private String columnFamily;
-  private String keyField;
+  private String table;
+  private String primaryKey;
+  private String partitionerClass;
 
   public abstract void init() throws Exception;
 
@@ -66,19 +69,19 @@ public abstract class AbstractSSTableWriter {
     this.keyspace = keyspace;
   }
 
-  protected String getColumnFamily() {
-    return columnFamily;
+  protected String getTable() {
+    return table;
   }
 
   /**
-   * Set the column family (table) to load to. Note: it is assumed that this column family exists in the keyspace
+   * Set the table to load to. Note: it is assumed that this table exists in the keyspace
    * apriori.
    *
-   * @param columnFamily
-   *          the column family to load to.
+   * @param table
+   *          the table to load to.
    */
-  public void setColumnFamily( String columnFamily ) {
-    this.columnFamily = columnFamily;
+  public void setTable( String table ) {
+    this.table = table;
   }
 
   protected int getBufferSize() {
@@ -95,11 +98,23 @@ public abstract class AbstractSSTableWriter {
     this.bufferSize = bufferSize;
   }
 
-  protected String getKeyField() {
-    return keyField;
+  protected String getPrimaryKey() {
+    return primaryKey;
   }
 
-  public void setKeyField( String keyField ) {
-    this.keyField = keyField;
+  public void setPrimaryKey( String primaryKey ) {
+    this.primaryKey = primaryKey;
+  }
+
+  protected String getPartitionerClass( ) {
+    return partitionerClass;
+  }
+
+  public void setPartitionerClass( String partitionerClass ) {
+    this.partitionerClass = partitionerClass;
+  }
+
+  protected String getPartitionKey( ) {
+    return CassandraUtils.getPartitionKey( primaryKey );
   }
 }

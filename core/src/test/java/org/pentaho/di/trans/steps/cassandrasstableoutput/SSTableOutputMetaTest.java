@@ -1,5 +1,5 @@
 /*!
- * Copyright 2017 Hitachi Vantara.  All rights reserved.
+ * Copyright 2018 Hitachi Vantara.  All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ package org.pentaho.di.trans.steps.cassandrasstableoutput;
 
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 
 public class SSTableOutputMetaTest {
 
@@ -53,12 +53,12 @@ public class SSTableOutputMetaTest {
   }
 
   @Test
-  public void testGetXMLColumnFamilyName() throws Exception {
+  public void testGetXMLTableName() throws Exception {
     SSTableOutputMeta ssTableOutputMeta = new SSTableOutputMeta();
     ssTableOutputMeta.setDefault();
-    ssTableOutputMeta.setColumnFamilyName( "someColumnFamilyName" );
-    assertTrue( "getXml() does not cover setColumnFamilyName() ",
-      ssTableOutputMeta.getXML().contains( "<column_family>someColumnFamilyName</column_family>" ) );
+    ssTableOutputMeta.setTableName( "someTableName" );
+    assertTrue( "getXml() does not cover setTableName() ",
+      ssTableOutputMeta.getXML().contains( "<table>someTableName</table>" ) );
   }
 
   @Test
@@ -105,12 +105,14 @@ public class SSTableOutputMetaTest {
     ssTableOutputMeta.setDefault();
     String xml = ssTableOutputMeta.getXML();
     assertTrue( "getXml() does not cover defaults ",
-      xml.contains( "<use_cql3>N</use_cql3>" ) );
+      xml.contains( "<use_cql3>Y</use_cql3>" ) );
     assertTrue( "getXml() does not cover defaults ",
       xml.contains( "<buffer_size_mb>16</buffer_size_mb>" ) );
-    String defDirectory =
-      ( "<output_directory>" + System.getProperty( "java.io.tmpdir" ) + "</output_directory>" ).replace( ":", "&#x3a;" )
-        .replace( "\\", "&#x5c;" );
+    String defDirectory = "<output_directory>" + System.getProperty( "java.io.tmpdir" ) + "</output_directory>";
+    //  ( "<output_directory>" + System.getProperty( "java.io.tmpdir" ) + "</output_directory>" ).replace( ":", "&#x3a;" )
+    //    .replace( "\\", "&#x5c;" );
+    //assertTrue( defDirectory,
+    //    xml.contains( defDirectory ) );
     assertTrue( "getXml() does not cover defaults ",
       xml.contains( defDirectory ) );
   }

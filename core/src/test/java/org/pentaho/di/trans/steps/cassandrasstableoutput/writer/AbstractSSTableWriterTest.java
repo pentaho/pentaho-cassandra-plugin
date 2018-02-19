@@ -1,5 +1,5 @@
 /*!
- * Copyright 2017 Hitachi Vantara.  All rights reserved.
+ * Copyright 2018 Hitachi Vantara.  All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,11 +42,11 @@ public class AbstractSSTableWriterTest extends AbstractSSTableWriter {
   }
 
   @Test
-  public void testGetColumnFamily() throws Exception {
+  public void testGetTable() throws Exception {
     AbstractSSTableWriter writer = new AbstractSSTableWriterTest();
-    assertEquals( null, writer.getColumnFamily() );
-    writer.setColumnFamily( "some_col" );
-    assertEquals( "some_col", writer.getColumnFamily() );
+    assertEquals( null, writer.getTable() );
+    writer.setTable( "some_table" );
+    assertEquals( "some_table", writer.getTable() );
   }
 
   @Test
@@ -60,9 +60,9 @@ public class AbstractSSTableWriterTest extends AbstractSSTableWriter {
   @Test
   public void testGetKeyField() throws Exception {
     AbstractSSTableWriter writer = new AbstractSSTableWriterTest();
-    assertEquals( null, writer.getKeyField() );
-    writer.setKeyField( "some_keyField" );
-    assertEquals( "some_keyField", writer.getKeyField() );
+    assertEquals( null, writer.getPrimaryKey() );
+    writer.setPrimaryKey( "some_keyField" );
+    assertEquals( "some_keyField", writer.getPrimaryKey() );
   }
 
   @Override public void init() throws Exception {

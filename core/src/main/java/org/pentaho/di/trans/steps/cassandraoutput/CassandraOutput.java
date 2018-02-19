@@ -2,7 +2,7 @@
  *
  * Pentaho Big Data
  *
- * Copyright (C) 2002-2017 by Hitachi Vantara : http://www.pentaho.com
+ * Copyright (C) 2002-2018 by Hitachi Vantara : http://www.pentaho.com
  *
  *******************************************************************************
  *
@@ -27,14 +27,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.pentaho.cassandra.CassandraUtils;
+import org.pentaho.cassandra.util.CassandraUtils;
 import org.pentaho.cassandra.ConnectionFactory;
-import org.pentaho.cassandra.driverimpl.DriverCQLRowHandler;
+import org.pentaho.cassandra.driver.datastax.DriverCQLRowHandler;
 import org.pentaho.cassandra.spi.CQLRowHandler;
-import org.pentaho.cassandra.spi.ColumnFamilyMetaData;
+import org.pentaho.cassandra.spi.ITableMetaData;
 import org.pentaho.cassandra.spi.Connection;
 import org.pentaho.cassandra.spi.Keyspace;
-import org.pentaho.cassandra.spi.NonCQLRowHandler;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.util.Utils;
 import org.pentaho.di.i18n.BaseMessages;
@@ -47,8 +46,8 @@ import org.pentaho.di.trans.step.StepMeta;
 import org.pentaho.di.trans.step.StepMetaInterface;
 
 /**
- * Class providing an output step for writing data to a cassandra table (column family). Can create the specified column
- * family (if it doesn't already exist) and can update column family meta data.
+ * Class providing an output step for writing data to a cassandra table. Can create the specified
+ * table (if it doesn't already exist) and can update table meta data.
  * 
  * @author Mark Hall (mhall{[at]}pentaho{[dot]}com)
  */
@@ -68,13 +67,9 @@ public class CassandraOutput extends BaseStep implements StepInterface {
   protected Keyspace m_keyspace;
 
   protected CQLRowHandler m_cqlHandler = null;
-  protected NonCQLRowHandler m_nonCqlHandler = null;
 
   /** Column meta data and schema information */
-  protected ColumnFamilyMetaData m_cassandraMeta;
-
-  /** Holds batch mutate for Thrift-based IO */
-  protected List<Object[]> m_nonCQLBatch;
+  protected ITableMetaData m_cassandraMeta;
 
   /** Holds batch insert CQL statement */
   protected StringBuilder m_batchInsertCQL;
@@ -91,8 +86,8 @@ public class CassandraOutput extends BaseStep implements StepInterface {
   /** The consistency to use - null means to use the cassandra default */
   protected String m_consistency = null;
 
-  /** The name of the column family (table) to write to */
-  protected String m_columnFamilyName;
+  /** The name of the table to write to */
+  protected String m_tableName;
 
   /** The name of the keyspace */
   protected String m_keyspaceName;
@@ -104,9 +99,6 @@ public class CassandraOutput extends BaseStep implements StepInterface {
 
   /** Default batch split factor */
   protected int m_batchSplitFactor = 10;
-
-  /** Whether to use Thrift for IO or not */
-  protected boolean m_useThriftIO;
 
   /** Consistency level to use */
   protected String m_consistencyLevel;
@@ -143,10 +135,7 @@ public class CassandraOutput extends BaseStep implements StepInterface {
       passS = environmentSubstitute( passS );
     }
     m_keyspaceName = environmentSubstitute( m_meta.getCassandraKeyspace() );
-    m_columnFamilyName = environmentSubstitute( m_meta.getColumnFamilyName() );
-    if ( m_meta.getUseCQL3() ) {
-      m_columnFamilyName = CassandraUtils.cql3MixedCaseQuote( m_columnFamilyName );
-    }
+    m_tableName = CassandraUtils.cql3MixedCaseQuote( m_tableName );
     m_consistencyLevel = environmentSubstitute( m_meta.getConsistency() );
 
     String keyField = environmentSubstitute( m_meta.getKeyField() );
@@ -179,9 +168,9 @@ public class CassandraOutput extends BaseStep implements StepInterface {
             "CassandraOutput.Error.MissingConnectionDetails" ) ); //$NON-NLS-1$
       }
 
-      if ( Utils.isEmpty( m_columnFamilyName ) ) {
+      if ( Utils.isEmpty( m_tableName ) ) {
         throw new KettleException( BaseMessages.getString( CassandraOutputMeta.PKG,
-            "CassandraOutput.Error.NoColumnFamilySpecified" ) ); //$NON-NLS-1$
+            "CassandraOutput.Error.NoTableSpecified" ) ); //$NON-NLS-1$
       }
 
       if ( Utils.isEmpty( keyField ) ) {
@@ -191,10 +180,6 @@ public class CassandraOutput extends BaseStep implements StepInterface {
 
       // check that the specified key field is present in the incoming data
       String[] kparts = keyField.split( "," ); //$NON-NLS-1$
-      if ( !m_meta.getUseCQL3() && kparts.length > 1 ) {
-        // TODO messageify
-        throw new KettleException( "Only one partition key field is supported for CQL 2/Thrift IO" ); //$NON-NLS-1$
-      }
       m_keyIndexes = new ArrayList<Integer>();
       for ( String kpart : kparts ) {
         int index = getInputRowMeta().indexOfValue( kpart.trim() );
@@ -204,8 +189,6 @@ public class CassandraOutput extends BaseStep implements StepInterface {
         }
         m_keyIndexes.add( index );
       }
-
-      m_useThriftIO = m_meta.getUseThriftIO();
 
       logBasic( BaseMessages.getString( CassandraOutputMeta.PKG,
           "CassandraOutput.Message.ConnectingForSchemaOperations", schemaHostS, //$NON-NLS-1$
@@ -224,7 +207,7 @@ public class CassandraOutput extends BaseStep implements StepInterface {
           List<String> statements = CassandraUtils.splitCQLStatements( aprioriCQL );
 
           logBasic( BaseMessages.getString( CassandraOutputMeta.PKG, "CassandraOutput.Message.ExecutingAprioriCQL", //$NON-NLS-1$
-              m_columnFamilyName, aprioriCQL ) );
+              m_tableName, aprioriCQL ) );
 
           String compression = m_meta.getUseCompression() ? "gzip" : ""; //$NON-NLS-1$ //$NON-NLS-2$
 
@@ -242,11 +225,11 @@ public class CassandraOutput extends BaseStep implements StepInterface {
           }
         }
 
-        if ( !keyspace.columnFamilyExists( m_columnFamilyName ) ) {
-          if ( m_meta.getCreateColumnFamily() ) {
-            // create the column family (table)
+        if ( !keyspace.tableExists( m_tableName ) ) {
+          if ( m_meta.getCreateTable() ) {
+            // create the table
             boolean result =
-                keyspace.createColumnFamily( m_columnFamilyName, getInputRowMeta(), m_keyIndexes,
+                keyspace.createTable( m_tableName, getInputRowMeta(), m_keyIndexes,
                     environmentSubstitute( m_meta.getCreateTableWithClause() ), log );
 
             if ( !result ) {
@@ -255,31 +238,21 @@ public class CassandraOutput extends BaseStep implements StepInterface {
             }
           } else {
             throw new KettleException( BaseMessages.getString( CassandraOutputMeta.PKG,
-                "CassandraOutput.Error.ColumnFamilyDoesNotExist", //$NON-NLS-1$
-                m_columnFamilyName, m_keyspaceName ) );
+                "CassandraOutput.Error.TableDoesNotExist", //$NON-NLS-1$
+                m_tableName, m_keyspaceName ) );
           }
         }
 
         if ( m_meta.getUpdateCassandraMeta() ) {
           // Update cassandra meta data for unknown incoming fields?
-          keyspace.updateColumnFamily( m_columnFamilyName, getInputRowMeta(), m_keyIndexes, log );
+          keyspace.updateTableCQL3( m_tableName, getInputRowMeta(), m_keyIndexes, log );
         }
 
-        // get the column family meta data
+        // get the table meta data
         logBasic( BaseMessages.getString( CassandraOutputMeta.PKG,
-            "CassandraOutput.Message.GettingMetaData", m_columnFamilyName ) ); //$NON-NLS-1$
+            "CassandraOutput.Message.GettingMetaData", m_tableName ) ); //$NON-NLS-1$
 
-        m_cassandraMeta = keyspace.getColumnFamilyMetaData( m_columnFamilyName );
-
-        // check that we have at least one incoming field apart from the key
-        // (CQL 2 only)
-        if ( !m_meta.getUseCQL3() ) {
-          if ( CassandraUtils.numFieldsToBeWritten( getInputRowMeta(), m_keyIndexes, m_cassandraMeta, m_meta
-              .getInsertFieldsNotInMeta() ) < 2 ) {
-            throw new KettleException( BaseMessages.getString( CassandraOutputMeta.PKG,
-                "CassandraOutput.Error.NeedAtLeastOneFieldAppartFromKey" ) ); //$NON-NLS-1$
-          }
-        }
+        m_cassandraMeta = keyspace.getTableMetaData( m_tableName );
 
         // output (downstream) is the same as input
         m_data.setOutputRowMeta( getInputRowMeta() );
@@ -297,9 +270,9 @@ public class CassandraOutput extends BaseStep implements StepInterface {
               "CassandraOutput.Error.NoBatchSizeSet" ) ); //$NON-NLS-1$
         }
 
-        // Truncate (remove all data from) column family first?
-        if ( m_meta.getTruncateColumnFamily() ) {
-          keyspace.truncateColumnFamily( m_columnFamilyName, log );
+        // Truncate (remove all data from) table first?
+        if ( m_meta.getTruncateTable() ) {
+          keyspace.truncateTable( m_tableName, log );
         }
       } finally {
         if ( connection != null ) {
@@ -310,8 +283,7 @@ public class CassandraOutput extends BaseStep implements StepInterface {
 
       m_consistency = environmentSubstitute( m_meta.getConsistency() );
       m_batchInsertCQL =
-          CassandraUtils.newCQLBatch( m_batchSize, m_consistency, m_meta.getUseCQL3(),
-              ( m_meta.getUseUnloggedBatch() && m_meta.getUseCQL3() ) );
+          CassandraUtils.newCQLBatch( m_batchSize, m_meta.getUseUnloggedBatch() );
 
       m_batch = new ArrayList<Object[]>();
 
@@ -337,13 +309,11 @@ public class CassandraOutput extends BaseStep implements StepInterface {
       }
       m_batchInsertCQL = null;
       m_batch = null;
-      m_nonCQLBatch = null;
 
       closeConnection( m_connection );
       m_connection = null;
       m_keyspace = null;
       m_cqlHandler = null;
-      m_nonCqlHandler = null;
 
       setOutputDone();
       return false;
@@ -397,36 +367,21 @@ public class CassandraOutput extends BaseStep implements StepInterface {
     // construct CQL/thrift batch and commit
     int size = batch.size();
     try {
-      if ( m_useThriftIO ) {
-        m_nonCQLBatch = CassandraUtils.newNonCQLBatch( size );
-      } else {
-        // construct CQL
-        m_batchInsertCQL =
-            CassandraUtils.newCQLBatch( m_batchSize, m_consistency, m_meta.getUseCQL3(),
-                ( m_meta.getUseUnloggedBatch() && m_meta.getUseCQL3() ) );
-      }
+      // construct CQL
+      m_batchInsertCQL =
+          CassandraUtils.newCQLBatch( m_batchSize, m_meta.getUseUnloggedBatch() );
       int rowsAdded = 0;
       if ( !m_meta.isUseDriver() ) {
         for ( Object[] r : batch ) {
           // add the row to the batch
-          if ( m_useThriftIO ) {
-            if ( CassandraUtils.addRowToNonCQLBatch( m_nonCQLBatch, r, getInputRowMeta(), m_cassandraMeta, m_meta
-                .getInsertFieldsNotInMeta(), log ) ) {
-              rowsAdded++;
-            }
-          } else {
-            if ( CassandraUtils.addRowToCQLBatch( m_batchInsertCQL, m_columnFamilyName, getInputRowMeta(), r,
-                m_cassandraMeta, m_meta.getInsertFieldsNotInMeta(), ( m_meta.getUseCQL3() ? 3 : 2 ), m_opts, log ) ) {
-              rowsAdded++;
-            }
+          if ( CassandraUtils.addRowToCQLBatch( m_batchInsertCQL, m_tableName, getInputRowMeta(), r,
+              m_cassandraMeta, m_meta.getInsertFieldsNotInMeta(), 3, m_opts, log ) ) {
+            rowsAdded++;
           }
         }
         if ( rowsAdded == 0 ) {
           logDebug( BaseMessages.getString( CassandraOutputMeta.PKG, "CassandraOutput.Message.SkippingEmptyBatch" ) ); //$NON-NLS-1$
           return;
-        }
-        if ( !m_useThriftIO ) {
-          CassandraUtils.completeCQLBatch( m_batchInsertCQL );
         }
       } else {
         DriverCQLRowHandler handler = (DriverCQLRowHandler) m_cqlHandler;
@@ -440,17 +395,12 @@ public class CassandraOutput extends BaseStep implements StepInterface {
       }
 
       logDetailed( BaseMessages.getString( CassandraOutputMeta.PKG,
-          "CassandraOutput.Message.CommittingBatch", m_columnFamilyName, "" //$NON-NLS-1$ //$NON-NLS-2$
+          "CassandraOutput.Message.CommittingBatch", m_tableName, "" //$NON-NLS-1$ //$NON-NLS-2$
               + rowsAdded ) );
 
       if ( !m_meta.isUseDriver() ) {
-        if ( m_useThriftIO ) {
-          m_nonCqlHandler.commitNonCQLBatch( this, m_nonCQLBatch, getInputRowMeta(), m_keyIndexes.get( 0 ),
-              m_columnFamilyName, m_consistency, log );
-        } else {
-          String compress = m_meta.getUseCompression() ? "GZIP" : ""; //$NON-NLS-1$ //$NON-NLS-2$
-          m_cqlHandler.commitCQLBatch( this, m_batchInsertCQL, compress, m_consistencyLevel, log );
-        }
+        String compress = m_meta.getUseCompression() ? "GZIP" : ""; //$NON-NLS-1$ //$NON-NLS-2$
+        m_cqlHandler.commitCQLBatch( this, m_batchInsertCQL, compress, m_consistencyLevel, log );
       }
     } catch ( Exception e ) {
       logError( e.getLocalizedMessage(), e );
@@ -531,10 +481,7 @@ public class CassandraOutput extends BaseStep implements StepInterface {
     m_opts.put( CassandraUtils.BatchOptions.BATCH_TIMEOUT, "" //$NON-NLS-1$
         + m_cqlBatchInsertTimeout );
 
-    // Set CQL version 3 if specified
-    if ( m_meta.getUseCQL3() ) {
-      m_opts.put( CassandraUtils.CQLOptions.CQLVERSION_OPTION, CassandraUtils.CQLOptions.CQL3_STRING );
-    }
+    m_opts.put( CassandraUtils.CQLOptions.CQLVERSION_OPTION, CassandraUtils.CQLOptions.CQL3_STRING );
 
     // Set TTL if specified
     String ttl = m_meta.getTTL();
@@ -571,18 +518,13 @@ public class CassandraOutput extends BaseStep implements StepInterface {
 
       connection =
           CassandraUtils.getCassandraConnection( actualHostToUse, Integer.parseInt( portS ), userS, passS,
-              m_meta.isUseDriver()
-                ? ConnectionFactory.Driver.BINARY_CQL3_PROTOCOL
-                : ConnectionFactory.Driver.LEGACY_THRIFT, m_opts );
+              ConnectionFactory.Driver.BINARY_CQL3_PROTOCOL, m_opts );
 
       // set the global connection only if this connection is not being used
       // just for schema changes
       if ( !forSchemaChanges ) {
         m_connection = connection;
         m_keyspace = m_connection.getKeyspace( m_keyspaceName );
-        if ( m_useThriftIO ) {
-          m_nonCqlHandler = m_keyspace.getNonCQLRowHandler();
-        }
         m_cqlHandler = m_keyspace.getCQLRowHandler();
 
       }

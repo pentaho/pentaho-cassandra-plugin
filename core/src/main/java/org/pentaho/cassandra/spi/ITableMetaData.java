@@ -2,7 +2,7 @@
 *
 * Pentaho Big Data
 *
-* Copyright (C) 2002-2017 by Hitachi Vantara : http://www.pentaho.com
+* Copyright (C) 2002-2018 by Hitachi Vantara : http://www.pentaho.com
 *
 *******************************************************************************
 *
@@ -24,43 +24,43 @@ package org.pentaho.cassandra.spi;
 
 import java.util.List;
 
-import org.pentaho.cassandra.cql.Selector;
+import org.pentaho.cassandra.util.Selector;
 import org.pentaho.di.core.row.ValueMetaInterface;
 
 /**
- * Interface to something that can fetch and represent meta data on a Cassandra
- * column family (table)
+ * Interface to something that can fetch and represent meta data
+ * on a Cassandra table
  * 
  * @author Mark Hall (mhall{[at]}pentaho{[dot]}com)
  */
-public interface ColumnFamilyMetaData {
+public interface ITableMetaData {
 
   /**
-   * Set the keyspace for this column family
+   * Set the keyspace for this table
    * 
    * @param keyspace the keyspace to use
    */
   void setKeyspace( Keyspace keyspace );
 
   /**
-   * Set the name of this column family
+   * Set the name of this table
    * 
-   * @param colFamName the name of this column family
+   * @param tableName the name of this table
    */
-  void setColumnFamilyName( String colFamName );
+  void setTableName( String tableName );
 
   /**
-   * Get the name of this column family
+   * Get the name of this table
    * 
-   * @return the name of this column family
+   * @return the name of this table
    */
-  String getColumnFamilyName();
+  String getTableName();
 
   /**
-   * Get a textual description of this column family with as much information as
+   * Get a textual description of this table with as much information as
    * the underlying driver provides
    * 
-   * @return a textual description of this column family
+   * @return a textual description of this table
    * @throws Exception if a problem occurs
    */
   String describe() throws Exception;
@@ -75,16 +75,16 @@ public interface ColumnFamilyMetaData {
   boolean columnExistsInSchema( String colName );
 
   /**
-   * Return the appropriate Kettle type for the column family's key. This should
+   * Return the appropriate Kettle type for the table's key. This should
    * handle a composite key value too - i.e. only Kettle type String can be used
    * as a catch-all for all composite possibilities
    * 
-   * @return the appropriate Kettle type for the column family's key
+   * @return the appropriate Kettle type for the table's key
    */
   ValueMetaInterface getValueMetaForKey();
 
   /**
-   * Get the names of the columns that make up the key in this column family. If
+   * Get the names of the columns that make up the key in this table. If
    * there is a single key column and it does not have an explicit alias set
    * then this will use the string "KEY".
    * 
@@ -94,7 +94,7 @@ public interface ColumnFamilyMetaData {
 
   /**
    * Return the appropriate Kettle type for the named column. If the column is
-   * not explicitly named in the column family schema then the Kettle type
+   * not explicitly named in the table schema then the Kettle type
    * equivalent to the default validation class should be returned. Note that
    * columns that make up a composite key should be covered by this method too -
    * i.e. the appropriate Kettle type for each should be returned
@@ -105,27 +105,17 @@ public interface ColumnFamilyMetaData {
   ValueMetaInterface getValueMetaForColumn( String colName );
 
   /**
-   * Return the appropriate Kettle type for the default validator (column value
-   * validator)
-   * 
-   * @return the appropriate Kettle type for the default validator
-   * @deprecated not used
-   */
-  @Deprecated
-  ValueMetaInterface getValueMetaForDefaultValidator();
-
-  /**
    * Return a list of Kettle types for all the columns explicitly defined in
-   * this column family (not including the default validator).
+   * this table (not including the default validator).
    * 
    * @return a list of Kettle types for explicitly defined columns in this
-   *         column family
+   *         table
    */
   List<ValueMetaInterface> getValueMetasForSchema();
 
   /**
    * Return the appropriate Kettle type for the selector depending on id this is column or function. If the column is
-   * not explicitly named in the column family schema or the function is incorrect named then the Kettle type
+   * not explicitly named in the table schema or the function is incorrect named then the Kettle type
    * equivalent to the default validation class should be returned.
    * @param selector the selector that corresponds either to Cassandra column name or Cassandra function to get the Kettle type
    * @return the Kettle type for the selector

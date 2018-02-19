@@ -2,7 +2,7 @@
  *
  * Pentaho Data Integration
  *
- * Copyright (C) 2002-2017 by Hitachi Vantara : http://www.pentaho.com
+ * Copyright (C) 2002-2018 by Hitachi Vantara : http://www.pentaho.com
  *
  *******************************************************************************
  *
@@ -68,21 +68,6 @@ public class CassandraInputMetaInjectionTest extends BaseMetadataInjectionTest<C
     check( "CQL_QUERY", new StringGetter() {
       public String get() {
         return meta.getCQLSelectQuery();
-      }
-    } );
-    check( "OUTPUT_KEY_VALUE_TIMESTAMP_TUPLES", new BooleanGetter() {
-      public boolean get() {
-        return meta.getOutputKeyValueTimestampTuples();
-      }
-    } );
-    check( "USE_THRIFT_IO", new BooleanGetter() {
-      public boolean get() {
-        return meta.getUseThriftIO();
-      }
-    } );
-    check( "USE_CQL_VERSION_3", new BooleanGetter() {
-      public boolean get() {
-        return meta.getUseCQL3();
       }
     } );
     check( "EXECUTE_FOR_EACH_ROW", new BooleanGetter() {

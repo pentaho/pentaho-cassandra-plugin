@@ -2,7 +2,7 @@
 *
 * Pentaho Big Data
 *
-* Copyright (C) 2002-2017 by Hitachi Vantara : http://www.pentaho.com
+* Copyright (C) 2002-2018 by Hitachi Vantara : http://www.pentaho.com
 *
 *******************************************************************************
 *
@@ -90,21 +90,6 @@ public interface Connection {
    * @return the underlying concrete implementation
    */
   Object getUnderlyingConnection();
-
-  /**
-   * Returns true if the driver backed by this connection supports CQL
-   * 
-   * @return true if CQL is supported
-   */
-  boolean supportsCQL();
-
-  /**
-   * Returns true if the driver backed by this connection supports a non-CQL
-   * protocol
-   * 
-   * @return true if a non-CQL protocol is supported
-   */
-  boolean supportsNonCQL();
 
   /**
    * Returns a concrete implementation of the Keyspace for the driver in

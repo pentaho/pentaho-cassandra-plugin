@@ -20,39 +20,19 @@
  *
  ******************************************************************************/
 
-package org.pentaho.di.trans.steps.cassandrasstableoutput;
+package org.pentaho.cassandra.util;
 
-import org.pentaho.di.core.row.RowMetaInterface;
-import org.pentaho.di.trans.step.BaseStepData;
-import org.pentaho.di.trans.step.StepDataInterface;
+public enum Compression {
+  NONE( 0 ),
+  GZIP( 1 );
 
-/**
- * Data class for SSTablesOutput step.
- * 
- * @author Rob Turner (robert{[at]}robertturner{[dot]}com{[dot]}au)
- * @author Mark Hall (mhall{[at]}pentaho{[dot]}com)
- */
-public class SSTableOutputData extends BaseStepData implements StepDataInterface {
+  private int value;
 
-  /** The output data format */
-  protected RowMetaInterface outputRowMeta;
-
-  /**
-   * Get the output row format
-   * 
-   * @return the output row format
-   */
-  public RowMetaInterface getOutputRowMeta() {
-    return outputRowMeta;
+  Compression( int value ) {
+    this.value = value;
   }
 
-  /**
-   * Set the output row format
-   * 
-   * @param rmi
-   *          the output row format
-   */
-  public void setOutputRowMeta( RowMetaInterface rmi ) {
-    outputRowMeta = rmi;
+  public int getValue() {
+    return this.value;
   }
 }

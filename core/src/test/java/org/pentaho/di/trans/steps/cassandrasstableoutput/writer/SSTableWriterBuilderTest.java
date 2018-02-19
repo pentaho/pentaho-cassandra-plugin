@@ -1,5 +1,5 @@
 /*!
- * Copyright 2017 Hitachi Vantara.  All rights reserved.
+ * Copyright 2018 Hitachi Vantara.  All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,49 +28,19 @@ public class SSTableWriterBuilderTest extends SSTableWriterBuilder {
 
   public static final String KEY_FIELD = "some_key";
   public static final int BUFFER_SIZE = 10;
-  public static final String COLUMN_FAMILY = "some_column_family";
+  public static final String TABLE = "some_table";
   public static final String DIR = "some_dir";
   public static final String CONF_PATH = "some_conf_path";
   public static final String KEYSPACE = "some_keyspace";
   public static final String PARTIONER_CLASS_NAME = "PartionerClassName";
   public static final RowMetaInterface ROW_META = mock( RowMetaInterface.class );
 
-  class CQL2SSTableWriterStub extends CQL2SSTableWriter {
-    public CQL2SSTableWriterStub() {
-      assertEquals( "file:" + CONF_PATH, System.getProperty( "cassandra.config" ) );
-    }
-
-    @Override public void setKeyField( String keyField ) {
-      assertEquals( KEY_FIELD, keyField );
-    }
-
-    @Override public void setPartitionerClassName( String partitionerClassName ) {
-      assertEquals( PARTIONER_CLASS_NAME, partitionerClassName );
-    }
-
-    @Override public void setDirectory( String directory ) {
-      assertEquals( DIR, directory );
-    }
-
-    @Override public void setKeyspace( String keyspace ) {
-      assertEquals( KEYSPACE, keyspace );
-    }
-
-    @Override public void setColumnFamily( String columnFamily ) {
-      assertEquals( COLUMN_FAMILY, columnFamily );
-    }
-
-    @Override public void setBufferSize( int bufferSize ) {
-      assertEquals( BUFFER_SIZE, bufferSize );
-    }
-  }
-
   class CQL3SSTableWriterStub extends CQL3SSTableWriter {
     public CQL3SSTableWriterStub() {
       assertEquals( "file:" + CONF_PATH, System.getProperty( "cassandra.config" ) );
     }
 
-    @Override public void setKeyField( String keyField ) {
+    @Override public void setPrimaryKey( String keyField ) {
       assertEquals( KEY_FIELD, keyField );
     }
 
@@ -82,8 +52,8 @@ public class SSTableWriterBuilderTest extends SSTableWriterBuilder {
       assertEquals( KEYSPACE, keyspace );
     }
 
-    @Override public void setColumnFamily( String columnFamily ) {
-      assertEquals( COLUMN_FAMILY, columnFamily );
+    @Override public void setTable( String table ) {
+      assertEquals( TABLE, table );
     }
 
     @Override public void setBufferSize( int bufferSize ) {
@@ -99,10 +69,6 @@ public class SSTableWriterBuilderTest extends SSTableWriterBuilder {
     return PARTIONER_CLASS_NAME;
   }
 
-  @Override CQL2SSTableWriter getCql2SSTableWriter() {
-    return new CQL2SSTableWriterStub();
-  }
-
   @Override CQL3SSTableWriter getCql3SSTableWriter() {
     return new CQL3SSTableWriterStub();
   }
@@ -111,8 +77,8 @@ public class SSTableWriterBuilderTest extends SSTableWriterBuilder {
   public void testBuild2() throws Exception {
     SSTableWriterBuilder ssTableWriterBuilder = new SSTableWriterBuilderTest();
     ssTableWriterBuilder = ssTableWriterBuilder.withConfig( CONF_PATH ).withBufferSize( BUFFER_SIZE )
-      .withColumnFamily( COLUMN_FAMILY ).withCqlVersion( 2 ).withDirectory( DIR )
-      .withKeyField( KEY_FIELD ).withKeyspace( KEYSPACE ).withRowMeta( ROW_META );
+      .withTable( TABLE ).withCqlVersion( 2 ).withDirectory( DIR )
+      .withPrimaryKey( KEY_FIELD ).withKeyspace( KEYSPACE ).withRowMeta( ROW_META );
     ssTableWriterBuilder.build();
   }
 
@@ -121,8 +87,8 @@ public class SSTableWriterBuilderTest extends SSTableWriterBuilder {
     SSTableWriterBuilder ssTableWriterBuilder = new SSTableWriterBuilderTest();
 
     ssTableWriterBuilder = ssTableWriterBuilder.withConfig( CONF_PATH ).withBufferSize( BUFFER_SIZE )
-      .withColumnFamily( COLUMN_FAMILY ).withCqlVersion( 3 ).withDirectory( DIR )
-      .withKeyField( KEY_FIELD ).withKeyspace( KEYSPACE ).withRowMeta( ROW_META );
+      .withTable( TABLE ).withCqlVersion( 3 ).withDirectory( DIR )
+      .withPrimaryKey( KEY_FIELD ).withKeyspace( KEYSPACE ).withRowMeta( ROW_META );
     ssTableWriterBuilder.build();
   }
 }

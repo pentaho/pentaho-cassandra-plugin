@@ -2,7 +2,7 @@
  *
  * Pentaho Data Integration
  *
- * Copyright (C) 2002-2017 by Hitachi Vantara : http://www.pentaho.com
+ * Copyright (C) 2002-2018 by Hitachi Vantara : http://www.pentaho.com
  *
  *******************************************************************************
  *
@@ -50,9 +50,9 @@ public class SSTableOutputMetaInjectionTest extends BaseMetadataInjectionTest<SS
         return meta.getCassandraKeyspace();
       }
     } );
-    check( "COLUMN_FAMILY", new StringGetter() {
+    check( "TABLE", new StringGetter() {
       public String get() {
-        return meta.getColumnFamilyName();
+        return meta.getTableName();
       }
     } );
     check( "KEY_FIELD", new StringGetter() {

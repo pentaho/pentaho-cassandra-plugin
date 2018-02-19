@@ -2,7 +2,7 @@
  *
  * Pentaho Big Data
  *
- * Copyright (C) 2002-2017 by Hitachi Vantara : http://www.pentaho.com
+ * Copyright (C) 2002-2018 by Hitachi Vantara : http://www.pentaho.com
  *
  *******************************************************************************
  *
@@ -34,16 +34,6 @@ import org.pentaho.di.trans.step.StepInterface;
  * @author Mark Hall (mhall{[at]}pentaho{[dot]}com)
  */
 public interface CQLRowHandler {
-
-  /**
-   * Returns true if the underlying driver supports the provided CQL major version number (e.g. 2 or 3).
-   * 
-   * @param cqMajorlVersion
-   *          the major version number of the CQL version to check
-   * @return true if the underlying driver supports this major version of CQL
-   */
-  boolean supportsCQLVersion( int cqMajorlVersion );
-
   /**
    * Set any special options for (e.g. timeouts etc)
    * 
@@ -81,55 +71,26 @@ public interface CQLRowHandler {
       LogChannelInterface log ) throws Exception;
 
   /**
-   * Add a row to a CQL batch. Clients can implement this if the static utility method by the same name in
-   * CassandraUtils is not sufficient.
-   * 
-   * @param batch
-   *          the batch to add to
-   * @param colFamilyName
-   *          the name of the column family that the batch insert applies to
-   * @param inputMeta
-   *          the structure of the incoming Kettle rows inserting
-   * @param row
-   *          the Kettle row
-   * @param insertFieldsNotInMetaData
-   *          true if any Kettle fields that are not in the Cassandra column family (table) meta data are to be
-   *          inserted. This is irrelevant if the user has opted to have the step initially update the Cassandra meta
-   *          data for incoming fields that are not known about.
-   * @param log
-   *          for logging
-   * @return true if the row was added to the batch
-   * @throws Exception
-   *           if a problem occurs
-   * @deprecated
-   */
-  @Deprecated
-  boolean addRowToCQLBatch( StringBuilder batch, String colFamilyName, RowMetaInterface inputMeta, Object[] row,
-      boolean insertFieldsNotInMetaData, LogChannelInterface log ) throws Exception;
-
-  /**
    * Executes a new CQL query and initializes ready for iteration over the results. Closes/discards any previous query.
    * 
    * @param requestingStep
    *          the step that is requesting rows - clients can use this primarily to check whether the running
    *          transformation has been paused or stopped (via isPaused() and isStopped())
-   * @param colFamName
-   *          the name of the column family to execute the query against
+   * @param tableName
+   *          the name of the table to execute the query against
    * @param cqlQuery
    *          the CQL query to execute
    * @param compress
    *          the name of the compression to use (may be null for no compression)
    * @param consistencyLevel
    *          the consistency level to use
-   * @param outputTuples
-   *          true if the output rows should be key, value, timestamp tuples
    * @param log
    *          the log to use
    * @throws Exception
    *           if a problem occurs
    */
-  void newRowQuery( StepInterface requestingStep, String colFamName, String cqlQuery, String compress,
-      String consistencyLevel, boolean outputTuples, LogChannelInterface log ) throws Exception;
+  void newRowQuery( StepInterface requestingStep, String tableName, String cqlQuery, String compress,
+      String consistencyLevel, LogChannelInterface log ) throws Exception;
 
   /**
    * Get the next output row(s) from the query. This might be a tuple row (i.e. a tuple representing one column value

@@ -135,7 +135,7 @@ public class CassandraOutput extends BaseStep implements StepInterface {
       passS = environmentSubstitute( passS );
     }
     m_keyspaceName = environmentSubstitute( m_meta.getCassandraKeyspace() );
-    m_tableName = CassandraUtils.cql3MixedCaseQuote( m_tableName );
+    m_tableName = CassandraUtils.cql3MixedCaseQuote( environmentSubstitute( m_meta.getTableName() ) );
     m_consistencyLevel = environmentSubstitute( m_meta.getConsistency() );
 
     String keyField = environmentSubstitute( m_meta.getKeyField() );

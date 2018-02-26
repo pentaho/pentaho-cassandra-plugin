@@ -876,12 +876,19 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
     m_cqlBatchTimeout = XMLHandler.getTagValue( stepnode, "cql_batch_timeout" ); //$NON-NLS-1$
     m_cqlSubBatchSize = XMLHandler.getTagValue( stepnode, "cql_sub_batch_size" ); //$NON-NLS-1$
 
-    m_createTable = XMLHandler.getTagValue( stepnode, "create_table" ).equalsIgnoreCase( "Y" ); //$NON-NLS-1$ //$NON-NLS-2$
+    // check legacy column family tag first
+    String createColFamStr = XMLHandler.getTagValue( stepnode, "create_column_family" ); //$NON-NLS-1$ //$NON-NLS-2$
+    m_createTable = !Utils.isEmpty( createColFamStr ) ? createColFamStr.equalsIgnoreCase( "Y" )
+        : XMLHandler.getTagValue( stepnode, "create_table" ).equalsIgnoreCase( "Y" );
+
     m_useCompression = XMLHandler.getTagValue( stepnode, "use_compression" ) //$NON-NLS-1$
         .equalsIgnoreCase( "Y" ); //$NON-NLS-1$
     m_insertFieldsNotInMeta = XMLHandler.getTagValue( stepnode, "insert_fields_not_in_meta" ).equalsIgnoreCase( "Y" ); //$NON-NLS-1$ //$NON-NLS-2$
     m_updateCassandraMeta = XMLHandler.getTagValue( stepnode, "update_cassandra_meta" ).equalsIgnoreCase( "Y" ); //$NON-NLS-1$ //$NON-NLS-2$
-    m_truncateTable = XMLHandler.getTagValue( stepnode, "truncate_table" ).equalsIgnoreCase( "Y" ); //$NON-NLS-1$ //$NON-NLS-2$
+
+    String truncateColFamStr = XMLHandler.getTagValue( stepnode, "truncate_column_family" ); //$NON-NLS-1$ //$NON-NLS-2$
+    m_truncateTable = !Utils.isEmpty( truncateColFamStr ) ? truncateColFamStr.equalsIgnoreCase( "Y" )
+        : XMLHandler.getTagValue( stepnode, "truncate_table" ).equalsIgnoreCase( "Y" ); //$NON-NLS-1$ //$NON-NLS-2$
 
     m_aprioriCQL = XMLHandler.getTagValue( stepnode, "apriori_cql" ); //$NON-NLS-1$
 
@@ -925,17 +932,34 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
     }
     m_cassandraKeyspace = rep.getStepAttributeString( id_step, 0, "cassandra_keyspace" ); //$NON-NLS-1$
     m_table = rep.getStepAttributeString( id_step, 0, "table" ); //$NON-NLS-1$
+    // try legacy identifier if table does not work
+    if ( Utils.isEmpty( m_table ) ) {
+      m_table = rep.getStepAttributeString( id_step, 0, "column_family" ); //$NON-NLS-1$
+    }
     m_keyField = rep.getStepAttributeString( id_step, 0, "key_field" ); //$NON-NLS-1$
     m_consistency = rep.getStepAttributeString( id_step, 0, "consistency" ); //$NON-NLS-1$
     m_batchSize = rep.getStepAttributeString( id_step, 0, "batch_size" ); //$NON-NLS-1$
     m_cqlBatchTimeout = rep.getStepAttributeString( id_step, 0, "cql_batch_timeout" ); //$NON-NLS-1$
     m_cqlSubBatchSize = rep.getStepAttributeString( id_step, 0, "cql_sub_batch_size" ); //$NON-NLS-1$
 
-    m_createTable = rep.getStepAttributeBoolean( id_step, 0, "create_table" ); //$NON-NLS-1$
+    try {
+      m_createTable = rep.getStepAttributeBoolean( id_step, 0, "create_table" );
+    } catch ( Exception e ) {
+      // try legacy identifier
+      m_createTable = rep.getStepAttributeBoolean( id_step, 0, "create_column_family" ); //$NON-NLS-1$
+    }
+
     m_useCompression = rep.getStepAttributeBoolean( id_step, 0, "use_compression" ); //$NON-NLS-1$
     m_insertFieldsNotInMeta = rep.getStepAttributeBoolean( id_step, 0, "insert_fields_not_in_meta" ); //$NON-NLS-1$
     m_updateCassandraMeta = rep.getStepAttributeBoolean( id_step, 0, "update_cassandra_meta" ); //$NON-NLS-1$
-    m_truncateTable = rep.getStepAttributeBoolean( id_step, 0, "truncate_table" ); //$NON-NLS-1$
+
+    try {
+      m_truncateTable = rep.getStepAttributeBoolean( id_step, 0, "truncate_table" ); //$NON-NLS-1$
+    } catch ( Exception e ) {
+      // try legacy identifier
+      m_truncateTable = rep.getStepAttributeBoolean( id_step, 0, "truncate_column_family" ); //$NON-NLS-1$
+    }
+
     m_unloggedBatch = rep.getStepAttributeBoolean( id_step, 0, "unlogged_batch" ); //$NON-NLS-1$
 
     m_aprioriCQL = rep.getStepAttributeString( id_step, 0, "apriori_cql" ); //$NON-NLS-1$

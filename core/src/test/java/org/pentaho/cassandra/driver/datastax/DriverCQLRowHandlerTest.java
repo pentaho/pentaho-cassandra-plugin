@@ -21,6 +21,7 @@
 package org.pentaho.cassandra.driver.datastax;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 
@@ -32,11 +33,14 @@ import org.pentaho.di.core.row.RowMetaInterface;
 import org.pentaho.di.core.row.value.ValueMetaInteger;
 import org.pentaho.di.core.row.value.ValueMetaNumber;
 import org.pentaho.di.core.row.value.ValueMetaString;
+import org.pentaho.di.core.row.value.ValueMetaDate;
+import org.pentaho.di.core.row.value.ValueMetaTimestamp;
 import org.pentaho.di.trans.step.StepInterface;
 
 import com.datastax.driver.core.ColumnDefinitions;
 import com.datastax.driver.core.ConsistencyLevel;
 import com.datastax.driver.core.DataType;
+import com.datastax.driver.core.LocalDate;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
@@ -213,6 +217,17 @@ public class DriverCQLRowHandlerTest {
             && stmt.getConsistencyLevel().equals( ConsistencyLevel.TWO );
       }
     } ) );
+  }
+
+  @Test
+  public void testQueryRowsTimestamp() {
+    Row row = mock( Row.class );
+    when( row.getLong( 0 ) ).thenReturn( 1L );
+    when( row.getTimestamp( 1 ) ).thenReturn( new Date( 1520538054000L ) );
+    when( row.getDate( 2 ) ).thenReturn( LocalDate.fromYearMonthDay( 2018, 03, 12 ) );
+    assertEquals( 1L, DriverCQLRowHandler.readValue( new ValueMetaInteger( "row" ), row, 0 ) );
+    assertEquals( new Date( 1520538054000L ), DriverCQLRowHandler.readValue( new ValueMetaTimestamp( "timestamp" ), row, 1 ) );
+    assertEquals( LocalDate.fromYearMonthDay( 2018, 03, 12 ), DriverCQLRowHandler.readValue( new ValueMetaDate( "datestamp" ), row, 2 ) );
   }
 
   protected void mockColumnDefinitions( ResultSet rs, DataType ... dataTypes ) {

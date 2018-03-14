@@ -40,7 +40,6 @@
 			<groupId>org.pentaho</groupId>
 			<artifactId>commons-xul-core</artifactId>
 		</dependency>
-
 		<!-- Third-party (external) dependencies -->
 		<!-- Cassandra dependencies (SSTable) -->
 		<dependency>
@@ -101,6 +100,10 @@
 		<dependency>
 			<groupId>org.apache.thrift</groupId>
 			<artifactId>libthrift</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>joda-time</groupId>
+			<artifactId>joda-time</artifactId>
 		</dependency>
 
 		<!-- Input/Output driver impl dependencies -->

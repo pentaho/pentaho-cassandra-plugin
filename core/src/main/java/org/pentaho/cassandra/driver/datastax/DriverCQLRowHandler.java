@@ -149,7 +149,7 @@ public class DriverCQLRowHandler implements CQLRowHandler {
     return outputRowData;
   }
 
-  private Object readValue( ValueMetaInterface meta, Row row, int i ) {
+  public static Object readValue( ValueMetaInterface meta, Row row, int i ) {
     switch ( meta.getType() ) {
       case ValueMetaInterface.TYPE_INTEGER:
         return row.getLong( i );
@@ -159,6 +159,8 @@ public class DriverCQLRowHandler implements CQLRowHandler {
         return row.getDecimal( i );
       case ValueMetaInterface.TYPE_DATE:
         return row.getDate( i );
+      case ValueMetaInterface.TYPE_TIMESTAMP:
+        return row.getTimestamp( i );
       default:
         return row.getObject( i );
     }

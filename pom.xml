@@ -50,6 +50,7 @@
 		<slf4j.version>1.7.7</slf4j.version>
 		<servlet.version>3.0.1</servlet.version>
 		<jackson.version>1.9.2</jackson.version>
+		<joda-time.version>2.9.9</joda-time.version>
 	</properties>
 	<profiles>
 		<profile>
@@ -306,6 +307,17 @@
 				<artifactId>libthrift</artifactId>
 				<version>${libthrift.version}</version>
 				<scope>compile</scope>
+				<exclusions>
+					<exclusion>
+						<groupId>*</groupId>
+						<artifactId>*</artifactId>
+					</exclusion>
+				</exclusions>
+			</dependency>
+			<dependency>
+				<groupId>joda-time</groupId>
+				<artifactId>joda-time</artifactId>
+				<version>${joda-time.version}</version>
 				<exclusions>
 					<exclusion>
 						<groupId>*</groupId>

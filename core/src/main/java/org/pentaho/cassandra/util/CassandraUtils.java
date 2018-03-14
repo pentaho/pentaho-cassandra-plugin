@@ -38,13 +38,14 @@ import org.apache.cassandra.db.marshal.BooleanType;
 import org.apache.cassandra.db.marshal.DecimalType;
 import org.apache.cassandra.db.marshal.DoubleType;
 import org.apache.cassandra.db.marshal.LongType;
-import org.apache.cassandra.db.marshal.TimestampType;
+import org.apache.cassandra.db.marshal.SimpleDateType;
 import org.apache.cassandra.db.marshal.UTF8Type;
 import org.apache.cassandra.dht.ByteOrderedPartitioner;
 import org.apache.cassandra.dht.IPartitioner;
 import org.apache.cassandra.dht.Murmur3Partitioner;
 import org.apache.cassandra.dht.RandomPartitioner;
 import org.apache.cassandra.dht.OrderPreservingPartitioner;
+import org.apache.cassandra.serializers.TimestampSerializer;
 import org.pentaho.cassandra.ConnectionFactory;
 import org.pentaho.cassandra.spi.ITableMetaData;
 import org.pentaho.cassandra.spi.Connection;
@@ -112,6 +113,7 @@ public class CassandraUtils {
       case ValueMetaInterface.TYPE_NUMBER:
         return "double"; //$NON-NLS-1$
       case ValueMetaInterface.TYPE_DATE:
+        return "date";
       case ValueMetaInterface.TYPE_TIMESTAMP:
         return "timestamp"; //$NON-NLS-1$
       case ValueMetaInterface.TYPE_BINARY:
@@ -135,6 +137,7 @@ public class CassandraUtils {
       case ValueMetaInterface.TYPE_NUMBER:
         return DataType.cdouble();
       case ValueMetaInterface.TYPE_DATE:
+        return DataType.date();
       case ValueMetaInterface.TYPE_TIMESTAMP:
         return DataType.timestamp();
       case ValueMetaInterface.TYPE_BINARY:
@@ -662,26 +665,20 @@ public class CassandraUtils {
         String cassandraString = dt.getString( decomposed );
         return quote + cassandraString + quote;
       }
-      case ValueMetaInterface.TYPE_DATE:
-      case ValueMetaInterface.TYPE_TIMESTAMP:
-        // milliseconds since epoch is supposedly OK
-        // Date toConvert = vm.getDate(value);
-        // LongType lt = LongType.instance;
-        // Long ltC = new Long(toConvert.getTime());
-        // ByteBuffer decomposed = lt.decompose(ltC);
-        // String cassandraString = lt.getString(decomposed);
-        // return quote + cassandraString + quote;
-
-        // Use a formatted date string here instead of inserting the
-        // long number of seconds since epoch. The reason for this is
-        // that if we are inserting into a dynamic CQL2 table
-        // with default column validator that is text then we want the
-        // actual date string stored rather than a long value
-        TimestampType t = TimestampType.instance;
+      case ValueMetaInterface.TYPE_DATE: {
+        SimpleDateType sdt = SimpleDateType.instance;
         Date toConvert = vm.getDate( value );
-        ByteBuffer decomposed = t.decompose( toConvert );
-        String cassandraFormattedDateString = t.getString( decomposed );
+        int daysSinceEpoch = (int) ( toConvert.getTime() / 86400000L ); // get number of days since epoch rounded to the current day at 12AM
+        ByteBuffer decomposed = sdt.decompose( daysSinceEpoch + Integer.MIN_VALUE ); // SimpleDateType subtracts Integer.MIN_VALUE for some reason
+        String cassandraFormattedDateString = sdt.getString( decomposed );
         return "'" + escapeSingleQuotes( cassandraFormattedDateString ) + "'"; //$NON-NLS-1$ //$NON-NLS-2$
+      }
+      case ValueMetaInterface.TYPE_TIMESTAMP: {
+        TimestampSerializer ts = TimestampSerializer.instance;
+        Date toConvert = vm.getDate( value );
+        String cassandraFormattedDateString = ts.toStringUTC( toConvert ); // Timestamp string in format "yyyy-MM-dd'T'HH:mm:ss.SSSX"
+        return "'" + escapeSingleQuotes( cassandraFormattedDateString ) + "'"; //$NON-NLS-1$ //$NON-NLS-2$
+      }
       case ValueMetaInterface.TYPE_BINARY:
       case ValueMetaInterface.TYPE_SERIALIZABLE:
 

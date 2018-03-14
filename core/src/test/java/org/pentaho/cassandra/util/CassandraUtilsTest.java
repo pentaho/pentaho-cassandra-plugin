@@ -20,12 +20,20 @@ package org.pentaho.cassandra.util;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import org.apache.cassandra.dht.ByteOrderedPartitioner;
 import org.apache.cassandra.dht.Murmur3Partitioner;
 import org.apache.cassandra.dht.OrderPreservingPartitioner;
 import org.apache.cassandra.dht.RandomPartitioner;
 import org.junit.Test;
+import org.pentaho.di.core.row.ValueMetaInterface;
+import org.pentaho.di.core.row.value.ValueMetaDate;
+import org.pentaho.di.core.row.value.ValueMetaTimestamp;
+
+import java.util.Date;
 
 public class CassandraUtilsTest {
 
@@ -103,5 +111,20 @@ public class CassandraUtilsTest {
 
     primaryKey = "((test1, test2), test3), test4";
     assertEquals( "((test1, test2), test3)", CassandraUtils.getPartitionKey( primaryKey ) );
+  }
+
+  @Test
+  public void testKettleToCQLDateAndTimestamp() throws Exception {
+    ValueMetaInterface vmDate = mock( ValueMetaDate.class );
+    ValueMetaInterface vmTimestamp = mock( ValueMetaTimestamp.class );
+    Date testTimestamp = new Date( 1520816523456L );
+
+    when( vmDate.getType() ).thenReturn( ValueMetaInterface.TYPE_DATE );
+    when( vmTimestamp.getType() ).thenReturn( ValueMetaInterface.TYPE_TIMESTAMP );
+    when( vmDate.getDate( any() ) ).thenReturn( testTimestamp );
+    when( vmTimestamp.getDate( any() ) ).thenReturn( testTimestamp );
+
+    assertEquals( "'2018-03-12'", CassandraUtils.kettleValueToCQL( vmDate, testTimestamp, 3 ) );
+    assertEquals( "'2018-03-12T01:02:03.456Z'", CassandraUtils.kettleValueToCQL( vmTimestamp, testTimestamp, 3 ) );
   }
 }

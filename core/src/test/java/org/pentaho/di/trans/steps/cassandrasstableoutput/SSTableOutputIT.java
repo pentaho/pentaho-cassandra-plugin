@@ -75,7 +75,7 @@ public class SSTableOutputIT {
     when( inputRowMeta.getValueMetaList() ).thenReturn( valueMetaList );
     RowSet rowset = helper.getMockInputRowSet( new Object[] { 1, "some" } );
     when( rowset.getRowMeta() ).thenReturn( inputRowMeta );
-    ssTableOutput.getInputRowSets().add( rowset );
+    ssTableOutput.addRowSetToInputRowSets( rowset );
     SSTableOutputMeta meta = createStepMeta( false );
     ssTableOutput.init( meta, helper.initStepDataInterface );
     ssTableOutput.processRow( meta, helper.processRowsStepDataInterface );
@@ -109,7 +109,7 @@ public class SSTableOutputIT {
     } );
     RowSet rowset = helper.getMockInputRowSet( new Object[] { 1L, "some" } );
     when( rowset.getRowMeta() ).thenReturn( inputRowMeta );
-    ssTableOutput.getInputRowSets().add( rowset );
+    ssTableOutput.addRowSetToInputRowSets( rowset );
     SSTableOutputMeta meta = createStepMeta( true );
     ssTableOutput.init( meta, helper.initStepDataInterface );
     ssTableOutput.processRow( meta, helper.processRowsStepDataInterface );

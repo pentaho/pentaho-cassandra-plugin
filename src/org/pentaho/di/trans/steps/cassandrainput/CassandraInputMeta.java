@@ -2,7 +2,7 @@
  *
  * Pentaho Big Data
  *
- * Copyright (C) 2002-2017 by Hitachi Vantara : http://www.pentaho.com
+ * Copyright (C) 2002-2018 by Hitachi Vantara : http://www.pentaho.com
  *
  *******************************************************************************
  *
@@ -67,11 +67,13 @@ import org.w3c.dom.Node;
 
 /**
  * Class providing an input step for reading data from an Cassandra column family (table).
+ *
+ * @author Mark Hall (mhall{[at]}pentaho{[dot]}com)
+ * @version $Revision$
  */
 @Step( id = "CassandraInput", image = "Cassandrain.svg", name = "Cassandra Input",
     description = "Reads data from a Cassandra table",
-    documentationUrl = "Products/Data_Integration/Transformation_Step_Reference/Cassandra_Input",
-    categoryDescription = "Big Data" )
+    documentationUrl = "http://wiki.pentaho.com/display/EAI/Cassandra+Input", categoryDescription = "Big Data" )
 @InjectionSupported( localizationPrefix = "CassandraInput.Injection." )
 public class CassandraInputMeta extends BaseStepMeta implements StepMetaInterface {
 

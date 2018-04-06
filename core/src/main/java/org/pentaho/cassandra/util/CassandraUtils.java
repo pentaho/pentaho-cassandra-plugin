@@ -79,9 +79,9 @@ public class CassandraUtils {
     public static final String CQLVERSION_OPTION = "cqlVersion"; //$NON-NLS-1$
 
     /**
-     * The highest release of CQL 3 supported by Datastax Cassandra v3.4.0 at time of coding
+     * The highest release of CQL 3 supported by Datastax Cassandra (v3.11.1) at time of coding
      */
-    public static final String CQL3_STRING = "3.11.1"; //$NON-NLS-1$
+    public static final String CQL3_STRING = "3.4.0"; //$NON-NLS-1$
   }
 
   public static class BatchOptions {

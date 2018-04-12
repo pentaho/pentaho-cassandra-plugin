@@ -24,6 +24,7 @@ package org.pentaho.cassandra.spi;
 
 import java.util.List;
 
+import com.datastax.driver.core.DataType;
 import org.pentaho.cassandra.util.Selector;
 import org.pentaho.di.core.row.ValueMetaInterface;
 
@@ -121,4 +122,17 @@ public interface ITableMetaData {
    * @return the Kettle type for the selector
    */
   ValueMetaInterface getValueMeta( Selector selector );
+
+  /**
+   * Returns the CQL type for a given column in this table
+   * @param colName the name of the column
+   * @return the CQL type
+   */
+  DataType getColumnCQLType( String colName );
+
+  /**
+   * Returns the names of the columns in a CQL table
+   * @return a list of the CQL table column names
+   */
+  List<String> getColumnNames();
 }

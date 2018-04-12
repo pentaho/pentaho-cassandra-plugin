@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.zip.Deflater;
 
+import com.datastax.driver.core.LocalDate;
 import org.apache.cassandra.db.marshal.BooleanType;
 import org.apache.cassandra.db.marshal.DecimalType;
 import org.apache.cassandra.db.marshal.DoubleType;
@@ -806,6 +807,40 @@ public class CassandraUtils {
       default:
         return null;
     }
+  }
+
+  /**
+   * A function designed to check any mismatched Kettle <-> CQL types and fix those issues
+   * For now, it just checks if a java.util.Date is specified for a CQL Date column,
+   * and converts that object to a com.datastax.driver.core.LocalDate type
+   * @param batch the batch list of rows to process
+   * @param cassandraMeta the metadata for a Cassandra table
+   * @return the updated batch list
+   */
+  public static List<Object[]> fixBatchMismatchedTypes( List<Object[]> batch, ITableMetaData cassandraMeta ) {
+    List<String> colNames = cassandraMeta.getColumnNames();
+
+    // List of rows
+    for ( int i = 0; i < batch.size(); i++ ) {
+      // Columns
+      for ( int j = 0; j < batch.get( i ).length; j++ ) {
+        if ( batch.get( i )[ j ] != null ) {
+          // CQL Date / Timestamp type checks
+          if ( cassandraMeta.getColumnCQLType( colNames.get( j ) ).getName() == DataType.Name.DATE ) {
+            // Check that Kettle type isn't actually more like a timestamp
+            if ( batch.get( i )[ j ].getClass() == Date.class ) {
+              Date d = (Date) batch.get( i )[ j ];
+
+              // Convert java.util.Date to CQL friendly Date format (rounds to the day)
+              LocalDate ld = LocalDate.fromMillisSinceEpoch( d.getTime() );
+              batch.get( i )[ j ] = ld;
+            }
+          }
+        }
+      }
+    }
+
+    return batch;
   }
 
   public static String getPartitionKey( String primaryKey ) {

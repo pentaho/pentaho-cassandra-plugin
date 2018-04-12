@@ -20,6 +20,7 @@
 
 package org.pentaho.cassandra.driver.datastax;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -115,6 +116,22 @@ public class TableMetaData implements ITableMetaData {
   public ValueMetaInterface getValueMeta( Selector selector ) {
     String name = selector.getColumnName();
     return getValueMetaForColumn( name );
+  }
+
+  @Override
+  public List<String> getColumnNames() {
+    List<ColumnMetadata> colMeta = meta.getColumns();
+    List<String> colNames = new ArrayList<>();
+    for ( ColumnMetadata c : colMeta ) {
+      colNames.add( c.getName() );
+    }
+
+    return colNames;
+  }
+
+  @Override
+  public DataType getColumnCQLType( String colName ) {
+    return meta.getColumn( colName ).getType();
   }
 
   protected ValueMetaInterface toValueMeta( String name, DataType dataType ) {

@@ -222,12 +222,18 @@ public class DriverCQLRowHandlerTest {
   @Test
   public void testQueryRowsTimestamp() {
     Row row = mock( Row.class );
+    ColumnDefinitions cdefs = mock( ColumnDefinitions.class );
+    when( row.getColumnDefinitions() ).thenReturn( cdefs );
+    when( cdefs.getType( 2 ) ).thenReturn( DataType.date() );
+    when( cdefs.getType( 3 ) ).thenReturn( DataType.timestamp() );
     when( row.getLong( 0 ) ).thenReturn( 1L );
     when( row.getTimestamp( 1 ) ).thenReturn( new Date( 1520538054000L ) );
-    when( row.getDate( 2 ) ).thenReturn( LocalDate.fromYearMonthDay( 2018, 03, 12 ) );
+    when( row.getDate( 2 ) ).thenReturn( LocalDate.fromYearMonthDay( 2018, 01, 1 ) );
+    when( row.getTimestamp( 3 ) ).thenReturn( new Date( 1520298371938L ) );
     assertEquals( 1L, DriverCQLRowHandler.readValue( new ValueMetaInteger( "row" ), row, 0 ) );
     assertEquals( new Date( 1520538054000L ), DriverCQLRowHandler.readValue( new ValueMetaTimestamp( "timestamp" ), row, 1 ) );
-    assertEquals( LocalDate.fromYearMonthDay( 2018, 03, 12 ), DriverCQLRowHandler.readValue( new ValueMetaDate( "datestamp" ), row, 2 ) );
+    assertEquals( new Date( 1514764800000L ), DriverCQLRowHandler.readValue( new ValueMetaDate( "datestamp" ), row, 2 ) );
+    assertEquals( new Date( 1520298371938L ), DriverCQLRowHandler.readValue( new ValueMetaDate( "datestamp2" ), row, 3 ) );
   }
 
   protected void mockColumnDefinitions( ResultSet rs, DataType ... dataTypes ) {

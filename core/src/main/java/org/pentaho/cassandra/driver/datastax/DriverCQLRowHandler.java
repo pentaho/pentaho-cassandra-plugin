@@ -44,6 +44,8 @@ import org.pentaho.di.trans.step.StepInterface;
 
 import com.datastax.driver.core.ColumnDefinitions;
 import com.datastax.driver.core.ConsistencyLevel;
+import com.datastax.driver.core.DataType;
+import com.datastax.driver.core.LocalDate;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
@@ -158,7 +160,14 @@ public class DriverCQLRowHandler implements CQLRowHandler {
       case ValueMetaInterface.TYPE_BIGNUMBER:
         return row.getDecimal( i );
       case ValueMetaInterface.TYPE_DATE:
-        return row.getDate( i );
+        // Check whether this is a CQL Date or Timestamp
+        ColumnDefinitions cdef = row.getColumnDefinitions();
+        if ( cdef.getType( i ).getName() == DataType.Name.DATE ) {
+          LocalDate ld = row.getDate( i );
+          return new java.util.Date(  ld.getMillisSinceEpoch() );
+        } else {
+          return row.getTimestamp( i );
+        }
       case ValueMetaInterface.TYPE_TIMESTAMP:
         return row.getTimestamp( i );
       default:

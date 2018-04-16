@@ -482,7 +482,7 @@ public class CassandraOutput extends BaseStep implements StepInterface {
     m_opts.put( CassandraUtils.BatchOptions.BATCH_TIMEOUT, "" //$NON-NLS-1$
         + m_cqlBatchInsertTimeout );
 
-    m_opts.put( CassandraUtils.CQLOptions.CQLVERSION_OPTION, CassandraUtils.CQLOptions.CQL3_STRING );
+    m_opts.put( CassandraUtils.CQLOptions.DATASTAX_DRIVER_VERSION, CassandraUtils.CQLOptions.CQL3_STRING );
 
     // Set TTL if specified
     String ttl = m_meta.getTTL();

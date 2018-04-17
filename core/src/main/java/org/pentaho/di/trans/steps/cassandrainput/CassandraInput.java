@@ -137,7 +137,7 @@ public class CassandraInput extends BaseStep implements StepInterface {
           opts.put( CassandraUtils.ConnectionOptions.MAX_LENGTH, maxLength );
         }
 
-        opts.put( CassandraUtils.CQLOptions.CQLVERSION_OPTION, CassandraUtils.CQLOptions.CQL3_STRING );
+        opts.put( CassandraUtils.CQLOptions.DATASTAX_DRIVER_VERSION, CassandraUtils.CQLOptions.CQL3_STRING );
 
         if ( m_meta.getUseCompression() ) {
           opts.put( CassandraUtils.ConnectionOptions.COMPRESSION, Boolean.TRUE.toString() );

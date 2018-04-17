@@ -728,7 +728,7 @@ public class CassandraInputDialog extends BaseStepDialog implements StepDialogIn
 
       try {
         Map<String, String> opts = new HashMap<String, String>();
-        opts.put( CassandraUtils.CQLOptions.CQLVERSION_OPTION, CassandraUtils.CQLOptions.CQL3_STRING );
+        opts.put( CassandraUtils.CQLOptions.DATASTAX_DRIVER_VERSION, CassandraUtils.CQLOptions.CQL3_STRING );
 
         conn =
             CassandraUtils.getCassandraConnection( hostS, Integer.parseInt( portS ), userS, passS,

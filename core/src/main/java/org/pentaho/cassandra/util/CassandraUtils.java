@@ -77,7 +77,7 @@ public class CassandraUtils {
   }
 
   public static class CQLOptions {
-    public static final String CQLVERSION_OPTION = "cqlVersion"; //$NON-NLS-1$
+    public static final String DATASTAX_DRIVER_VERSION = "driverVersion"; //$NON-NLS-1$
 
     /**
      * The highest release of CQL 3 supported by Datastax Cassandra (v3.11.1) at time of coding

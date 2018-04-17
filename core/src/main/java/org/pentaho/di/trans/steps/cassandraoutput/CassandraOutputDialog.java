@@ -1020,7 +1020,7 @@ public class CassandraOutputDialog extends BaseStepDialog implements StepDialogI
 
       try {
         Map<String, String> opts = new HashMap<String, String>();
-        opts.put( CassandraUtils.CQLOptions.CQLVERSION_OPTION, CassandraUtils.CQLOptions.CQL3_STRING );
+        opts.put( CassandraUtils.CQLOptions.DATASTAX_DRIVER_VERSION, CassandraUtils.CQLOptions.CQL3_STRING );
         conn =
             CassandraUtils.getCassandraConnection( hostS, Integer.parseInt( portS ), userS, passS,
                 ConnectionFactory.Driver.BINARY_CQL3_PROTOCOL, opts );
@@ -1234,7 +1234,7 @@ public class CassandraOutputDialog extends BaseStepDialog implements StepDialogI
 
       try {
         Map<String, String> opts = new HashMap<String, String>();
-        opts.put( CassandraUtils.CQLOptions.CQLVERSION_OPTION, CassandraUtils.CQLOptions.CQL3_STRING );
+        opts.put( CassandraUtils.CQLOptions.DATASTAX_DRIVER_VERSION, CassandraUtils.CQLOptions.CQL3_STRING );
 
         conn = CassandraUtils.getCassandraConnection( hostS, Integer.parseInt( portS ), userS, passS,
             ConnectionFactory.Driver.BINARY_CQL3_PROTOCOL,

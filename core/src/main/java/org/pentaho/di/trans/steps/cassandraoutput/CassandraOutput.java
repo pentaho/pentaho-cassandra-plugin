@@ -372,24 +372,10 @@ public class CassandraOutput extends BaseStep implements StepInterface {
           CassandraUtils.newCQLBatch( m_batchSize, m_meta.getUseUnloggedBatch() );
       int rowsAdded = 0;
       batch = CassandraUtils.fixBatchMismatchedTypes( batch, m_cassandraMeta );
-      if ( !m_meta.isUseDriver() ) {
-        for ( Object[] r : batch ) {
-          // add the row to the batch
-          if ( CassandraUtils.addRowToCQLBatch( m_batchInsertCQL, m_tableName, getInputRowMeta(), r,
-              m_cassandraMeta, m_meta.getInsertFieldsNotInMeta(), 3, m_opts, log ) ) {
-            rowsAdded++;
-          }
-        }
-        if ( rowsAdded == 0 ) {
-          logDebug( BaseMessages.getString( CassandraOutputMeta.PKG, "CassandraOutput.Message.SkippingEmptyBatch" ) ); //$NON-NLS-1$
-          return;
-        }
-      } else {
-        DriverCQLRowHandler handler = (DriverCQLRowHandler) m_cqlHandler;
-        handler.setUnloggedBatch( m_meta.getUseUnloggedBatch() );
-        handler.batchInsert( getInputRowMeta(), batch, m_cassandraMeta, m_consistencyLevel, m_meta
-            .getInsertFieldsNotInMeta(), getLogChannel() );
-      }
+      DriverCQLRowHandler handler = (DriverCQLRowHandler) m_cqlHandler;
+      handler.setUnloggedBatch( m_meta.getUseUnloggedBatch() );
+      handler.batchInsert( getInputRowMeta(), batch, m_cassandraMeta, m_consistencyLevel, m_meta
+          .getInsertFieldsNotInMeta(), getLogChannel() );
       // commit
       if ( m_connection == null ) {
         openConnection( false );
@@ -398,11 +384,6 @@ public class CassandraOutput extends BaseStep implements StepInterface {
       logDetailed( BaseMessages.getString( CassandraOutputMeta.PKG,
           "CassandraOutput.Message.CommittingBatch", m_tableName, "" //$NON-NLS-1$ //$NON-NLS-2$
               + rowsAdded ) );
-
-      if ( !m_meta.isUseDriver() ) {
-        String compress = m_meta.getUseCompression() ? "GZIP" : ""; //$NON-NLS-1$ //$NON-NLS-2$
-        m_cqlHandler.commitCQLBatch( this, m_batchInsertCQL, compress, m_consistencyLevel, log );
-      }
     } catch ( Exception e ) {
       logError( e.getLocalizedMessage(), e );
       setErrors( getErrors() + 1 );

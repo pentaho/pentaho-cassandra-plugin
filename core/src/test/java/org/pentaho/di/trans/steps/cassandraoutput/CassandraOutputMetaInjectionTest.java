@@ -145,11 +145,6 @@ public class CassandraOutputMetaInjectionTest extends BaseMetadataInjectionTest<
         return meta.getDontComplainAboutAprioriCQLFailing();
       }
     } );
-    check( "USE_CQL_VERSION_3", new BooleanGetter() {
-      public boolean get() {
-        return meta.getUseCQL3();
-      }
-    } );
     check( "SOCKET_TIMEOUT", new StringGetter() {
       public String get() {
         return meta.getSocketTimeout();

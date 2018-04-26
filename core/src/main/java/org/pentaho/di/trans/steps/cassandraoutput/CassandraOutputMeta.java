@@ -176,22 +176,12 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
   @Injection( name = "DONT_COMPLAIN_IF_APRIORI_CQL_FAILS" )
   protected boolean m_dontComplainAboutAprioriCQLFailing;
 
-  /** Whether to use CQL version 3 */
-  @Injection( name = "USE_CQL_VERSION_3" )
-  protected boolean m_useCQL3 = false;
-
   /** Time to live (TTL) for inserts (affects all fields inserted) */
   @Injection( name = "TTL" )
   protected String m_ttl = ""; //$NON-NLS-1$
 
   @Injection( name = "TTL_UNIT" )
   protected String m_ttlUnit = TTLUnits.NONE.toString();
-
-  private boolean useDriver = true;
-
-  public boolean isUseDriver() {
-    return useDriver && !m_useCQL3;
-  }
 
   public enum TTLUnits {
     NONE( BaseMessages.getString( PKG, "CassandraOutput.TTLUnit.None" ) ) { //$NON-NLS-1$
@@ -672,25 +662,6 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
   }
 
   /**
-   * Set whether to use CQL version 3 is to be used for CQL IO mode
-   *
-   * @param cql3
-   *          true if CQL version 3 is to be used
-   */
-  public void setUseCQL3( boolean cql3 ) {
-    m_useCQL3 = cql3;
-  }
-
-  /**
-   * Get whether to use CQL version 3 is to be used for CQL IO mode
-   *
-   * @param return true if CQL version 3 is to be used
-   */
-  public boolean getUseCQL3() {
-    return m_useCQL3;
-  }
-
-  /**
    * Set the time to live for fields inserted. Null or empty indicates no TTL (i.e. fields don't expire).
    *
    * @param ttl
@@ -842,9 +813,6 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
               m_createTableWithClause ) );
     }
 
-    retval.append( "\n    " ).append( //$NON-NLS-1$
-        XMLHandler.addTagValue( "use_cql3", m_useCQL3 ) ); //$NON-NLS-1$
-
     if ( !Utils.isEmpty( m_ttl ) ) {
       retval.append( "\n    " ).append( XMLHandler.addTagValue( "ttl", m_ttl ) ); //$NON-NLS-1$ //$NON-NLS-2$
     }
@@ -893,11 +861,6 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
     m_aprioriCQL = XMLHandler.getTagValue( stepnode, "apriori_cql" ); //$NON-NLS-1$
 
     m_createTableWithClause = XMLHandler.getTagValue( stepnode, "create_table_with_clause" ); //$NON-NLS-1$
-
-    String useCQL3 = XMLHandler.getTagValue( stepnode, "use_cql3" ); //$NON-NLS-1$
-    if ( !Utils.isEmpty( useCQL3 ) ) {
-      m_useCQL3 = useCQL3.equalsIgnoreCase( "Y" ); //$NON-NLS-1$
-    }
 
     String unloggedBatch = XMLHandler.getTagValue( stepnode, "unlogged_batch" ); //$NON-NLS-1$
     if ( !Utils.isEmpty( unloggedBatch ) ) {
@@ -968,7 +931,6 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
 
     m_dontComplainAboutAprioriCQLFailing = rep.getStepAttributeBoolean( id_step, 0, "dont_complain_aprior_cql" ); //$NON-NLS-1$
 
-    m_useCQL3 = rep.getStepAttributeBoolean( id_step, 0, "use_cql3" ); //$NON-NLS-1$
     m_ttl = rep.getStepAttributeString( id_step, 0, "ttl" ); //$NON-NLS-1$
     m_ttlUnit = rep.getStepAttributeString( id_step, 0, "ttl_unit" ); //$NON-NLS-1$
 
@@ -1071,7 +1033,6 @@ public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterfa
 
     rep.saveStepAttribute( id_transformation, id_step, 0, "ttl_unit", m_ttlUnit ); //$NON-NLS-1$
 
-    rep.saveStepAttribute( id_transformation, id_step, 0, "use_cql3", m_useCQL3 ); //$NON-NLS-1$
     rep.saveStepAttribute( id_transformation, id_step, 0,
         "dont_complain_apriori_cql", m_dontComplainAboutAprioriCQLFailing ); //$NON-NLS-1$
   }

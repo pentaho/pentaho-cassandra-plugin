@@ -39,7 +39,6 @@ import org.apache.cassandra.db.marshal.BooleanType;
 import org.apache.cassandra.db.marshal.DecimalType;
 import org.apache.cassandra.db.marshal.DoubleType;
 import org.apache.cassandra.db.marshal.LongType;
-import org.apache.cassandra.db.marshal.SimpleDateType;
 import org.apache.cassandra.db.marshal.UTF8Type;
 import org.apache.cassandra.dht.ByteOrderedPartitioner;
 import org.apache.cassandra.dht.IPartitioner;
@@ -114,7 +113,6 @@ public class CassandraUtils {
       case ValueMetaInterface.TYPE_NUMBER:
         return "double"; //$NON-NLS-1$
       case ValueMetaInterface.TYPE_DATE:
-        return "date";
       case ValueMetaInterface.TYPE_TIMESTAMP:
         return "timestamp"; //$NON-NLS-1$
       case ValueMetaInterface.TYPE_BINARY:
@@ -138,9 +136,8 @@ public class CassandraUtils {
       case ValueMetaInterface.TYPE_NUMBER:
         return DataType.cdouble();
       case ValueMetaInterface.TYPE_DATE:
-        return DataType.date();
       case ValueMetaInterface.TYPE_TIMESTAMP:
-        return DataType.timestamp();
+        return DataType.timestamp(); // CQL timestamp
       case ValueMetaInterface.TYPE_BINARY:
       case ValueMetaInterface.TYPE_SERIALIZABLE:
       default:
@@ -666,14 +663,7 @@ public class CassandraUtils {
         String cassandraString = dt.getString( decomposed );
         return quote + cassandraString + quote;
       }
-      case ValueMetaInterface.TYPE_DATE: {
-        SimpleDateType sdt = SimpleDateType.instance;
-        Date toConvert = vm.getDate( value );
-        int daysSinceEpoch = (int) ( toConvert.getTime() / 86400000L ); // get number of days since epoch rounded to the current day at 12AM
-        ByteBuffer decomposed = sdt.decompose( daysSinceEpoch + Integer.MIN_VALUE ); // SimpleDateType subtracts Integer.MIN_VALUE for some reason
-        String cassandraFormattedDateString = sdt.getString( decomposed );
-        return "'" + escapeSingleQuotes( cassandraFormattedDateString ) + "'"; //$NON-NLS-1$ //$NON-NLS-2$
-      }
+      case ValueMetaInterface.TYPE_DATE:
       case ValueMetaInterface.TYPE_TIMESTAMP: {
         TimestampSerializer ts = TimestampSerializer.instance;
         Date toConvert = vm.getDate( value );
@@ -814,10 +804,11 @@ public class CassandraUtils {
    * For now, it just checks if a java.util.Date is specified for a CQL Date column,
    * and converts that object to a com.datastax.driver.core.LocalDate type
    * @param batch the batch list of rows to process
+   * @param inputMeta the meta of the incoming rows (column order aligns with batch, whereas cassandraMeta does not)
    * @param cassandraMeta the metadata for a Cassandra table
    * @return the updated batch list
    */
-  public static List<Object[]> fixBatchMismatchedTypes( List<Object[]> batch, ITableMetaData cassandraMeta ) {
+  public static List<Object[]> fixBatchMismatchedTypes( List<Object[]> batch, RowMetaInterface inputMeta, ITableMetaData cassandraMeta ) {
     List<String> colNames = cassandraMeta.getColumnNames();
 
     // List of rows
@@ -828,12 +819,14 @@ public class CassandraUtils {
           // CQL Date / Timestamp type checks
           if ( cassandraMeta.getColumnCQLType( colNames.get( j ) ).getName() == DataType.Name.DATE ) {
             // Check that Kettle type isn't actually more like a timestamp
-            if ( batch.get( i )[ j ].getClass() == Date.class ) {
-              Date d = (Date) batch.get( i )[ j ];
+            // NOTE: batch order does not match cassandraMeta order, need to pair up
+            int index = inputMeta.indexOfValue( colNames.get( j ) );
+            if ( batch.get( i )[ index ].getClass() == Date.class ) {
+              Date d = (Date) batch.get( i )[ index ];
 
               // Convert java.util.Date to CQL friendly Date format (rounds to the day)
               LocalDate ld = LocalDate.fromMillisSinceEpoch( d.getTime() );
-              batch.get( i )[ j ] = ld;
+              batch.get( i )[ index ] = ld;
             }
           }
         }

@@ -168,8 +168,6 @@ public class DriverCQLRowHandler implements CQLRowHandler {
         } else {
           return row.getTimestamp( i );
         }
-      case ValueMetaInterface.TYPE_TIMESTAMP:
-        return row.getTimestamp( i );
       default:
         return row.getObject( i );
     }

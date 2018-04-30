@@ -33,6 +33,7 @@ import org.apache.cassandra.dht.RandomPartitioner;
 import org.junit.Test;
 import org.pentaho.cassandra.driver.datastax.TableMetaData;
 import org.pentaho.cassandra.spi.ITableMetaData;
+import org.pentaho.di.core.row.RowMetaInterface;
 import org.pentaho.di.core.row.ValueMetaInterface;
 import org.pentaho.di.core.row.value.ValueMetaDate;
 import org.pentaho.di.core.row.value.ValueMetaTimestamp;
@@ -121,16 +122,18 @@ public class CassandraUtilsTest {
 
   @Test
   public void testKettleToCQLDateAndTimestamp() throws Exception {
+    // We will always convert a kettle Date type to a CQL timestamp type
     ValueMetaInterface vmDate = mock( ValueMetaDate.class );
     ValueMetaInterface vmTimestamp = mock( ValueMetaTimestamp.class );
     Date testTimestamp = new Date( 1520816523456L );
 
+    // Kettle Date and Timestamps will produce the same CQL timestamp output result
     when( vmDate.getType() ).thenReturn( ValueMetaInterface.TYPE_DATE );
     when( vmTimestamp.getType() ).thenReturn( ValueMetaInterface.TYPE_TIMESTAMP );
     when( vmDate.getDate( any() ) ).thenReturn( testTimestamp );
     when( vmTimestamp.getDate( any() ) ).thenReturn( testTimestamp );
 
-    assertEquals( "'2018-03-12'", CassandraUtils.kettleValueToCQL( vmDate, testTimestamp, 3 ) );
+    assertEquals( "'2018-03-12T01:02:03.456Z'", CassandraUtils.kettleValueToCQL( vmDate, testTimestamp, 3 ) );
     assertEquals( "'2018-03-12T01:02:03.456Z'", CassandraUtils.kettleValueToCQL( vmTimestamp, testTimestamp, 3 ) );
   }
 
@@ -139,6 +142,7 @@ public class CassandraUtilsTest {
     Date testDate1 = new Date( 1523542916441L ); // UTC Thu Apr 12 2018 14:21:56
     Date testTimestamp1 = new Date( 1023528397418L ); // UTC Sat Jun 08 2002 09:26:37
     ITableMetaData mockTableMeta = mock( TableMetaData.class );
+    RowMetaInterface inputMeta = mock( RowMetaInterface.class );
 
     List<String> cqlColumnNames = new ArrayList<>();
     cqlColumnNames.add( "date" );
@@ -147,13 +151,16 @@ public class CassandraUtilsTest {
     when( mockTableMeta.getColumnCQLType( "date" ) ).thenReturn( DataType.date() );
     when( mockTableMeta.getColumnCQLType( "timestamp" ) ).thenReturn( DataType.timestamp() );
 
+    when( inputMeta.indexOfValue( "date" ) ).thenReturn( 0 );
+    when( inputMeta.indexOfValue( "timestamp" ) ).thenReturn( 1 );
+
     Object[] row = { testDate1, testTimestamp1 };
     List<Object[]> batch = new ArrayList<>();
     batch.add( row );
 
     LocalDate testLocalDate = LocalDate.fromMillisSinceEpoch( 1523542916441L );
 
-    batch = CassandraUtils.fixBatchMismatchedTypes( batch, mockTableMeta );
+    batch = CassandraUtils.fixBatchMismatchedTypes( batch, inputMeta, mockTableMeta );
 
     // Fix CQL dates but not timestamps
     assertEquals( testLocalDate, batch.get( 0 )[ 0 ] );

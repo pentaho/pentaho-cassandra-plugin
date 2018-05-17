@@ -34,7 +34,6 @@ import org.pentaho.di.core.row.value.ValueMetaInteger;
 import org.pentaho.di.core.row.value.ValueMetaNumber;
 import org.pentaho.di.core.row.value.ValueMetaString;
 import org.pentaho.di.core.row.value.ValueMetaDate;
-import org.pentaho.di.core.row.value.ValueMetaTimestamp;
 import org.pentaho.di.trans.step.StepInterface;
 
 import com.datastax.driver.core.ColumnDefinitions;
@@ -221,17 +220,20 @@ public class DriverCQLRowHandlerTest {
 
   @Test
   public void testQueryRowsTimestamp() {
+    // Use case for existing Cassandra table with a CQL Date column
     Row row = mock( Row.class );
     ColumnDefinitions cdefs = mock( ColumnDefinitions.class );
     when( row.getColumnDefinitions() ).thenReturn( cdefs );
-    when( cdefs.getType( 2 ) ).thenReturn( DataType.date() );
-    when( cdefs.getType( 3 ) ).thenReturn( DataType.timestamp() );
+    when( cdefs.getType( 0 ) ).thenReturn( DataType.bigint() );
+    when( cdefs.getType( 1 ) ).thenReturn( DataType.timestamp() ); // CQL timestamp
+    when( cdefs.getType( 2 ) ).thenReturn( DataType.date() ); // CQL date
+    when( cdefs.getType( 3 ) ).thenReturn( DataType.timestamp() ); // CQL timestamp
     when( row.getLong( 0 ) ).thenReturn( 1L );
     when( row.getTimestamp( 1 ) ).thenReturn( new Date( 1520538054000L ) );
     when( row.getDate( 2 ) ).thenReturn( LocalDate.fromYearMonthDay( 2018, 01, 1 ) );
     when( row.getTimestamp( 3 ) ).thenReturn( new Date( 1520298371938L ) );
     assertEquals( 1L, DriverCQLRowHandler.readValue( new ValueMetaInteger( "row" ), row, 0 ) );
-    assertEquals( new Date( 1520538054000L ), DriverCQLRowHandler.readValue( new ValueMetaTimestamp( "timestamp" ), row, 1 ) );
+    assertEquals( new Date( 1520538054000L ), DriverCQLRowHandler.readValue( new ValueMetaDate( "timestamp" ), row, 1 ) );
     assertEquals( new Date( 1514764800000L ), DriverCQLRowHandler.readValue( new ValueMetaDate( "datestamp" ), row, 2 ) );
     assertEquals( new Date( 1520298371938L ), DriverCQLRowHandler.readValue( new ValueMetaDate( "datestamp2" ), row, 3 ) );
   }

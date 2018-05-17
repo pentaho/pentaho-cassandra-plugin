@@ -34,7 +34,6 @@ import org.pentaho.di.core.row.RowMetaInterface;
 import org.pentaho.di.core.row.ValueMetaInterface;
 import org.pentaho.di.core.util.Utils;
 
-import com.datastax.driver.core.DataType;
 import com.datastax.driver.core.KeyspaceMetadata;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.TableMetadata;
@@ -113,7 +112,7 @@ public class DriverKeyspace implements Keyspace {
     for ( int i = 0; i < rowMeta.size(); i++ ) {
       if ( !keyIndexes.contains( i ) ) {
         ValueMetaInterface valueMeta = rowMeta.getValueMeta( i );
-        createTable.addColumn( valueMeta.getName(), getDataType( valueMeta ) );
+        createTable.addColumn( valueMeta.getName(), CassandraUtils.getCassandraDataTypeFromValueMeta( valueMeta ) );
       } else {
         ValueMetaInterface key = rowMeta.getValueMeta( i );
         createTable.addPartitionKey( key.getName(), CassandraUtils.getCassandraDataTypeFromValueMeta( key ) );
@@ -143,7 +142,7 @@ public class DriverKeyspace implements Keyspace {
     for ( ValueMetaInterface valueMeta : rowMeta.getValueMetaList() ) {
       if ( !table.columnExistsInSchema( valueMeta.getName() ) ) {
         session.execute( SchemaBuilder.alterTable( tableName ).alterColumn( valueMeta.getName() ).type(
-            getDataType( valueMeta ) ) );
+            CassandraUtils.getCassandraDataTypeFromValueMeta( valueMeta ) ) );
       }
     }
   }
@@ -155,10 +154,6 @@ public class DriverKeyspace implements Keyspace {
 
   protected Session getSession() {
     return conn.getSession( name );
-  }
-
-  private DataType getDataType( ValueMetaInterface valueMeta ) {
-    return CassandraUtils.getCassandraDataTypeFromValueMeta( valueMeta );
   }
 
   @Override

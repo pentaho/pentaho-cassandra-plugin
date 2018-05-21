@@ -371,7 +371,7 @@ public class CassandraOutput extends BaseStep implements StepInterface {
       m_batchInsertCQL =
           CassandraUtils.newCQLBatch( m_batchSize, m_meta.getUseUnloggedBatch() );
       int rowsAdded = 0;
-      batch = CassandraUtils.fixBatchMismatchedTypes( batch, m_cassandraMeta );
+      batch = CassandraUtils.fixBatchMismatchedTypes( batch, getInputRowMeta(), m_cassandraMeta );
       DriverCQLRowHandler handler = (DriverCQLRowHandler) m_cqlHandler;
       handler.setUnloggedBatch( m_meta.getUseUnloggedBatch() );
       handler.batchInsert( getInputRowMeta(), batch, m_cassandraMeta, m_consistencyLevel, m_meta

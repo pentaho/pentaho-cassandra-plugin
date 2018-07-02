@@ -54,7 +54,7 @@ import org.w3c.dom.Node;
  * Class providing an output step for writing data to a cassandra table. Can create the specified
  * table (if it doesn't already exist) and can update table meta data.
  */
-@Step( id = "CassandraOutput", image = "Cassandraout.svg", name = "Cassandra Output",
+@Step( id = "CassandraOutput", image = "Cassandraout.svg", name = "Cassandra output",
     description = "Writes to a Cassandra table",
     documentationUrl = "Products/Data_Integration/Transformation_Step_Reference/Cassandra_Output",
     categoryDescription = "Big Data" )

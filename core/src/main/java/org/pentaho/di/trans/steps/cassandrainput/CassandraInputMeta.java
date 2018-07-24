@@ -65,7 +65,7 @@ import org.w3c.dom.Node;
 /**
  * Class providing an input step for reading data from an Cassandra table
  */
-@Step( id = "CassandraInput", image = "Cassandrain.svg", name = "Cassandra Input",
+@Step( id = "CassandraInput", image = "Cassandrain.svg", name = "Cassandra input",
     description = "Reads data from a Cassandra table",
     documentationUrl = "Products/Data_Integration/Transformation_Step_Reference/Cassandra_Input",
     categoryDescription = "Big Data" )

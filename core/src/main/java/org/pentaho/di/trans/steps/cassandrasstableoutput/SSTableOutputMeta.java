@@ -51,7 +51,7 @@ import org.w3c.dom.Node;
 /**
  * Provides metadata for the Cassandra SSTable output step.
  */
-@Step( id = "SSTableOutput", image = "Cassandra.svg", name = "SSTable Output",
+@Step( id = "SSTableOutput", image = "Cassandra.svg", name = "SSTable output",
     documentationUrl = "Products/Data_Integration/Transformation_Step_Reference/SSTable_Output",
     description = "Writes to a filesystem directory as a Cassandra SSTable", categoryDescription = "Big Data" )
 @InjectionSupported( localizationPrefix = "SSTableOutput.Injection." )

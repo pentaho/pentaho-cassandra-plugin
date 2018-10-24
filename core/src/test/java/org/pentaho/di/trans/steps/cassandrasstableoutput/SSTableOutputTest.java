@@ -18,6 +18,7 @@
 package org.pentaho.di.trans.steps.cassandrasstableoutput;
 
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.pentaho.di.core.exception.KettleException;
@@ -40,6 +41,12 @@ public class SSTableOutputTest {
     when( helper.logChannelInterfaceFactory.create( any(), any( LoggingObjectInterface.class ) ) ).thenReturn(
       helper.logChannelInterface );
     when( helper.trans.isRunning() ).thenReturn( true );
+  }
+
+  @AfterClass
+  public static void classTearDown() {
+    //Cleanup class setup
+    helper.cleanUp();
   }
 
   @After

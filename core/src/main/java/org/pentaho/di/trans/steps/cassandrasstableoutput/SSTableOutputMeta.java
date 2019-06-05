@@ -2,7 +2,7 @@
  *
  * Pentaho Big Data
  *
- * Copyright (C) 2002-2018 by Hitachi Vantara : http://www.pentaho.com
+ * Copyright (C) 2002-2019 by Hitachi Vantara : http://www.pentaho.com
  *
  *******************************************************************************
  *
@@ -52,7 +52,7 @@ import org.w3c.dom.Node;
  * Provides metadata for the Cassandra SSTable output step.
  */
 @Step( id = "SSTableOutput", image = "Cassandra.svg", name = "SSTable output",
-    documentationUrl = "Products/Data_Integration/Transformation_Step_Reference/SSTable_Output",
+    documentationUrl = "Products/SSTable_Output",
     description = "Writes to a filesystem directory as a Cassandra SSTable", categoryDescription = "Big Data" )
 @InjectionSupported( localizationPrefix = "SSTableOutput.Injection." )
 @ParentFirst( patterns = { ".*" } )

@@ -2,7 +2,7 @@
  *
  * Pentaho Big Data
  *
- * Copyright (C) 2002-2018 by Hitachi Vantara : http://www.pentaho.com
+ * Copyright (C) 2002-2019 by Hitachi Vantara : http://www.pentaho.com
  *
  *******************************************************************************
  *
@@ -56,7 +56,7 @@ import org.w3c.dom.Node;
  */
 @Step( id = "CassandraOutput", image = "Cassandraout.svg", name = "Cassandra output",
     description = "Writes to a Cassandra table",
-    documentationUrl = "Products/Data_Integration/Transformation_Step_Reference/Cassandra_Output",
+    documentationUrl = "Products/Cassandra_Output",
     categoryDescription = "Big Data" )
 @InjectionSupported( localizationPrefix = "CassandraOutput.Injection." )
 public class CassandraOutputMeta extends BaseStepMeta implements StepMetaInterface {

@@ -20,19 +20,21 @@
 
 package org.pentaho.cassandra.driver.datastax;
 
-import java.util.Arrays;
+import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.apache.commons.lang.NotImplementedException;
-import org.pentaho.cassandra.util.CassandraUtils;
 import org.pentaho.cassandra.spi.CQLRowHandler;
 import org.pentaho.cassandra.spi.ITableMetaData;
 import org.pentaho.cassandra.spi.Keyspace;
+import org.pentaho.cassandra.util.CassandraUtils;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.logging.LogChannelInterface;
 import org.pentaho.di.core.row.RowDataUtil;
@@ -44,8 +46,6 @@ import org.pentaho.di.trans.step.StepInterface;
 
 import com.datastax.driver.core.ColumnDefinitions;
 import com.datastax.driver.core.ConsistencyLevel;
-import com.datastax.driver.core.DataType;
-import com.datastax.driver.core.LocalDate;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
@@ -152,22 +152,58 @@ public class DriverCQLRowHandler implements CQLRowHandler {
   }
 
   public static Object readValue( ValueMetaInterface meta, Row row, int i ) {
+
+    if ( row.isNull( i ) ) {
+      return null;
+    }
+
     switch ( meta.getType() ) {
+
       case ValueMetaInterface.TYPE_INTEGER:
-        return row.getLong( i );
       case ValueMetaInterface.TYPE_NUMBER:
-        return row.getDouble( i );
       case ValueMetaInterface.TYPE_BIGNUMBER:
-        return row.getDecimal( i );
+      case ValueMetaInterface.TYPE_BOOLEAN:
       case ValueMetaInterface.TYPE_DATE:
-        // Check whether this is a CQL Date or Timestamp
+      case ValueMetaInterface.TYPE_BINARY:
+        /*
+         * https://docs.datastax.com/en/cql/3.3/cql/cql_reference/cql_data_types_c.html
+         * 
+         * Calling getLong() on a Cassandra column of INT datatype throws an NPE Calling getDouble() on a Cassandra
+         * column of FLOAT datatype throws an NPE ...
+         */
         ColumnDefinitions cdef = row.getColumnDefinitions();
-        if ( cdef.getType( i ).getName() == DataType.Name.DATE ) {
-          LocalDate ld = row.getDate( i );
-          return new java.util.Date(  ld.getMillisSinceEpoch() );
-        } else {
-          return row.getTimestamp( i );
+        switch ( cdef.getType( i ).getName() ) {
+          case BIGINT:
+          case COUNTER:
+            return row.getLong( i );
+          case SMALLINT:
+            return (long) row.getShort( i );
+          case TINYINT:
+            return (long) row.getByte( i );
+          case INT:
+            return (long) row.getInt( i );
+          case FLOAT:
+            return (double) row.getFloat( i );
+          case DOUBLE:
+            return row.getDouble( i );
+          case DECIMAL:
+            return row.getDecimal( i );
+          case VARINT:
+            return new BigDecimal( row.getVarint( i ) );
+          case BOOLEAN:
+            return row.getBool( i );
+          case DATE:
+            return new Date( row.getDate( i ).getMillisSinceEpoch() );
+          case TIMESTAMP:
+            return row.getTimestamp( i );
+          case TIME:
+            return row.getTime( i );
+          case BLOB:
+            return row.getBytes( i ).array();
+          default:
+            return row.getObject( i );
         }
+
       default:
         return row.getObject( i );
     }

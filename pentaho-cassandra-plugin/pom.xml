@@ -3,10 +3,10 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.pentaho</groupId>
-    <artifactId>pentaho-ce-jar-parent-pom</artifactId>
+    <artifactId>pentaho-cassandra-plugins-parent</artifactId>
     <version>9.0.0.0-SNAPSHOT</version>
   </parent>
-  <artifactId>pentaho-cassandra-plugins-parent</artifactId>
+  <artifactId>pentaho-cassandra-plugin-parent</artifactId>
   <packaging>pom</packaging>
   <scm>
     <connection>scm:git:git@github.com:pentaho/${project.artifactId}.git</connection>
@@ -55,8 +55,19 @@
         <activeByDefault>true</activeByDefault>
       </activation>
       <modules>
-        <module>pentaho-cassandra-plugin</module>
-        <module>pentaho-cassandra-sstable-plugin</module>
+        <module>core</module>
+        <module>assemblies</module>
+      </modules>
+    </profile>
+    <profile>
+      <id>core</id>
+      <activation>
+        <property>
+          <name>core</name>
+        </property>
+      </activation>
+      <modules>
+        <module>core</module>
       </modules>
     </profile>
   </profiles>
@@ -148,19 +159,6 @@
         </exclusions>
          -->
       </dependency>
-	  <dependency>
-	    <!-- This is required for the SSTableWriter -->
-	    <groupId>com.datastax.cassandra</groupId>
-	    <artifactId>cassandra-driver-core</artifactId>
-	    <version>3.4.0</version>
-	    <scope>compile</scope>
-	    <exclusions>
-          <exclusion>
-            <groupId>*</groupId>
-            <artifactId>*</artifactId>
-          </exclusion>
-        </exclusions>
-	  </dependency>
       <dependency>
         <groupId>com.datastax.oss</groupId>
         <artifactId>java-driver-core</artifactId>
@@ -405,8 +403,8 @@
     </dependencies>
   </dependencyManagement>
   <modules>
-    <module>pentaho-cassandra-plugin</module>
-    <module>pentaho-cassandra-sstable-plugin</module>
+    <module>core</module>
+    <module>assemblies</module>
   </modules>
 </project>
 

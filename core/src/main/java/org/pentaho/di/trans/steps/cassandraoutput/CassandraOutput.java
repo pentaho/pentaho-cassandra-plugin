@@ -2,7 +2,7 @@
  *
  * Pentaho Big Data
  *
- * Copyright (C) 2002-2018 by Hitachi Vantara : http://www.pentaho.com
+ * Copyright (C) 2002-2020 by Hitachi Vantara : http://www.pentaho.com
  *
  *******************************************************************************
  *
@@ -373,6 +373,10 @@ public class CassandraOutput extends BaseStep implements StepInterface {
       int rowsAdded = 0;
       batch = CassandraUtils.fixBatchMismatchedTypes( batch, getInputRowMeta(), m_cassandraMeta );
       DriverCQLRowHandler handler = (DriverCQLRowHandler) m_cqlHandler;
+      String ttl = m_meta.getTTL();
+      if ( !Utils.isEmpty( ttl ) ) {
+        handler.setTtlSec( Integer.parseInt( ttl ) );
+      }
       handler.setUnloggedBatch( m_meta.getUseUnloggedBatch() );
       handler.batchInsert( getInputRowMeta(), batch, m_cassandraMeta, m_consistencyLevel, m_meta
           .getInsertFieldsNotInMeta(), getLogChannel() );

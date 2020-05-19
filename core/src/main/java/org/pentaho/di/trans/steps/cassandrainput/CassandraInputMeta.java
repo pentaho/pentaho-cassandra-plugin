@@ -530,6 +530,7 @@ public class CassandraInputMeta extends BaseStepMeta implements StepMetaInterfac
       if ( subQ.toLowerCase().indexOf( "limit" ) > 0 ) { //$NON-NLS-1$
         String limitS =
           subQ.toLowerCase().substring( subQ.toLowerCase().indexOf( "limit" ) + 5, subQ.length() ).trim(); //$NON-NLS-1$
+        limitS = limitS.split(" ")[0];
         limitS = limitS.replaceAll( ";", "" ); //$NON-NLS-1$ //$NON-NLS-2$
         try {
           m_rowLimit = Integer.parseInt( limitS );

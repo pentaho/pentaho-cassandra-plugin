@@ -701,4 +701,5 @@ public class CassandraInputMeta extends BaseStepMeta implements StepMetaInterfac
 
     return new CassandraInputDialog( shell, meta, transMeta, name );
   }
+  
 }

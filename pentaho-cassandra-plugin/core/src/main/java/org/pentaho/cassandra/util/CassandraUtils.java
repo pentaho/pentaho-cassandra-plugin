@@ -28,7 +28,7 @@ import com.datastax.oss.driver.api.core.type.ListType;
 import com.datastax.oss.driver.api.core.type.MapType;
 import com.datastax.oss.driver.api.core.type.SetType;
 import org.pentaho.cassandra.ConnectionFactory;
-import org.pentaho.cassandra.datastax.DriverConnection;
+import org.pentaho.cassandra.driver.datastax.DriverConnection;
 import org.pentaho.cassandra.spi.ITableMetaData;
 import org.pentaho.di.core.Const;
 import org.pentaho.di.core.exception.KettleException;
@@ -105,8 +105,8 @@ public class CassandraUtils {
     }
   }
 
-  public static boolean isCollection( DataType dataType ) {
-    return dataType instanceof ListType || dataType instanceof SetType || dataType instanceof MapType;
+  public static boolean isCollection( DataType dataType, boolean notExpandingMaps ) {
+    return dataType instanceof ListType || dataType instanceof SetType || ( !notExpandingMaps && dataType instanceof MapType );
   }
 
   /**

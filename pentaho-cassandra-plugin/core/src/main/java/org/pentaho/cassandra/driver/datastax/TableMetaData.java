@@ -18,7 +18,7 @@
  *
  ******************************************************************************/
 
-package org.pentaho.cassandra.datastax;
+package org.pentaho.cassandra.driver.datastax;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
@@ -36,6 +36,7 @@ import org.pentaho.di.core.row.value.ValueMetaBigNumber;
 import org.pentaho.di.core.row.value.ValueMetaBinary;
 import org.pentaho.di.core.row.value.ValueMetaBoolean;
 import org.pentaho.di.core.row.value.ValueMetaDate;
+import org.pentaho.di.core.row.value.ValueMetaInteger;
 import org.pentaho.di.core.row.value.ValueMetaNumber;
 import org.pentaho.di.core.row.value.ValueMetaString;
 
@@ -85,13 +86,13 @@ public class TableMetaData implements ITableMetaData {
   }
 
   @Override
-  public ValueMetaInterface getValueMetaForKey() {
+  public ValueMetaInterface getValueMetaForKey( boolean notExpandingMaps ) {
     List<ColumnMetadata> partKeys = meta.getPartitionKey();
     if ( partKeys.size() > 1 ) {
       return new ValueMetaString( "KEY" );
     }
 
-    return toValueMeta( partKeys.get( 0 ).getName(), partKeys.get( 0 ).getType(), expandCollection );
+    return toValueMeta( partKeys.get( 0 ).getName(), partKeys.get( 0 ).getType(), expandCollection, notExpandingMaps );
   }
 
   @Override
@@ -100,28 +101,28 @@ public class TableMetaData implements ITableMetaData {
   }
 
   @Override
-  public ValueMetaInterface getValueMetaForColumn( String colName ) {
+  public ValueMetaInterface getValueMetaForColumn( String colName, boolean notExpandingMaps ) {
     ColumnMetadata column = meta.getColumn( colName ).get();
-    return getValueMetaForColumn( column );
+    return getValueMetaForColumn( column, notExpandingMaps );
   }
 
-  protected ValueMetaInterface getValueMetaForColumn( ColumnMetadata column ) {
+  protected ValueMetaInterface getValueMetaForColumn( ColumnMetadata column, boolean notExpandingMaps ) {
     if ( column != null ) {
-      return toValueMeta( column.getName(), column.getType(), expandCollection );
+      return toValueMeta( column.getName(), column.getType(), expandCollection, notExpandingMaps );
     }
     return new ValueMetaString( name );
   }
 
   @Override
-  public List<ValueMetaInterface> getValueMetasForSchema() {
-    return meta.getColumns().values().stream().map( col -> getValueMetaForColumn( col ) )
+  public List<ValueMetaInterface> getValueMetasForSchema( boolean notExpandingMaps ) {
+    return meta.getColumns().values().stream().map( col -> getValueMetaForColumn( col, notExpandingMaps ) )
       .collect( Collectors.toList() );
   }
 
   @Override
-  public ValueMetaInterface getValueMeta( Selector selector ) {
+  public ValueMetaInterface getValueMeta( Selector selector, boolean notExpandingMaps ) {
     String name = selector.getColumnName();
-    return getValueMetaForColumn( name );
+    return getValueMetaForColumn( name, notExpandingMaps );
   }
 
   @Override
@@ -134,12 +135,12 @@ public class TableMetaData implements ITableMetaData {
     return meta.getColumn( colName ).get().getType();
   }
 
-  protected static ValueMetaInterface toValueMeta( CqlIdentifier name, DataType dataType, boolean expandCollection ) {
+  protected static ValueMetaInterface toValueMeta( CqlIdentifier name, DataType dataType, boolean expandCollection, boolean notExpandingMaps ) {
 
     String nameStr = name.toString();
 
     if ( expandCollection ) {
-      if ( dataType instanceof MapType ) {
+      if ( !notExpandingMaps && dataType instanceof MapType ) {
         dataType = ( (MapType) dataType ).getKeyType();
       } else if ( dataType instanceof ListType ) {
         dataType = ( (ListType) dataType ).getElementType();
@@ -153,8 +154,8 @@ public class TableMetaData implements ITableMetaData {
       || dataType == DataTypes.COUNTER
       || dataType == DataTypes.INT
       || dataType == DataTypes.SMALLINT
-      || dataType == DataTypes.SMALLINT ) {
-      return new ValueMetaString( nameStr );
+      || dataType == DataTypes.TINYINT ) {
+      return new ValueMetaInteger( nameStr );
     } else if ( dataType == DataTypes.DOUBLE
       || dataType == DataTypes.FLOAT ) {
       return new ValueMetaNumber( nameStr );

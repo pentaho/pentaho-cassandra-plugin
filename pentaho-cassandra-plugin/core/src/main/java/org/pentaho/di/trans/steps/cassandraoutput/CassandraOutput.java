@@ -23,8 +23,8 @@
 package org.pentaho.di.trans.steps.cassandraoutput;
 
 import org.pentaho.cassandra.ConnectionFactory;
-import org.pentaho.cassandra.datastax.DriverCQLRowHandler;
-import org.pentaho.cassandra.datastax.DriverConnection;
+import org.pentaho.cassandra.driver.datastax.DriverCQLRowHandler;
+import org.pentaho.cassandra.driver.datastax.DriverConnection;
 import org.pentaho.cassandra.spi.CQLRowHandler;
 import org.pentaho.cassandra.spi.ITableMetaData;
 import org.pentaho.cassandra.spi.Keyspace;

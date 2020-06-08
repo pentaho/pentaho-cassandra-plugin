@@ -22,6 +22,8 @@
 
 package org.pentaho.cassandra.spi;
 
+import com.datastax.oss.driver.api.core.CqlSession;
+
 import java.util.Map;
 
 /**
@@ -76,14 +78,14 @@ public interface Connection {
   /**
    * Open the connection (if necessary)
    */
-  void openConnection() throws Exception;
+  CqlSession openConnection() throws Exception;
 
   /**
    * Opens a connection for a particular keyspace
    * @param keyspace
    * @throws Exception
    */
-  void openConnection( String keyspace ) throws Exception;
+  CqlSession openConnection( String keyspace ) throws Exception;
 
   /**
    * Close the connection

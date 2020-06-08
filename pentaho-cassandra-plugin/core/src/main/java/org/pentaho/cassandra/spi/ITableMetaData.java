@@ -83,7 +83,7 @@ public interface ITableMetaData {
    * 
    * @return the appropriate Kettle type for the table's key
    */
-  ValueMetaInterface getValueMetaForKey();
+  ValueMetaInterface getValueMetaForKey( boolean notExpandingMaps );
 
   /**
    * Get the names of the columns that make up the key in this table. If
@@ -104,7 +104,7 @@ public interface ITableMetaData {
    * @param colName the Cassandra column name to get the Kettle type for
    * @return the Kettle type for the named column.
    */
-  ValueMetaInterface getValueMetaForColumn( String colName );
+  ValueMetaInterface getValueMetaForColumn( String colName, boolean notExpandingMaps );
 
   /**
    * Return a list of Kettle types for all the columns explicitly defined in
@@ -113,7 +113,7 @@ public interface ITableMetaData {
    * @return a list of Kettle types for explicitly defined columns in this
    *         table
    */
-  List<ValueMetaInterface> getValueMetasForSchema();
+  List<ValueMetaInterface> getValueMetasForSchema( boolean notExpandingMaps );
 
   /**
    * Return the appropriate Kettle type for the selector depending on id this is column or function. If the column is
@@ -122,7 +122,7 @@ public interface ITableMetaData {
    * @param selector the selector that corresponds either to Cassandra column name or Cassandra function to get the Kettle type
    * @return the Kettle type for the selector
    */
-  ValueMetaInterface getValueMeta( Selector selector );
+  ValueMetaInterface getValueMeta( Selector selector, boolean notExpandingMaps );
 
   /**
    * Returns the CQL type for a given column in this table

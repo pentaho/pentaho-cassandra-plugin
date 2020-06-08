@@ -18,7 +18,7 @@
  *
  ******************************************************************************/
 
-package org.pentaho.cassandra.datastax;
+package org.pentaho.cassandra.driver.datastax;
 
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.CqlSession;
@@ -51,6 +51,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -68,16 +69,18 @@ public class DriverCQLRowHandler implements CQLRowHandler {
   private boolean unloggedBatch = true;
 
   private boolean expandCollection = true;
+  private boolean notExpandingMaps = false;
   private int primaryCollectionOutputIndex = -1;
 
-  public DriverCQLRowHandler( DriverKeyspace keyspace, Session session, boolean expandCollection ) {
+  public DriverCQLRowHandler( DriverKeyspace keyspace, Session session, boolean expandCollection, boolean notExpandingMaps ) {
     this.keyspace = keyspace;
     this.session = (CqlSession) session;
     this.expandCollection = expandCollection;
+    this.notExpandingMaps = notExpandingMaps;
   }
 
-  public DriverCQLRowHandler( DriverKeyspace keyspace ) {
-    this( keyspace, keyspace.getConnection().getSession( keyspace.getName() ), true );
+  public DriverCQLRowHandler( DriverKeyspace keyspace ) throws Exception {
+    this( keyspace, keyspace.getConnection().getSession( keyspace.getName() ), true, false );
   }
 
   public boolean supportsCQLVersion( int cqMajorlVersion ) {
@@ -108,7 +111,7 @@ public class DriverCQLRowHandler implements CQLRowHandler {
     columns = result.getColumnDefinitions();
     if ( expandCollection ) {
       for ( int i = 0; i < columns.size(); i++ ) {
-        if ( CassandraUtils.isCollection( columns.get( i ).getType() ) ) {
+        if ( CassandraUtils.isCollection( columns.get( i ).getType(), notExpandingMaps ) ) {
           if ( primaryCollectionOutputIndex < 0 ) {
             primaryCollectionOutputIndex = i;
           }
@@ -143,7 +146,7 @@ public class DriverCQLRowHandler implements CQLRowHandler {
     if ( primaryCollectionOutputIndex >= 0 ) {
       Object collectionObject = row.getObject( primaryCollectionOutputIndex );
       if ( collectionObject != null
-          && ( collectionObject instanceof Map<?, ?> || collectionObject instanceof Collection<?> ) ) {
+        && ( collectionObject instanceof Collection<?> || ( !notExpandingMaps && collectionObject instanceof Map<?, ?> ) ) ) {
 
         Collection<?> collection =
             ( collectionObject instanceof Map<?, ?> ) ? ( (Map<?, ?>) collectionObject ).keySet()
@@ -197,7 +200,7 @@ public class DriverCQLRowHandler implements CQLRowHandler {
           return (long) row.getShort( i );
         } else if ( dt.equals( DataTypes.TINYINT ) ) {
           return (long) row.getByte( i );
-        } else if ( dt.equals( DataTypes.BIGINT ) ) {
+        } else if ( dt.equals( DataTypes.INT ) ) {
           return (long) row.getInt( i );
         } else if ( dt.equals( DataTypes.FLOAT ) ) {
           return (double) row.getFloat( i );
@@ -216,11 +219,11 @@ public class DriverCQLRowHandler implements CQLRowHandler {
         } else if ( dt.equals( DataTypes.BLOB ) ) {
           return row.getByteBuffer( i ).array();
         } else {
-          return row.getObject( i );
+          return Objects.toString( row.getObject( i ), null );
         }
 
       default:
-        return row.getObject( i );
+        return Objects.toString( row.getObject( i ), null );
     }
   }
 

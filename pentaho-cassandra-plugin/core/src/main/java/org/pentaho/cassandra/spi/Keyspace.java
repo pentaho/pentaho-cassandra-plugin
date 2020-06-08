@@ -132,7 +132,10 @@ public interface Keyspace {
    * @return
    * @throws Exception
    */
+  @Deprecated
   IQueryMetaData getQueryMetaData( String query ) throws Exception;
+
+  IQueryMetaData getQueryMetaData( String query, boolean expandCollections, boolean notExpandingMaps ) throws Exception;
 
   /**
    * Create a table in the current keyspace.
@@ -193,5 +196,7 @@ public interface Keyspace {
    * @return a CQLRowHandler or null if the driver in question does not support
    *         CQL
    */
-  CQLRowHandler getCQLRowHandler();
+  CQLRowHandler getCQLRowHandler() throws Exception;
+
+  CQLRowHandler getCQLRowHandler( boolean notExpandingMaps ) throws Exception;
 }

@@ -18,12 +18,15 @@
  *
  ******************************************************************************/
 
-package org.pentaho.cassandra.datastax;
+package org.pentaho.cassandra.driver.datastax;
 
 import com.datastax.oss.driver.api.core.cql.ColumnDefinition;
 import com.datastax.oss.driver.api.core.cql.ColumnDefinitions;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import com.datastax.oss.driver.api.core.type.DataType;
+import com.datastax.oss.driver.api.core.type.ListType;
+import com.datastax.oss.driver.api.core.type.MapType;
+import com.datastax.oss.driver.api.core.type.SetType;
 import org.pentaho.cassandra.spi.IQueryMetaData;
 import org.pentaho.cassandra.spi.Keyspace;
 import org.pentaho.di.core.row.ValueMetaInterface;
@@ -38,11 +41,29 @@ public class DriverQueryMetaData implements IQueryMetaData {
   protected String tableName = null;
   protected ColumnDefinitions columnDefinitions;
   protected boolean expandCollection = true;
+  protected boolean notExpandingMaps = false;
+
+  private boolean processedFirstComplex = false;
 
   @Override
   public void setKeyspace( Keyspace ks ) {
     keySpace = (DriverKeyspace) ks;
-    expandCollection = keySpace.getConnection().isExpandCollection();
+  }
+
+  public boolean isExpandCollection() {
+    return expandCollection;
+  }
+
+  public void setExpandCollection( boolean expandCollection ) {
+    this.expandCollection = expandCollection;
+  }
+
+  public boolean isNotExpandingMaps() {
+    return notExpandingMaps;
+  }
+
+  public void setNotExpandingMaps( boolean notExpandingMaps ) {
+    this.notExpandingMaps = notExpandingMaps;
   }
 
   @Override
@@ -68,7 +89,11 @@ public class DriverQueryMetaData implements IQueryMetaData {
     if ( columnDefinitions != null ) {
       ColumnDefinition cd = columnDefinitions.get( colName );
       if ( cd != null ) {
-        return TableMetaData.toValueMeta( cd.getName(), cd.getType(), expandCollection );
+        ValueMetaInterface vm =  TableMetaData.toValueMeta( cd.getName(), cd.getType(), expandCollection && !processedFirstComplex, notExpandingMaps );
+        if ( cd.getType() instanceof SetType || cd.getType() instanceof ListType || ( !notExpandingMaps && cd.getType() instanceof MapType ) ) {
+          processedFirstComplex = true;
+        }
+        return vm;
       }
     }
     return null;
@@ -76,6 +101,7 @@ public class DriverQueryMetaData implements IQueryMetaData {
 
   @Override
   public List<ValueMetaInterface> getValueMetasForQuery() {
+    processedFirstComplex = false;
     return getColumnNames().stream().map( cn -> getValueMetaForColumn( cn ) ).collect( Collectors.toList() );
   }
 

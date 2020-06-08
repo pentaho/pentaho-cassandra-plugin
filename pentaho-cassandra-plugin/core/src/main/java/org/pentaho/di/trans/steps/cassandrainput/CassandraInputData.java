@@ -23,7 +23,7 @@
 package org.pentaho.di.trans.steps.cassandrainput;
 
 import org.pentaho.cassandra.ConnectionFactory;
-import org.pentaho.cassandra.datastax.DriverConnection;
+import org.pentaho.cassandra.driver.datastax.DriverConnection;
 import org.pentaho.cassandra.util.CassandraUtils;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.logging.LogChannelInterface;

@@ -23,7 +23,7 @@
 package org.pentaho.di.trans.steps.cassandrainput;
 
 import org.eclipse.swt.widgets.Shell;
-import org.pentaho.cassandra.datastax.DriverConnection;
+import org.pentaho.cassandra.driver.datastax.DriverConnection;
 import org.pentaho.cassandra.spi.IQueryMetaData;
 import org.pentaho.cassandra.spi.Keyspace;
 import org.pentaho.di.core.Counter;
@@ -146,6 +146,11 @@ public class CassandraInputMeta extends BaseStepMeta implements StepMetaInterfac
   @Injection( name = "APPLICATION_CONF" )
   protected String applicationConfFile = null;
 
+  @Injection( name = "NOT_EXPANDING_MAPS" )
+  protected boolean notExpandingMaps = false;
+
+  @Injection( name = "EXPAND_COLLECTION" )
+  protected boolean expandComplex = true;
 
   /**
    * Set the timeout (milliseconds) to use for socket comms
@@ -358,6 +363,22 @@ public class CassandraInputMeta extends BaseStepMeta implements StepMetaInterfac
     this.localDataCenter = localDataCenter;
   }
 
+  public boolean isNotExpandingMaps() {
+    return notExpandingMaps;
+  }
+
+  public void setNotExpandingMaps( boolean notExpandingMaps ) {
+    this.notExpandingMaps = notExpandingMaps;
+  }
+
+  public boolean isExpandComplex() {
+    return expandComplex;
+  }
+
+  public void setExpandComplex( boolean expandComplex ) {
+    this.expandComplex = expandComplex;
+  }
+
   @Override
   public String getXML() {
     StringBuffer retval = new StringBuffer();
@@ -421,6 +442,11 @@ public class CassandraInputMeta extends BaseStepMeta implements StepMetaInterfac
     retval.append( "    " ).append( //$NON-NLS-1$
       XMLHandler.addTagValue( "local_datacenter", localDataCenter ) ); //$NON-NLS-1$
 
+    retval.append( "    " ).append( //$NON-NLS-1$
+      XMLHandler.addTagValue( "not_backward_compatible", notExpandingMaps ) ); //$NON-NLS-1$
+
+    retval.append( "    " ).append( //$NON-NLS-1$
+      XMLHandler.addTagValue( "expand_complex", expandComplex ) ); //$NON-NLS-1$
 
     return retval.toString();
   }
@@ -453,6 +479,11 @@ public class CassandraInputMeta extends BaseStepMeta implements StepMetaInterfac
     localDataCenter = XMLHandler.getTagValue( stepnode, "local_datacenter" );
     applicationConfFile = XMLHandler.getTagValue( stepnode, "application_conf_file" );
 
+    notExpandingMaps = "Y".equalsIgnoreCase( XMLHandler.getTagValue( stepnode, "not_backward_compatible" ) );
+    if ( !Utils.isEmpty( XMLHandler.getTagValue( stepnode, "expand_complex" ) ) ) {
+      expandComplex = "Y".equalsIgnoreCase( XMLHandler.getTagValue( stepnode, "expand_complex" ) );
+    }
+
   }
 
   @Override
@@ -477,6 +508,8 @@ public class CassandraInputMeta extends BaseStepMeta implements StepMetaInterfac
     ssl = rep.getStepAttributeBoolean( id_step, 0, "ssl" );
     localDataCenter = rep.getStepAttributeString( id_step, 0, "local_datacenter" );
     applicationConfFile = rep.getStepAttributeString( id_step, 0, "applicationConfFile" );
+    notExpandingMaps = rep.getStepAttributeBoolean( id_step, 0, "not_backward_compatible" );
+    expandComplex = rep.getStepAttributeBoolean( id_step, 0, "expand_complex", true );
   }
 
   @Override
@@ -528,6 +561,10 @@ public class CassandraInputMeta extends BaseStepMeta implements StepMetaInterfac
 
     rep.saveStepAttribute( id_transformation, id_step, 0, "application_conf_file", applicationConfFile );
 
+    rep.saveStepAttribute( id_transformation, id_step, 0, "expand_complex", expandComplex );
+
+    rep.saveStepAttribute( id_transformation, id_step, 0, "not_backward_compatible", notExpandingMaps );
+
   }
 
   @Override
@@ -551,6 +588,8 @@ public class CassandraInputMeta extends BaseStepMeta implements StepMetaInterfac
     socketTimeout = ""; //$NON-NLS-1$
     ssl = false;
     localDataCenter = "datacenter1";
+    expandComplex = true;
+    notExpandingMaps = false;
   }
 
   @Override
@@ -567,13 +606,20 @@ public class CassandraInputMeta extends BaseStepMeta implements StepMetaInterfac
       return;
     }
 
+    if ( executeForEachIncomingRow ) {
+      // We can't do field substitution here, so need to convert the field subsitution to something
+      // Cassandra is actually OK with.  Search for ?{field_name} and replace with ?
+      queryS = queryS.replaceAll( "\\?\\{[^\\}]+\\}", "?" );
+    }
+
     DriverConnection conn = null;
 
     try {
 
       conn = CassandraInputData.getCassandraConnection( this, space, getLog() );
+      conn.setExpandCollection( expandComplex );
       Keyspace ks = conn.getKeyspace( keyspaceS );
-      IQueryMetaData qm = ks.getQueryMetaData( queryS );
+      IQueryMetaData qm = ks.getQueryMetaData( queryS, expandComplex, notExpandingMaps );
 
       List<ValueMetaInterface> vmis = qm.getValueMetasForQuery();
       vmis.stream().forEach( vmi -> {

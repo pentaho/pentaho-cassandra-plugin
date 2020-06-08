@@ -109,6 +109,18 @@ public class CassandraInputMetaInjectionTest extends BaseMetadataInjectionTest<C
         return meta.getApplicationConfFile();
       }
     } );
+    check( "EXPAND_COLLECTION", new BooleanGetter() {
+      @Override
+      public boolean get() {
+        return meta.isExpandComplex();
+      }
+    } );
+    check( "NOT_EXPANDING_MAPS", new BooleanGetter() {
+      @Override
+      public boolean get() {
+        return meta.isNotExpandingMaps();
+      }
+    } );
   }
 
 }

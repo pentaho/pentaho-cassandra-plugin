@@ -31,6 +31,14 @@ public interface IQueryMetaData {
 
   void parseQuery( String query ) throws Exception;
 
+  boolean isExpandCollection();
+
+  void setExpandCollection( boolean expandCollection );
+
+  boolean isNotExpandingMaps();
+
+  void setNotExpandingMaps( boolean notExpandingMaps );
+
   String getTableName();
 
   /**

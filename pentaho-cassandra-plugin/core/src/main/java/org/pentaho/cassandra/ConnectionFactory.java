@@ -22,7 +22,7 @@
 
 package org.pentaho.cassandra;
 
-import org.pentaho.cassandra.datastax.DriverConnection;
+import org.pentaho.cassandra.driver.datastax.DriverConnection;
 import org.pentaho.cassandra.spi.Connection;
 
 public class ConnectionFactory {

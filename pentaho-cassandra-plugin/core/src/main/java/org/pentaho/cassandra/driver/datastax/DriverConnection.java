@@ -18,7 +18,7 @@
  *
  ******************************************************************************/
 
-package org.pentaho.cassandra.datastax;
+package org.pentaho.cassandra.driver.datastax;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
@@ -63,7 +63,7 @@ public class DriverConnection implements Connection, AutoCloseable {
   private CqlSession session;
   private Map<String, CqlSession> sessions = new HashMap<>();
 
-  private boolean expandCollection = true;
+  protected boolean expandCollection = true;
 
   public DriverConnection() {
   }
@@ -121,12 +121,16 @@ public class DriverConnection implements Connection, AutoCloseable {
   }
 
   @Override
-  public void openConnection() throws Exception {
+  public CqlSession openConnection() throws Exception {
     session = getCluster();
+    sessions.put( null, session );
+    return session;
   }
 
-  public void openConnection( String keySpace ) throws Exception {
+  public CqlSession openConnection( String keySpace ) throws Exception {
     session = getCluster( keySpace );
+    sessions.put( keySpace, session );
+    return session;
   }
 
   @Override
@@ -134,19 +138,22 @@ public class DriverConnection implements Connection, AutoCloseable {
 
     Exception ex = null;
 
-    if ( session != null ) {
+    // No longer needed since all open sessions will be int he sessions object
+    /*if ( session != null ) {
       try {
         session.close();
       } catch ( Exception e ) {
         ex = e;
       }
+    }*/
+    if ( sessions != null ) {
+      try {
+        sessions.forEach( ( name, session ) -> session.close() );
+      } catch ( Exception e ) {
+        ex = e;
+      }
+      sessions.clear();
     }
-    try {
-      sessions.forEach( ( name, session ) -> session.close() );
-    } catch ( Exception e ) {
-      ex = e;
-    }
-    sessions.clear();
 
     if ( ex != null ) {
       throw ex;
@@ -163,11 +170,11 @@ public class DriverConnection implements Connection, AutoCloseable {
     this.useCompression = useCompression;
   }
 
-  public CqlSession getCluster() {
+  protected CqlSession getCluster() {
     return getCluster( null );
   }
 
-  public CqlSession getCluster( String keySpace ) {
+  protected CqlSession getCluster( String keySpace ) {
 
     ClassLoader prevLoader = Thread.currentThread().getContextClassLoader();
 
@@ -288,13 +295,13 @@ public class DriverConnection implements Connection, AutoCloseable {
 
   }
 
-  public CqlSession getSession( String keyspace ) {
-    return sessions.computeIfAbsent( keyspace, ks -> getCluster( ks ) );
+  public CqlSession getSession( String keyspace ) throws Exception {
+    return sessions.containsKey( keyspace ) ? sessions.get( keyspace ) : openConnection( keyspace );
   }
 
   @Override
   public Keyspace getKeyspace( String keyspacename ) throws Exception {
-    KeyspaceMetadata keyspace = getCluster().getMetadata().getKeyspace( keyspacename ).get();
+    KeyspaceMetadata keyspace = getSession( keyspacename ).getMetadata().getKeyspace( keyspacename ).get();
     return new DriverKeyspace( this, keyspace, session );
   }
 
@@ -305,6 +312,10 @@ public class DriverConnection implements Connection, AutoCloseable {
 
   public boolean isExpandCollection() {
     return expandCollection;
+  }
+
+  public void setExpandCollection( boolean expandCollection ) {
+    this.expandCollection = expandCollection;
   }
 
   protected InetSocketAddress[] getAddresses() {

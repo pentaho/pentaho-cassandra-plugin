@@ -18,7 +18,7 @@
  *
  ******************************************************************************/
 
-package org.pentaho.cassandra.datastax;
+package org.pentaho.cassandra.driver.datastax;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
@@ -121,9 +121,18 @@ public class DriverKeyspace implements Keyspace {
   }
 
   @Override
+  @Deprecated
   public IQueryMetaData getQueryMetaData( String query ) throws Exception {
+    return getQueryMetaData( query, true, false );
+  }
+
+  @Override
+  public IQueryMetaData getQueryMetaData( String query, boolean expandCollections, boolean notExpandingMaps ) throws Exception {
     DriverQueryMetaData queryMeta = new DriverQueryMetaData();
+
+    queryMeta.setNotExpandingMaps( notExpandingMaps );
     queryMeta.setKeyspace( this );
+    queryMeta.setExpandCollection( expandCollections );
     queryMeta.parseQuery( query );
     return queryMeta;
   }
@@ -203,13 +212,18 @@ public class DriverKeyspace implements Keyspace {
     getSession().execute( QueryBuilder.truncate( tableName ).build() );
   }
 
-  protected CqlSession getSession() {
+  protected CqlSession getSession() throws Exception {
     return conn.getSession( name );
     //return this.session;
   }
 
   @Override
-  public CQLRowHandler getCQLRowHandler() {
-    return new DriverCQLRowHandler( this, getSession(), getConnection().isExpandCollection() );
+  public CQLRowHandler getCQLRowHandler() throws Exception {
+    return getCQLRowHandler( false );
+  }
+
+  @Override
+  public CQLRowHandler getCQLRowHandler( boolean notExpandingMaps ) throws Exception {
+    return new DriverCQLRowHandler( this, getSession(), getConnection().isExpandCollection(), notExpandingMaps );
   }
 }

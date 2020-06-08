@@ -22,7 +22,7 @@
 
 package org.pentaho.di.trans.steps.cassandrainput;
 
-import org.pentaho.cassandra.datastax.DriverConnection;
+import org.pentaho.cassandra.driver.datastax.DriverConnection;
 import org.pentaho.cassandra.spi.CQLRowHandler;
 import org.pentaho.cassandra.spi.Keyspace;
 import org.pentaho.cassandra.util.Compression;
@@ -104,6 +104,7 @@ public class CassandraInput extends BaseStep implements StepInterface {
 
         try {
           connection = CassandraInputData.getCassandraConnection( meta, this, getLogChannel(), true );
+          connection.setExpandCollection( meta.isExpandComplex() );
           keyspace = connection.getKeyspace( keyspaceS );
 
         } catch ( Exception ex ) {
@@ -188,11 +189,13 @@ public class CassandraInput extends BaseStep implements StepInterface {
     }
     Compression compression = meta.getUseCompression() ? Compression.GZIP : Compression.NONE;
     try {
-      logBasic( BaseMessages.getString( CassandraInputMeta.PKG, "CassandraInput.Info.ExecutingQuery", //$NON-NLS-1$
-        queryS, ( meta.getUseCompression() ? BaseMessages.getString( CassandraInputMeta.PKG,
-          "CassandraInput.Info.UsingGZIPCompression" ) : "" ) ) ); // $NON-NLS-!$ //$NON-NLS-2$
+      if ( log.isDebug() ) {
+        logDebug( BaseMessages.getString( CassandraInputMeta.PKG, "CassandraInput.Info.ExecutingQuery", //$NON-NLS-1$
+          queryS, ( meta.getUseCompression() ? BaseMessages.getString( CassandraInputMeta.PKG,
+            "CassandraInput.Info.UsingGZIPCompression" ) : "" ) ) ); // $NON-NLS-!$ //$NON-NLS-2$
+      }
       if ( cqlHandler == null ) {
-        cqlHandler = keyspace.getCQLRowHandler();
+        cqlHandler = keyspace.getCQLRowHandler( meta.isNotExpandingMaps() );
       }
       cqlHandler.newRowQuery( this, tableName, queryS, compression.name(), "", log );
     } catch ( Exception e ) {

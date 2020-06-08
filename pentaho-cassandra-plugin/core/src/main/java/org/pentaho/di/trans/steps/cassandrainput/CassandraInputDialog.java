@@ -33,6 +33,7 @@ import org.eclipse.swt.events.MouseAdapter;
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.events.ShellAdapter;
 import org.eclipse.swt.events.ShellEvent;
 import org.eclipse.swt.layout.FormAttachment;
@@ -45,7 +46,7 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
-import org.pentaho.cassandra.datastax.DriverConnection;
+import org.pentaho.cassandra.driver.datastax.DriverConnection;
 import org.pentaho.cassandra.spi.IQueryMetaData;
 import org.pentaho.cassandra.spi.Keyspace;
 import org.pentaho.di.core.Const;
@@ -119,6 +120,9 @@ public class CassandraInputDialog extends BaseStepDialog implements StepDialogIn
 
   private Button wExecuteForEachRow;
 
+  private Button wExpandMaps;
+  private Button wExpandCollection;
+
   public CassandraInputDialog( Shell parent, Object in, TransMeta tr, String name ) {
 
     super( parent, (BaseStepMeta) in, tr, name );
@@ -142,6 +146,18 @@ public class CassandraInputDialog extends BaseStepDialog implements StepDialogIn
       @Override
       public void modifyText( ModifyEvent e ) {
         currentMeta.setChanged();
+      }
+    };
+
+    SelectionListener lsSel = new SelectionListener() {
+      @Override
+      public void widgetSelected( SelectionEvent selectionEvent ) {
+        lsMod.modifyText( null );
+      }
+
+      @Override
+      public void widgetDefaultSelected( SelectionEvent selectionEvent ) {
+
       }
     };
 
@@ -457,12 +473,7 @@ public class CassandraInputDialog extends BaseStepDialog implements StepDialogIn
     fd.left = new FormAttachment( middle, 0 );
     fd.top = new FormAttachment( wKeyspace, margin );
     wCompression.setLayoutData( fd );
-    wCompression.addSelectionListener( new SelectionAdapter() {
-      @Override
-      public void widgetSelected( SelectionEvent e ) {
-        currentMeta.setChanged();
-      }
-    } );
+    wCompression.addSelectionListener( lsSel );
 
     // execute for each row
     Label executeForEachLab = new Label( shell, SWT.RIGHT );
@@ -482,6 +493,47 @@ public class CassandraInputDialog extends BaseStepDialog implements StepDialogIn
     fd.left = new FormAttachment( middle, 0 );
     fd.top = new FormAttachment( wCompression, margin );
     wExecuteForEachRow.setLayoutData( fd );
+    wExecuteForEachRow.addSelectionListener( lsSel );
+
+    // expand collection
+    Label expandCollectionLabel = new Label( shell, SWT.RIGHT );
+    props.setLook( expandCollectionLabel );
+    expandCollectionLabel
+      .setText( BaseMessages.getString( PKG, "CassandraInputDialog.ExpandCollection.Label" ) ); //$NON-NLS-1$
+    fd = new FormData();
+    fd.right = new FormAttachment( middle, -margin );
+    fd.left = new FormAttachment( 0, 0 );
+    fd.top = new FormAttachment( wExecuteForEachRow, margin );
+    expandCollectionLabel.setLayoutData( fd );
+
+    wExpandCollection = new Button( shell, SWT.CHECK );
+    props.setLook( wExpandCollection );
+    fd = new FormData();
+    fd.right = new FormAttachment( 100, 0 );
+    fd.left = new FormAttachment( middle, 0 );
+    fd.top = new FormAttachment( wExecuteForEachRow, margin );
+    wExpandCollection.setLayoutData( fd );
+    wExpandCollection.addSelectionListener( lsSel );
+
+    // execute for each row
+    Label expandMapsLab = new Label( shell, SWT.RIGHT );
+    props.setLook( expandMapsLab );
+    expandMapsLab
+      .setText( BaseMessages.getString( PKG, "CassandraInputDialog.ExpandMaps.Label" ) ); //$NON-NLS-1$
+    fd = new FormData();
+    fd.right = new FormAttachment( middle, -margin );
+    fd.left = new FormAttachment( 0, 0 );
+    fd.top = new FormAttachment( wExpandCollection, margin );
+    expandMapsLab.setLayoutData( fd );
+
+    wExpandMaps = new Button( shell, SWT.CHECK );
+    props.setLook( wExpandMaps );
+    fd = new FormData();
+    fd.right = new FormAttachment( 100, 0 );
+    fd.left = new FormAttachment( middle, 0 );
+    fd.top = new FormAttachment( wExpandCollection, margin );
+    wExpandMaps.setLayoutData( fd );
+    wExpandMaps.addSelectionListener( lsSel );
 
     // Buttons inherited from BaseStepDialog
     wOK = new Button( shell, SWT.PUSH );
@@ -525,7 +577,7 @@ public class CassandraInputDialog extends BaseStepDialog implements StepDialogIn
     wlCql.setText( BaseMessages.getString( PKG, "CassandraInputDialog.CQL.Label" ) ); //$NON-NLS-1$
     fd = new FormData();
     fd.left = new FormAttachment( 0, 0 );
-    fd.top = new FormAttachment( wExecuteForEachRow, margin );
+    fd.top = new FormAttachment( wExpandMaps, margin );
     fd.right = new FormAttachment( middle, -margin );
     wlCql.setLayoutData( fd );
 
@@ -672,6 +724,8 @@ public class CassandraInputDialog extends BaseStepDialog implements StepDialogIn
     meta.setExecuteForEachIncomingRow( wExecuteForEachRow.getSelection() );
     meta.setSsl( wSsl.getSelection() );
     meta.setApplicationConfFile( wApplicationConf.getText() );
+    meta.setNotExpandingMaps( !wExpandMaps.getSelection() );
+    meta.setExpandComplex( wExpandCollection.getSelection() );
   }
 
   protected void ok() {
@@ -724,6 +778,9 @@ public class CassandraInputDialog extends BaseStepDialog implements StepDialogIn
     if ( !Utils.isEmpty( currentMeta.getCQLSelectQuery() ) ) {
       wCql.setText( currentMeta.getCQLSelectQuery() );
     }
+
+    wExpandMaps.setSelection( !currentMeta.isNotExpandingMaps() );
+    wExpandCollection.setSelection( currentMeta.isExpandComplex() );
   }
 
   protected void setPosition() {

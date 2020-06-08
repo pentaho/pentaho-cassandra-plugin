@@ -14,3 +14,5 @@ pdi-bin/
 override.properties
 *.iml
 **/target/
+*.project
+*.classpath

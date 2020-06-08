@@ -3,10 +3,10 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.pentaho</groupId>
-    <artifactId>pentaho-ce-jar-parent-pom</artifactId>
+    <artifactId>pentaho-cassandra-plugins-parent</artifactId>
     <version>9.1.0.0-SNAPSHOT</version>
   </parent>
-  <artifactId>pentaho-cassandra-plugins-parent</artifactId>
+  <artifactId>pentaho-cassandra-sstable-plugin-parent</artifactId>
   <packaging>pom</packaging>
   <scm>
     <connection>scm:git:git@github.com:pentaho/${project.artifactId}.git</connection>
@@ -25,7 +25,6 @@
     <pdi.version>9.1.0.0-SNAPSHOT</pdi.version>
     <cassandra.version>3.11.1</cassandra.version>
     <swt.version>4.6</swt.version>
-    <cassandra-driver.version>4.3.1</cassandra-driver.version>
     <mockito.version>1.9.5</mockito.version>
     <apache.commons.lang3.version>3.0</apache.commons.lang3.version>
     <commons-lang.version>2.6</commons-lang.version>
@@ -55,8 +54,19 @@
         <activeByDefault>true</activeByDefault>
       </activation>
       <modules>
-        <module>pentaho-cassandra-plugin</module>
-        <module>pentaho-cassandra-sstable-plugin</module>
+        <module>core</module>
+        <module>assemblies</module>
+      </modules>
+    </profile>
+    <profile>
+      <id>core</id>
+      <activation>
+        <property>
+          <name>core</name>
+        </property>
+      </activation>
+      <modules>
+        <module>core</module>
       </modules>
     </profile>
   </profiles>
@@ -139,34 +149,7 @@
         <artifactId>cassandra-all</artifactId>
         <version>${cassandra.version}</version>
         <scope>compile</scope>
-        <!-- 
-        <exclusions>
-          <exclusion>
-            <groupId>*</groupId>
-            <artifactId>*</artifactId>
-          </exclusion>
-        </exclusions>
-         -->
-      </dependency>
-	  <dependency>
-	    <!-- This is required for the SSTableWriter -->
-	    <groupId>com.datastax.cassandra</groupId>
-	    <artifactId>cassandra-driver-core</artifactId>
-	    <version>3.4.0</version>
-	    <scope>compile</scope>
-	    <exclusions>
-          <exclusion>
-            <groupId>*</groupId>
-            <artifactId>*</artifactId>
-          </exclusion>
-        </exclusions>
-	  </dependency>
-      <dependency>
-        <groupId>com.datastax.oss</groupId>
-        <artifactId>java-driver-core</artifactId>
-        <version>${cassandra-driver.version}</version>
-        <scope>compile</scope>
-        <!-- 
+        <!--
         <exclusions>
           <exclusion>
             <groupId>*</groupId>
@@ -176,18 +159,11 @@
          -->
       </dependency>
       <dependency>
-        <groupId>com.datastax.oss</groupId>
-        <artifactId>java-driver-query-builder</artifactId>
-        <version>${cassandra-driver.version}</version>
+        <!-- This is required for the SSTableWriter -->
+        <groupId>com.datastax.cassandra</groupId>
+        <artifactId>cassandra-driver-core</artifactId>
+        <version>3.4.0</version>
         <scope>compile</scope>
-        <!-- 
-        <exclusions>
-          <exclusion>
-            <groupId>*</groupId>
-            <artifactId>*</artifactId>
-          </exclusion>
-        </exclusions>
-         -->
       </dependency>
 
       <dependency>
@@ -259,8 +235,8 @@
           </exclusion>
         </exclusions>
       </dependency>
-      
-      
+
+
       <dependency>
         <groupId>io.dropwizard.metrics</groupId>
         <artifactId>metrics-core</artifactId>
@@ -321,22 +297,22 @@
           </exclusion>
         </exclusions>
       </dependency>
-           
-           <!-- 
-           
-      <dependency>
-        <groupId>org.apache.thrift</groupId>
-        <artifactId>libthrift</artifactId>
-        <version>${libthrift.version}</version>
-        <scope>runtime</scope>
-        <exclusions>
-          <exclusion>
-            <groupId>*</groupId>
-            <artifactId>*</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-       -->
+
+      <!--
+
+ <dependency>
+   <groupId>org.apache.thrift</groupId>
+   <artifactId>libthrift</artifactId>
+   <version>${libthrift.version}</version>
+   <scope>runtime</scope>
+   <exclusions>
+     <exclusion>
+       <groupId>*</groupId>
+       <artifactId>*</artifactId>
+     </exclusion>
+   </exclusions>
+ </dependency>
+  -->
 
       <dependency>
         <groupId>org.apache.commons</groupId>
@@ -405,8 +381,8 @@
     </dependencies>
   </dependencyManagement>
   <modules>
-    <module>pentaho-cassandra-plugin</module>
-    <module>pentaho-cassandra-sstable-plugin</module>
+    <module>core</module>
+    <module>assemblies</module>
   </modules>
 </project>
 

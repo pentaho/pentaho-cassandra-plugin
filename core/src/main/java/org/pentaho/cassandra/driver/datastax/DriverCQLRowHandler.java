@@ -1,6 +1,6 @@
 /*******************************************************************************
  *
- * Copyright (C) 2018 by Hitachi Vantara : http://www.pentaho.com
+ * Copyright (C) 2020 by Hitachi Vantara : http://www.pentaho.com
  *
  *******************************************************************************
  *
@@ -260,6 +260,10 @@ public class DriverCQLRowHandler implements CQLRowHandler {
 
   private Session getSession() {
     return session;
+  }
+
+  public void setTtlSec( int ttl ) {
+    ttlSec = ttl;
   }
 
 }

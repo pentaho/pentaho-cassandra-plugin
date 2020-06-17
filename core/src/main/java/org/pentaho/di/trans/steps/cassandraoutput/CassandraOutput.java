@@ -373,14 +373,7 @@ public class CassandraOutput extends BaseStep implements StepInterface {
       int rowsAdded = 0;
       batch = CassandraUtils.fixBatchMismatchedTypes( batch, getInputRowMeta(), m_cassandraMeta );
       DriverCQLRowHandler handler = (DriverCQLRowHandler) m_cqlHandler;
-      String ttl = m_meta.getTTL();
-      if ( !Utils.isEmpty( ttl ) ) {
-        try {
-          handler.setTtlSec( Integer.parseInt( ttl ) );
-        } catch ( NumberFormatException e ) {
-          logDebug( BaseMessages.getString( CassandraOutputMeta.PKG, "CassandraOutput.Error.CantParseTTL", ttl ) );
-        }
-      }
+      validateTtlField( handler, m_meta.getTTL() );
       handler.setUnloggedBatch( m_meta.getUseUnloggedBatch() );
       handler.batchInsert( getInputRowMeta(), batch, m_cassandraMeta, m_consistencyLevel, m_meta
           .getInsertFieldsNotInMeta(), getLogChannel() );
@@ -430,6 +423,16 @@ public class CassandraOutput extends BaseStep implements StepInterface {
           subBatch.add( batch.remove( batch.size() - 1 ) );
           doBatch( subBatch );
         }
+      }
+    }
+  }
+
+  private void validateTtlField( DriverCQLRowHandler handler, String ttl ) {
+    if ( !Utils.isEmpty( ttl ) ) {
+      try {
+        handler.setTtlSec( Integer.parseInt( ttl ) );
+      } catch ( NumberFormatException e ) {
+        logDebug( BaseMessages.getString( CassandraOutputMeta.PKG, "CassandraOutput.Error.CantParseTTL", ttl ) );
       }
     }
   }

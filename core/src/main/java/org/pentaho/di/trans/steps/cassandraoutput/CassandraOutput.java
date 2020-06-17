@@ -375,7 +375,11 @@ public class CassandraOutput extends BaseStep implements StepInterface {
       DriverCQLRowHandler handler = (DriverCQLRowHandler) m_cqlHandler;
       String ttl = m_meta.getTTL();
       if ( !Utils.isEmpty( ttl ) ) {
-        handler.setTtlSec( Integer.parseInt( ttl ) );
+        try {
+          handler.setTtlSec( Integer.parseInt( ttl ) );
+        } catch ( NumberFormatException e ) {
+          logDebug( BaseMessages.getString( CassandraOutputMeta.PKG, "CassandraOutput.Error.CantParseTTL", ttl ) );
+        }
       }
       handler.setUnloggedBatch( m_meta.getUseUnloggedBatch() );
       handler.batchInsert( getInputRowMeta(), batch, m_cassandraMeta, m_consistencyLevel, m_meta

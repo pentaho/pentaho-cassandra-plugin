@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.pentaho.cassandra.util.CassandraUtils;
 import org.pentaho.cassandra.ConnectionFactory;
 import org.pentaho.cassandra.driver.datastax.DriverCQLRowHandler;
@@ -426,8 +427,8 @@ public class CassandraOutput extends BaseStep implements StepInterface {
       }
     }
   }
-
-  private void validateTtlField( DriverCQLRowHandler handler, String ttl ) {
+  @VisibleForTesting
+  void validateTtlField( DriverCQLRowHandler handler, String ttl ) {
     if ( !Utils.isEmpty( ttl ) ) {
       try {
         handler.setTtlSec( Integer.parseInt( ttl ) );

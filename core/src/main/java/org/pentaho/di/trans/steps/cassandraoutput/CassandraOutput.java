@@ -478,26 +478,7 @@ public class CassandraOutput extends BaseStep implements StepInterface {
     m_opts.put( CassandraUtils.CQLOptions.DATASTAX_DRIVER_VERSION, CassandraUtils.CQLOptions.CQL3_STRING );
 
     // Set TTL if specified
-    String ttl = m_meta.getTTL();
-    ttl = environmentSubstitute( ttl );
-    if ( !Utils.isEmpty( ttl ) && !ttl.startsWith( "-" ) ) {
-      String ttlUnit = m_meta.getTTLUnit();
-      CassandraOutputMeta.TTLUnits theUnit = CassandraOutputMeta.TTLUnits.NONE;
-      for ( CassandraOutputMeta.TTLUnits u : CassandraOutputMeta.TTLUnits.values() ) {
-        if ( ttlUnit.equals( u.toString() ) ) {
-          theUnit = u;
-          break;
-        }
-      }
-      int value = -1;
-      try {
-        value = Integer.parseInt( ttl );
-        value = theUnit.convertToSeconds( value );
-        m_opts.put( CassandraUtils.BatchOptions.TTL, "" + value );
-      } catch ( NumberFormatException e ) {
-        logDebug( BaseMessages.getString( CassandraOutputMeta.PKG, "CassandraOutput.Error.CantParseTTL", ttl ) );
-      }
-    }
+    setTTLIfSpecified();
 
     if ( m_opts.size() > 0 ) {
       logBasic( BaseMessages.getString( CassandraOutputMeta.PKG, "CassandraOutput.Message.UsingConnectionOptions", //$NON-NLS-1$
@@ -528,6 +509,29 @@ public class CassandraOutput extends BaseStep implements StepInterface {
     }
 
     return connection;
+  }
+
+  void setTTLIfSpecified() {
+    String ttl = m_meta.getTTL();
+    ttl = environmentSubstitute( ttl );
+    if ( !Utils.isEmpty( ttl ) && !ttl.startsWith( "-" ) ) {
+      String ttlUnit = m_meta.getTTLUnit();
+      CassandraOutputMeta.TTLUnits theUnit = CassandraOutputMeta.TTLUnits.NONE;
+      for ( CassandraOutputMeta.TTLUnits u : CassandraOutputMeta.TTLUnits.values() ) {
+        if ( ttlUnit.equals( u.toString() ) ) {
+          theUnit = u;
+          break;
+        }
+      }
+      int value = -1;
+      try {
+        value = Integer.parseInt( ttl );
+        value = theUnit.convertToSeconds( value );
+        m_opts.put( CassandraUtils.BatchOptions.TTL, "" + value );
+      } catch ( NumberFormatException e ) {
+        logDebug( BaseMessages.getString( CassandraOutputMeta.PKG, "CassandraOutput.Error.CantParseTTL", ttl ) );
+      }
+    }
   }
 
   @Override

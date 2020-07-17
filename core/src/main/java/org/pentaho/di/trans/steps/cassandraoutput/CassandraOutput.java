@@ -510,7 +510,7 @@ public class CassandraOutput extends BaseStep implements StepInterface {
 
     return connection;
   }
-
+  @VisibleForTesting
   void setTTLIfSpecified() {
     String ttl = m_meta.getTTL();
     ttl = environmentSubstitute( ttl );

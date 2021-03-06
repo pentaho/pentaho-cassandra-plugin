@@ -6,10 +6,10 @@
 	<parent>
 		<groupId>org.pentaho</groupId>
 		<artifactId>pentaho-cassandra-plugin-assemblies</artifactId>
-		<version>9.2.0.0-SNAPSHOT</version>
+		<version>9.2.0.0-229</version>
 	</parent>
 	<artifactId>pentaho-cassandra-plugin-package</artifactId>
-	<version>9.2.0.0-SNAPSHOT</version>
+	<version>9.2.0.0-229</version>
 	<packaging>pom</packaging>
 	<name>Cassandra Plugin Package</name>
 	<dependencies>

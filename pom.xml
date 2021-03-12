@@ -42,7 +42,7 @@
     <jamm.version>0.3.0</jamm.version>
     <high-scale-lib.version>1.0.6</high-scale-lib.version>
     <supercsv.version>2.1.0</supercsv.version>
-    <libthrift.version>0.12.0</libthrift.version>
+    <libthrift.version>0.14.0</libthrift.version>
     <junit.version>4.11</junit.version>
     <xml-apis.version>2.0.2</xml-apis.version>
   </properties>

@@ -26,8 +26,6 @@ commitlog_sync: periodic
 commitlog_sync_period_in_ms: 10000
 commitlog_segment_size_in_mb: 32
 seed_provider:
-    - class_name: org.apache.cassandra.locator.SimpleSeedProvider
-      parameters:
     - seeds: "127.0.0.1"
 concurrent_reads: 32
 concurrent_writes: 32

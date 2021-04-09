@@ -59,34 +59,6 @@ public class SSTableOutputIT {
   }
 
   @Test
-  public void testCQLS2SSTableWriter() throws Exception {
-    SSTableOutput ssTableOutput =
-      new SSTableOutput( helper.stepMeta, helper.stepDataInterface, 0, helper.transMeta, helper.trans );
-    ValueMetaInterface one = new ValueMetaBase( "key", ValueMetaBase.TYPE_INTEGER );
-    ValueMetaInterface two = new ValueMetaBase( "two", ValueMetaBase.TYPE_STRING );
-    List<ValueMetaInterface> valueMetaList = new ArrayList<ValueMetaInterface>(  );
-    valueMetaList.add( one );
-    valueMetaList.add( two );
-    String[] fieldNames = new String[] { "key", "two" };
-    RowMetaInterface inputRowMeta = mock( RowMetaInterface.class );
-    when( inputRowMeta.clone() ).thenReturn( inputRowMeta );
-    when( inputRowMeta.size() ).thenReturn( 2 );
-    when( inputRowMeta.getFieldNames() ).thenReturn( fieldNames );
-    when( inputRowMeta.getValueMetaList() ).thenReturn( valueMetaList );
-    RowSet rowset = helper.getMockInputRowSet( new Object[] { 1, "some" } );
-    when( rowset.getRowMeta() ).thenReturn( inputRowMeta );
-    ssTableOutput.addRowSetToInputRowSets( rowset );
-    SSTableOutputMeta meta = createStepMeta( false );
-    ssTableOutput.init( meta, helper.initStepDataInterface );
-    ssTableOutput.processRow( meta, helper.processRowsStepDataInterface );
-    Assert.assertEquals( "Step init error.", 0, ssTableOutput.getErrors() );
-    assertEquals( "org.pentaho.di.trans.steps.cassandrasstableoutput.writer.CQL2SSTableWriter",
-      ssTableOutput.writer.getClass().getName() );
-    ssTableOutput.dispose( meta, helper.initStepDataInterface );
-    Assert.assertEquals( "Step dispose error", 0, ssTableOutput.getErrors() );
-  }
-
-  @Test
   public void testCQLS3SSTableWriter() throws Exception {
     SSTableOutput ssTableOutput =
       new SSTableOutput( helper.stepMeta, helper.stepDataInterface, 0, helper.transMeta, helper.trans );

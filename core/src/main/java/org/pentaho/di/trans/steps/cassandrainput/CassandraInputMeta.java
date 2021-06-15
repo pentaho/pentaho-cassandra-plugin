@@ -528,22 +528,16 @@ public class CassandraInputMeta extends BaseStepMeta implements StepMetaInterfac
       }
 
       // is there a LIMIT clause?
-      Scanner scanner = null;
       if ( subQ.toLowerCase().indexOf( "limit" ) > 0 ) { //$NON-NLS-1$
         String limitS =
           subQ.toLowerCase().substring( subQ.toLowerCase().indexOf( "limit" ) + 5, subQ.length() ).trim(); //$NON-NLS-1$
         limitS = limitS.replaceAll( ";", "" ); //$NON-NLS-1$ //$NON-NLS-2$
-        try {
-          scanner = new Scanner( limitS );
+        try ( Scanner scanner = new Scanner( limitS ) ) {
           m_rowLimit = scanner.nextInt();
         } catch ( Exception ex ) {
           logError( BaseMessages
             .getString( PKG, "CassandraInput.Error.UnableToParseLimitClause", m_cqlSelectQuery ) ); //$NON-NLS-1$
           m_rowLimit = 10000;
-        } finally {
-          if( scanner != null ) {
-            scanner.close();
-          }
         }
       }
 

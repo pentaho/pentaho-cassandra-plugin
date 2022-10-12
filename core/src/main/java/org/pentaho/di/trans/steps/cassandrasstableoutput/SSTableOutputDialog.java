@@ -2,7 +2,7 @@
  *
  * Pentaho Big Data
  *
- * Copyright (C) 2002-2018 by Hitachi Vantara : http://www.pentaho.com
+ * Copyright (C) 2002-2022 by Hitachi Vantara : http://www.pentaho.com
  *
  *******************************************************************************
  *
@@ -35,10 +35,8 @@ import org.eclipse.swt.layout.FormAttachment;
 import org.eclipse.swt.layout.FormData;
 import org.eclipse.swt.layout.FormLayout;
 import org.eclipse.swt.widgets.Button;
-import org.eclipse.swt.widgets.DirectoryDialog;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
-import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Shell;
@@ -54,10 +52,13 @@ import org.pentaho.di.trans.step.BaseStepMeta;
 import org.pentaho.di.trans.step.StepDialogInterface;
 import org.pentaho.di.trans.step.StepMeta;
 import org.pentaho.di.ui.core.dialog.EnterSelectionDialog;
+import org.pentaho.di.ui.core.events.dialog.FilterType;
+import org.pentaho.di.ui.core.events.dialog.SelectionAdapterFileDialogTextVar;
+import org.pentaho.di.ui.core.events.dialog.SelectionAdapterOptions;
+import org.pentaho.di.ui.core.events.dialog.SelectionOperation;
 import org.pentaho.di.ui.core.widget.TextVar;
 import org.pentaho.di.ui.trans.step.BaseStepDialog;
 
-import java.io.File;
 
 /**
  * Dialog class for the SSTableOutput step
@@ -175,33 +176,6 @@ public class SSTableOutputDialog extends BaseStepDialog implements StepDialogInt
     fd.top = new FormAttachment( m_stepnameText, margin );
     m_yamlBut.setLayoutData( fd );
 
-    m_yamlBut.addSelectionListener( new SelectionAdapter() {
-      @Override
-      public void widgetSelected( SelectionEvent e ) {
-        FileDialog dialog = new FileDialog( shell, SWT.OPEN );
-        String[] extensions = null;
-        String[] filterNames = null;
-
-        extensions = new String[2];
-        filterNames = new String[2];
-
-        extensions[0] = "*.yaml";
-        filterNames[0] = BaseMessages.getString( PKG, "SSTableOutputDialog.FileType.YAML" );
-
-        extensions[1] = "*";
-        filterNames[1] = BaseMessages.getString( PKG, "System.FileType.AllFiles" );
-
-        dialog.setFilterExtensions( extensions );
-        dialog.setFilterNames( filterNames );
-
-        if ( dialog.open() != null ) {
-          String path = dialog.getFilterPath() + System.getProperty( "file.separator" ) + dialog.getFileName();
-          path = new File( path ).toURI().toString();
-          m_yamlText.setText( path );
-        }
-      }
-    } );
-
     m_yamlText = new TextVar( transMeta, shell, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     props.setLook( m_yamlText );
     m_yamlText.addModifyListener( new ModifyListener() {
@@ -215,6 +189,10 @@ public class SSTableOutputDialog extends BaseStepDialog implements StepDialogInt
     fd.top = new FormAttachment( m_stepnameText, margin );
     fd.left = new FormAttachment( middle, 0 );
     m_yamlText.setLayoutData( fd );
+
+    m_yamlBut.addSelectionListener(  new SelectionAdapterFileDialogTextVar( log, m_yamlText, transMeta,
+      new SelectionAdapterOptions( SelectionOperation.FILE,
+        new FilterType[] { FilterType.YAML, FilterType.ALL }, FilterType.YAML ) ) );
 
     // directory line
     m_directoryLab = new Label( shell, SWT.RIGHT );
@@ -234,19 +212,6 @@ public class SSTableOutputDialog extends BaseStepDialog implements StepDialogInt
     fd.top = new FormAttachment( m_yamlText, margin );
     m_directoryBut.setLayoutData( fd );
 
-    m_directoryBut.addSelectionListener( new SelectionAdapter() {
-      @Override
-      public void widgetSelected( SelectionEvent e ) {
-        DirectoryDialog dialog = new DirectoryDialog( shell, SWT.OPEN );
-
-        if ( dialog.open() != null ) {
-          String path = dialog.getFilterPath();
-          path = new File( path ).toURI().toString();
-          m_directoryText.setText( path );
-        }
-      }
-    } );
-
     m_directoryText = new TextVar( transMeta, shell, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     props.setLook( m_directoryText );
     m_directoryText.addModifyListener( new ModifyListener() {
@@ -260,6 +225,9 @@ public class SSTableOutputDialog extends BaseStepDialog implements StepDialogInt
     fd.top = new FormAttachment( m_yamlText, margin );
     fd.left = new FormAttachment( middle, 0 );
     m_directoryText.setLayoutData( fd );
+
+    m_directoryBut.addSelectionListener( new SelectionAdapterFileDialogTextVar( log, m_directoryText, transMeta,
+      new SelectionAdapterOptions( SelectionOperation.FOLDER ) ) );
 
     // keyspace line
     m_keyspaceLab = new Label( shell, SWT.RIGHT );

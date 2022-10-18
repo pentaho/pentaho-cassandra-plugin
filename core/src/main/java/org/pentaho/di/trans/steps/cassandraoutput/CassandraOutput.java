@@ -2,7 +2,7 @@
  *
  * Pentaho Big Data
  *
- * Copyright (C) 2002-2018 by Hitachi Vantara : http://www.pentaho.com
+ * Copyright (C) 2002-2020 by Hitachi Vantara : http://www.pentaho.com
  *
  *******************************************************************************
  *
@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.pentaho.cassandra.util.CassandraUtils;
 import org.pentaho.cassandra.ConnectionFactory;
 import org.pentaho.cassandra.driver.datastax.DriverCQLRowHandler;
@@ -373,6 +374,7 @@ public class CassandraOutput extends BaseStep implements StepInterface {
       int rowsAdded = 0;
       batch = CassandraUtils.fixBatchMismatchedTypes( batch, getInputRowMeta(), m_cassandraMeta );
       DriverCQLRowHandler handler = (DriverCQLRowHandler) m_cqlHandler;
+      validateTtlField( handler, m_opts.get( CassandraUtils.BatchOptions.TTL ) );
       handler.setUnloggedBatch( m_meta.getUseUnloggedBatch() );
       handler.batchInsert( getInputRowMeta(), batch, m_cassandraMeta, m_consistencyLevel, m_meta
           .getInsertFieldsNotInMeta(), getLogChannel() );
@@ -425,6 +427,16 @@ public class CassandraOutput extends BaseStep implements StepInterface {
       }
     }
   }
+  @VisibleForTesting
+  void validateTtlField( DriverCQLRowHandler handler, String ttl ) {
+    if ( !Utils.isEmpty( ttl ) ) {
+      try {
+        handler.setTtlSec( Integer.parseInt( ttl ) );
+      } catch ( NumberFormatException e ) {
+        logDebug( BaseMessages.getString( CassandraOutputMeta.PKG, "CassandraOutput.Error.CantParseTTL", ttl ) );
+      }
+    }
+  }
 
   @Override
   public void setStopped( boolean stopped ) {
@@ -466,26 +478,7 @@ public class CassandraOutput extends BaseStep implements StepInterface {
     m_opts.put( CassandraUtils.CQLOptions.DATASTAX_DRIVER_VERSION, CassandraUtils.CQLOptions.CQL3_STRING );
 
     // Set TTL if specified
-    String ttl = m_meta.getTTL();
-    ttl = environmentSubstitute( ttl );
-    if ( !Utils.isEmpty( ttl ) && !ttl.startsWith( "-" ) ) {
-      String ttlUnit = m_meta.getTTLUnit();
-      CassandraOutputMeta.TTLUnits theUnit = CassandraOutputMeta.TTLUnits.NONE;
-      for ( CassandraOutputMeta.TTLUnits u : CassandraOutputMeta.TTLUnits.values() ) {
-        if ( ttlUnit.equals( u.toString() ) ) {
-          theUnit = u;
-          break;
-        }
-      }
-      int value = -1;
-      try {
-        value = Integer.parseInt( ttl );
-        value = theUnit.convertToSeconds( value );
-        m_opts.put( CassandraUtils.BatchOptions.TTL, "" + value );
-      } catch ( NumberFormatException e ) {
-        logDebug( BaseMessages.getString( CassandraOutputMeta.PKG, "CassandraOutput.Error.CantParseTTL", ttl ) );
-      }
-    }
+    setTTLIfSpecified();
 
     if ( m_opts.size() > 0 ) {
       logBasic( BaseMessages.getString( CassandraOutputMeta.PKG, "CassandraOutput.Message.UsingConnectionOptions", //$NON-NLS-1$
@@ -516,6 +509,29 @@ public class CassandraOutput extends BaseStep implements StepInterface {
     }
 
     return connection;
+  }
+  @VisibleForTesting
+  void setTTLIfSpecified() {
+    String ttl = m_meta.getTTL();
+    ttl = environmentSubstitute( ttl );
+    if ( !Utils.isEmpty( ttl ) && !ttl.startsWith( "-" ) ) {
+      String ttlUnit = m_meta.getTTLUnit();
+      CassandraOutputMeta.TTLUnits theUnit = CassandraOutputMeta.TTLUnits.NONE;
+      for ( CassandraOutputMeta.TTLUnits u : CassandraOutputMeta.TTLUnits.values() ) {
+        if ( ttlUnit.equals( u.toString() ) ) {
+          theUnit = u;
+          break;
+        }
+      }
+      int value = -1;
+      try {
+        value = Integer.parseInt( ttl );
+        value = theUnit.convertToSeconds( value );
+        m_opts.put( CassandraUtils.BatchOptions.TTL, "" + value );
+      } catch ( NumberFormatException e ) {
+        logDebug( BaseMessages.getString( CassandraOutputMeta.PKG, "CassandraOutput.Error.CantParseTTL", ttl ) );
+      }
+    }
   }
 
   @Override

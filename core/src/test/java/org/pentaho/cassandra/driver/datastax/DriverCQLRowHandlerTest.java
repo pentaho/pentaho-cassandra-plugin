@@ -78,7 +78,9 @@ public class DriverCQLRowHandlerTest {
     Session session = mock( Session.class );
     ResultSet rs = mock( ResultSet.class );
 
-    mockColumnDefinitions( rs, DataType.cint(), DataType.text(), DataType.cdouble() );
+    DataType[] columnTypes = { DataType.bigint(), DataType.text(), DataType.cdouble() };
+
+    mockColumnDefinitions( rs, columnTypes );
 
     when( session.execute( anyString() ) ).thenReturn( rs );
 
@@ -87,6 +89,7 @@ public class DriverCQLRowHandlerTest {
     when( rs.one() ).then( invocation -> {
       Object[] rowArr = it.next();
       Row row = mock( Row.class );
+      mockColumnDefinitions( row, columnTypes );
       when( row.getObject( anyInt() ) ).then( invoc -> {
         return rowArr[(int) invoc.getArguments()[0]];
       } );
@@ -121,6 +124,8 @@ public class DriverCQLRowHandlerTest {
     rowList.add( new Object[] { 2L, new ArrayList<Long>() } );
     Iterator<Object[]> it = rowList.iterator();
 
+    DataType[] columnTypes = { DataType.bigint(), DataType.list( DataType.bigint() ) };
+
     DriverKeyspace keyspace = mock( DriverKeyspace.class );
     Session session = mock( Session.class );
     ResultSet rs = mock( ResultSet.class );
@@ -129,6 +134,7 @@ public class DriverCQLRowHandlerTest {
     when( rs.one() ).then( invocation -> {
       Object[] rowArr = it.next();
       Row row = mock( Row.class );
+      mockColumnDefinitions( row, columnTypes );
       when( row.getObject( anyInt() ) ).then( invoc -> {
         return rowArr[(int) invoc.getArguments()[0]];
       } );
@@ -136,7 +142,7 @@ public class DriverCQLRowHandlerTest {
       return row;
     } );
 
-    mockColumnDefinitions( rs, DataType.bigint(), DataType.list( DataType.bigint() ) );
+    mockColumnDefinitions( rs, columnTypes );
 
     DriverCQLRowHandler rowHandler = new DriverCQLRowHandler( keyspace, session, true );
     RowMetaInterface rowMeta = new RowMeta();
@@ -222,29 +228,39 @@ public class DriverCQLRowHandlerTest {
   public void testQueryRowsTimestamp() {
     // Use case for existing Cassandra table with a CQL Date column
     Row row = mock( Row.class );
-    ColumnDefinitions cdefs = mock( ColumnDefinitions.class );
-    when( row.getColumnDefinitions() ).thenReturn( cdefs );
-    when( cdefs.getType( 0 ) ).thenReturn( DataType.bigint() );
-    when( cdefs.getType( 1 ) ).thenReturn( DataType.timestamp() ); // CQL timestamp
-    when( cdefs.getType( 2 ) ).thenReturn( DataType.date() ); // CQL date
-    when( cdefs.getType( 3 ) ).thenReturn( DataType.timestamp() ); // CQL timestamp
+
+    mockColumnDefinitions( row, DataType.bigint(), DataType.timestamp(), DataType.date(), DataType.timestamp() );
+
     when( row.getLong( 0 ) ).thenReturn( 1L );
     when( row.getTimestamp( 1 ) ).thenReturn( new Date( 1520538054000L ) );
     when( row.getDate( 2 ) ).thenReturn( LocalDate.fromYearMonthDay( 2018, 01, 1 ) );
     when( row.getTimestamp( 3 ) ).thenReturn( new Date( 1520298371938L ) );
     assertEquals( 1L, DriverCQLRowHandler.readValue( new ValueMetaInteger( "row" ), row, 0 ) );
-    assertEquals( new Date( 1520538054000L ), DriverCQLRowHandler.readValue( new ValueMetaDate( "timestamp" ), row, 1 ) );
-    assertEquals( new Date( 1514764800000L ), DriverCQLRowHandler.readValue( new ValueMetaDate( "datestamp" ), row, 2 ) );
-    assertEquals( new Date( 1520298371938L ), DriverCQLRowHandler.readValue( new ValueMetaDate( "datestamp2" ), row, 3 ) );
+    assertEquals( new Date( 1520538054000L ),
+      DriverCQLRowHandler.readValue( new ValueMetaDate( "timestamp" ), row, 1 ) );
+    assertEquals( new Date( 1514764800000L ),
+      DriverCQLRowHandler.readValue( new ValueMetaDate( "datestamp" ), row, 2 ) );
+    assertEquals( new Date( 1520298371938L ),
+      DriverCQLRowHandler.readValue( new ValueMetaDate( "datestamp2" ), row, 3 ) );
   }
 
   protected void mockColumnDefinitions( ResultSet rs, DataType ... dataTypes ) {
+    ColumnDefinitions cdef = mockColumnDefinitions( dataTypes );
+    when( rs.getColumnDefinitions() ).thenReturn( cdef );
+  }
+
+  protected void mockColumnDefinitions( Row row, DataType ... dataTypes ) {
+    ColumnDefinitions cdef = mockColumnDefinitions( dataTypes );
+    when( row.getColumnDefinitions() ).thenReturn( cdef );
+  }
+
+  protected ColumnDefinitions mockColumnDefinitions( DataType ... dataTypes ) {
     ColumnDefinitions cdef = mock( ColumnDefinitions.class );
     when( cdef.size() ).thenReturn( dataTypes.length );
     for ( int i = 0; i < dataTypes.length; i++ ) {
       when( cdef.getType( i ) ).thenReturn( dataTypes[i] );
     }
-    when( rs.getColumnDefinitions() ).thenReturn( cdef );
+    return cdef;
   }
 
   protected List<Object[]> getNextOutputRows( DriverCQLRowHandler rowHandler, RowMetaInterface rowMeta )

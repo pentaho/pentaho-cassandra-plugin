@@ -2,7 +2,7 @@
  *
  * Pentaho Big Data
  *
- * Copyright (C) 2002-2019 by Hitachi Vantara : http://www.pentaho.com
+ * Copyright (C) 2002-2021 by Hitachi Vantara : http://www.pentaho.com
  *
  *******************************************************************************
  *
@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Scanner;
 
 import org.eclipse.swt.widgets.Shell;
 import org.pentaho.cassandra.util.CassandraUtils;
@@ -532,9 +533,9 @@ public class CassandraInputMeta extends BaseStepMeta implements StepMetaInterfac
           subQ.toLowerCase().substring( subQ.toLowerCase().indexOf( "limit" ) + 5, subQ.length() ).trim(); //$NON-NLS-1$
         limitS = limitS.split(" ")[0];
         limitS = limitS.replaceAll( ";", "" ); //$NON-NLS-1$ //$NON-NLS-2$
-        try {
-          m_rowLimit = Integer.parseInt( limitS );
-        } catch ( NumberFormatException ex ) {
+        try ( Scanner scanner = new Scanner( limitS ) ) {
+          m_rowLimit = scanner.nextInt();
+        } catch ( Exception ex ) {
           logError( BaseMessages
             .getString( PKG, "CassandraInput.Error.UnableToParseLimitClause", m_cqlSelectQuery ) ); //$NON-NLS-1$
           m_rowLimit = 10000;

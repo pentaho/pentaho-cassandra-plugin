@@ -46,6 +46,7 @@ import org.pentaho.di.core.logging.LoggingObjectInterface;
 import org.pentaho.di.trans.Trans;
 import org.pentaho.di.trans.TransMeta;
 import org.pentaho.di.trans.step.StepDataInterface;
+import org.pentaho.di.trans.step.StepErrorMeta;
 import org.pentaho.di.trans.step.StepMeta;
 import org.pentaho.di.trans.step.StepMetaInterface;
 
@@ -65,6 +66,7 @@ public class StepMockHelper<Meta extends StepMetaInterface, Data extends StepDat
   public final LogChannelInterface logChannelInterface;
   public final LogChannelInterfaceFactory logChannelInterfaceFactory;
   public final LogChannelInterfaceFactory originalLogChannelInterfaceFactory;
+  public final StepErrorMeta stepErrorMeta;
 
   public StepMockHelper( String stepName, Class<Meta> stepMetaClass, Class<Data> stepDataClass ) {
     originalLogChannelInterfaceFactory = KettleLogStore.getLogChannelInterfaceFactory();
@@ -73,6 +75,8 @@ public class StepMockHelper<Meta extends StepMetaInterface, Data extends StepDat
     KettleLogStore.setLogChannelInterfaceFactory( logChannelInterfaceFactory );
     stepMeta = mock( StepMeta.class );
     when( stepMeta.getName() ).thenReturn( stepName );
+    stepErrorMeta = mock( StepErrorMeta.class );
+    when( stepMeta.getStepErrorMeta() ).thenReturn( stepErrorMeta );
     stepDataInterface = mock( stepDataClass );
     transMeta = mock( TransMeta.class );
     when( transMeta.findStep( stepName ) ).thenReturn( stepMeta );

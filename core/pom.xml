@@ -6,10 +6,10 @@
   <parent>
     <groupId>org.pentaho</groupId>
     <artifactId>pentaho-cassandra-plugin-parent</artifactId>
-    <version>10.1.0.0-SNAPSHOT</version>
+    <version>10.1.0.0-138</version>
   </parent>
   <artifactId>pentaho-cassandra-plugin</artifactId>
-  <version>10.1.0.0-SNAPSHOT</version>
+  <version>10.1.0.0-138</version>
   <packaging>jar</packaging>
   <name>Cassandra Plugin Core</name>
   <properties>

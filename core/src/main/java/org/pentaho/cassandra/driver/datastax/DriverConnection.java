@@ -21,7 +21,11 @@
 package org.pentaho.cassandra.driver.datastax;
 
 import java.net.InetSocketAddress;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
@@ -29,32 +33,35 @@ import org.pentaho.cassandra.util.CassandraUtils;
 import org.pentaho.cassandra.spi.Connection;
 import org.pentaho.cassandra.spi.Keyspace;
 import org.pentaho.di.core.util.Utils;
+import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
+import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
+import com.datastax.oss.driver.api.core.config.ProgrammaticDriverConfigLoaderBuilder;
 
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.CqlSessionBuilder;
+import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
+import com.datastax.oss.driver.api.core.type.codec.MappingCodec;
+import com.datastax.oss.driver.api.core.type.codec.registry.CodecRegistry;
+import com.datastax.oss.driver.api.core.type.codec.TypeCodec;
+import com.datastax.oss.driver.api.core.type.codec.TypeCodecs;
+import com.datastax.oss.driver.api.core.type.reflect.GenericType;
 
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.CodecRegistry;
-import com.datastax.driver.core.KeyspaceMetadata;
-import com.datastax.driver.core.ProtocolOptions;
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.SocketOptions;
-import com.datastax.driver.core.TypeCodec;
-import com.datastax.driver.extras.codecs.MappingCodec;
 
 /**
  * connection using standard datastax driver<br>
  * not thread-safe
  */
 public class DriverConnection implements Connection, AutoCloseable {
+  public static final String LZ4_COMPRESSION = "lz4";
 
   private String host;
   private int port = 9042;
   private String username, password;
   private Map<String, String> opts = new HashMap<>();
-  private Cluster cluster;
   private boolean useCompression;
 
-  private Session session;
-  private Map<String, Session> sessions = new HashMap<>();
+  private CqlSession session;
+  private Map<String, CqlSession> sessions = new HashMap<>();
 
   private boolean expandCollection = true;
 
@@ -101,7 +108,7 @@ public class DriverConnection implements Connection, AutoCloseable {
 
   @Override
   public void openConnection() throws Exception {
-    session = getCluster().connect();
+    session = baseSessionBuilder().build();
   }
 
   @Override
@@ -111,14 +118,10 @@ public class DriverConnection implements Connection, AutoCloseable {
     }
     sessions.forEach( ( name, session ) -> session.close() );
     sessions.clear();
-    if ( cluster != null ) {
-      cluster.closeAsync();
-      cluster = null;
-    }
   }
 
   @Override
-  public Session getUnderlyingConnection() {
+  public CqlSession getUnderlyingConnection() {
     return session;
   }
 
@@ -126,30 +129,37 @@ public class DriverConnection implements Connection, AutoCloseable {
     this.useCompression = useCompression;
   }
 
-  public Cluster getCluster() {
-    if ( cluster == null ) {
-      Cluster.Builder builder = Cluster.builder().addContactPointsWithPorts( getAddresses() );
-      if ( !Utils.isEmpty( username ) ) {
-        builder = builder.withCredentials( username, password );
-      }
-      if ( opts.containsKey( CassandraUtils.ConnectionOptions.SOCKET_TIMEOUT ) ) {
-        int timeoutMs = Integer.parseUnsignedInt( opts.get( CassandraUtils.ConnectionOptions.SOCKET_TIMEOUT ).trim() );
-        builder.withSocketOptions( new SocketOptions().setConnectTimeoutMillis( timeoutMs ) );
-      }
-      builder.withCompression( useCompression ? ProtocolOptions.Compression.LZ4 : ProtocolOptions.Compression.NONE );
-      cluster = builder.build();
-      registerCodecs( cluster.getConfiguration().getCodecRegistry() );
-    }
-    return cluster;
+  public CqlSession getSession( String keyspace ) {
+    return sessions.computeIfAbsent( keyspace, ks -> baseSessionBuilder().withKeyspace( ks ).build() );
   }
 
-  public Session getSession( String keyspace ) {
-    return sessions.computeIfAbsent( keyspace, ks -> getCluster().connect( ks ) );
+  private CqlSessionBuilder baseSessionBuilder() {
+    CqlSessionBuilder builder = CqlSession.builder();
+    builder.addContactPoints( getAddresses() );
+    if ( !Utils.isEmpty( username ) ) {
+      builder = builder.withCredentials( username, password );
+    }
+    ProgrammaticDriverConfigLoaderBuilder loaderBuilder = DriverConfigLoader.programmaticBuilder();
+    if ( opts.containsKey( CassandraUtils.ConnectionOptions.SOCKET_TIMEOUT ) ) {
+      int timeoutMs = Integer.parseUnsignedInt( opts.get( CassandraUtils.ConnectionOptions.SOCKET_TIMEOUT ).trim() );
+      loaderBuilder.withDuration( DefaultDriverOption.CONNECTION_CONNECT_TIMEOUT, Duration.ofMillis( timeoutMs ) );
+    }
+    if ( useCompression ) {
+      loaderBuilder.withString( DefaultDriverOption.PROTOCOL_COMPRESSION, LZ4_COMPRESSION );
+    }
+    loaderBuilder.withString( DefaultDriverOption.LOAD_BALANCING_POLICY_CLASS, "BasicLoadBalancingPolicy" );
+    builder.withConfigLoader( loaderBuilder.build() );
+    registerCodecs( builder );
+
+    return builder;
   }
 
   @Override
   public Keyspace getKeyspace( String keyspacename ) throws Exception {
-    KeyspaceMetadata keyspace = getCluster().getMetadata().getKeyspace( keyspacename );
+    if ( session == null ) {
+      openConnection();
+    }
+    KeyspaceMetadata keyspace = session.getMetadata().getKeyspace( keyspacename ).orElse( null );
     return new DriverKeyspace( this, keyspace );
   }
 
@@ -162,13 +172,13 @@ public class DriverConnection implements Connection, AutoCloseable {
     return expandCollection;
   }
 
-  protected InetSocketAddress[] getAddresses() {
+  protected List<InetSocketAddress> getAddresses() {
     if ( !host.contains( "," ) && !host.contains( ":" ) ) {
-      return new InetSocketAddress[] { new InetSocketAddress( host, port ) };
+      return Collections.singletonList( new InetSocketAddress( host, port ) );
     } else {
       String[] hostss = StringUtils.split( this.host, "," );
-      InetSocketAddress[] hosts = new InetSocketAddress[hostss.length];
-      for ( int i = 0; i < hosts.length; i++ ) {
+      List<InetSocketAddress> hosts = new ArrayList<>( hostss.length );
+      for ( int i = 0; i < hostss.length; i++ ) {
         String[] hostPair = StringUtils.split( hostss[i], ":" );
         String hostName = hostPair[0].trim();
         int port = this.port;
@@ -179,34 +189,37 @@ public class DriverConnection implements Connection, AutoCloseable {
             // ignored, default
           }
         }
-        hosts[i] = new InetSocketAddress( hostName, port );
+        hosts.add( new InetSocketAddress( hostName, port ) );
       }
       return hosts;
     }
   }
 
-  private void registerCodecs( CodecRegistry registry ) {
+  private void registerCodecs( CqlSessionBuilder builder ) {
     // where kettle expects specific types that don't match default deserialization
-    registry.register( new MappingCodec<Long, Integer>( TypeCodec.cint(), Long.class ) {
+    MappingCodec<Integer, Long> codecLong = new MappingCodec<Integer, Long>( TypeCodecs.INT, GenericType.LONG ) {
       @Override
-      protected Long deserialize( Integer value ) {
+      protected Long innerToOuter( Integer value ) {
         return value == null ? null : value.longValue();
       }
       @Override
-      protected Integer serialize( Long value ) {
+      protected Integer outerToInner( Long value ) {
         return value == null ? null : value.intValue();
       }
-    } );
-    registry.register( new MappingCodec<Double, Float>( TypeCodec.cfloat(), Double.class ) {
+    };
+
+    MappingCodec<Double, Float> codecFloat = new MappingCodec<Double, Float>( TypeCodecs.DOUBLE, GenericType.FLOAT ) {
       @Override
-      protected Double deserialize( Float value ) {
+      protected Double outerToInner( Float value ) {
         return value == null ? null : value.doubleValue();
       }
       @Override
-      protected Float serialize( Double value ) {
+      protected Float innerToOuter( Double value ) {
         return value == null ? null : value.floatValue();
       }
-    } );
+    };
+
+     builder.addTypeCodecs( codecLong, codecFloat );
   }
 
 }

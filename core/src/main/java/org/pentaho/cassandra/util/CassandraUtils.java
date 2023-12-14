@@ -26,6 +26,8 @@ import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -34,7 +36,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.zip.Deflater;
 
-import com.datastax.driver.core.LocalDate;
 import org.apache.cassandra.db.marshal.BooleanType;
 import org.apache.cassandra.db.marshal.DecimalType;
 import org.apache.cassandra.db.marshal.DoubleType;
@@ -57,7 +58,12 @@ import org.pentaho.di.core.row.ValueMetaInterface;
 import org.pentaho.di.core.util.Utils;
 import org.pentaho.di.i18n.BaseMessages;
 
-import com.datastax.driver.core.DataType;
+import com.datastax.oss.driver.api.core.type.DataType;
+import com.datastax.oss.driver.api.core.type.DataTypes;
+import com.datastax.oss.driver.api.core.type.ListType;
+import com.datastax.oss.driver.api.core.type.MapType;
+import com.datastax.oss.driver.api.core.type.SetType;
+
 import com.google.common.base.Joiner;
 
 /**
@@ -68,6 +74,9 @@ import com.google.common.base.Joiner;
 public class CassandraUtils {
 
   protected static final Class<?> PKG = CassandraUtils.class;
+
+  // only works for CQL 3+, but that's all we support, currently.
+  protected static final String QUOT = "\"";
 
   public static class ConnectionOptions {
     public static final String SOCKET_TIMEOUT = "socketTimeout"; //$NON-NLS-1$
@@ -126,22 +135,22 @@ public class CassandraUtils {
   public static DataType getCassandraDataTypeFromValueMeta( ValueMetaInterface vm ) {
     switch ( vm.getType() ) {
       case ValueMetaInterface.TYPE_STRING:
-        return DataType.varchar();
+        return DataTypes.TEXT;
       case ValueMetaInterface.TYPE_BIGNUMBER:
-        return DataType.decimal();
+        return DataTypes.DECIMAL;
       case ValueMetaInterface.TYPE_BOOLEAN:
-        return DataType.cboolean();
+        return DataTypes.BOOLEAN;
       case ValueMetaInterface.TYPE_INTEGER:
-        return DataType.bigint();
+        return DataTypes.INT;
       case ValueMetaInterface.TYPE_NUMBER:
-        return DataType.cdouble();
+        return DataTypes.DOUBLE;
       case ValueMetaInterface.TYPE_DATE:
       case ValueMetaInterface.TYPE_TIMESTAMP:
-        return DataType.timestamp(); // CQL timestamp
+        return DataTypes.TIMESTAMP; // CQL timestamp
       case ValueMetaInterface.TYPE_BINARY:
       case ValueMetaInterface.TYPE_SERIALIZABLE:
       default:
-        return DataType.blob();
+        return DataTypes.BLOB;
     }
   }
   /**
@@ -593,6 +602,13 @@ public class CassandraUtils {
     return result;
   }
 
+  public static String quoteIdentifier( String source ) {
+    if ( source.startsWith( QUOT ) && source.endsWith( QUOT ) ) {
+      return source;
+    }
+    return QUOT + source + QUOT;
+  }
+
   /**
    * Quotes an identifier (for CQL 3) if it contains mixed case
    * 
@@ -817,7 +833,7 @@ public class CassandraUtils {
       for ( int j = 0; j < batch.get( i ).length; j++ ) {
         if ( batch.get( i )[ j ] != null ) {
           // CQL Date / Timestamp type checks
-          if ( cassandraMeta.getColumnCQLType( colNames.get( j ) ).getName() == DataType.Name.DATE ) {
+          if ( cassandraMeta.getColumnCQLType( colNames.get( j ) ).equals( DataTypes.DATE ) ) {
             // Check that Kettle type isn't actually more like a timestamp
             // NOTE: batch order does not match cassandraMeta order, need to pair up
             int index = inputMeta.indexOfValue( colNames.get( j ) );
@@ -825,7 +841,7 @@ public class CassandraUtils {
               Date d = (Date) batch.get( i )[ index ];
 
               // Convert java.util.Date to CQL friendly Date format (rounds to the day)
-              LocalDate ld = LocalDate.fromMillisSinceEpoch( d.getTime() );
+              LocalDate ld = d.toInstant().atZone( ZoneId.systemDefault() ).toLocalDate();
               batch.get( i )[ index ] = ld;
             }
           }
@@ -834,6 +850,10 @@ public class CassandraUtils {
     }
 
     return batch;
+  }
+
+  public static boolean isCollection( DataType type ) {
+    return type instanceof MapType || type instanceof ListType || type instanceof SetType;
   }
 
   public static String getPartitionKey( String primaryKey ) {

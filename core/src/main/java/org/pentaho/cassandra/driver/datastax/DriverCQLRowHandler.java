@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -44,18 +45,26 @@ import org.pentaho.di.core.util.Utils;
 import org.pentaho.di.i18n.BaseMessages;
 import org.pentaho.di.trans.step.StepInterface;
 
-import com.datastax.driver.core.ColumnDefinitions;
-import com.datastax.driver.core.ConsistencyLevel;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.querybuilder.Batch;
-import com.datastax.driver.core.querybuilder.Insert;
-import com.datastax.driver.core.querybuilder.QueryBuilder;
+import com.datastax.oss.driver.api.core.ConsistencyLevel;
+import com.datastax.oss.driver.api.core.cql.BatchStatement;
+import com.datastax.oss.driver.api.core.cql.BatchStatementBuilder;
+import com.datastax.oss.driver.api.core.cql.BatchType;
+import com.datastax.oss.driver.api.core.cql.ColumnDefinitions;
+import com.datastax.oss.driver.api.core.cql.ResultSet;
+import com.datastax.oss.driver.api.core.cql.Row;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.DefaultConsistencyLevel;
+import com.datastax.oss.driver.api.core.session.Session;
+import com.datastax.oss.driver.api.querybuilder.insert.Insert;
+import com.datastax.oss.driver.api.querybuilder.insert.InsertInto;
+import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
+import com.datastax.oss.driver.api.querybuilder.term.Term;
+import com.datastax.oss.protocol.internal.ProtocolConstants;
+
 
 public class DriverCQLRowHandler implements CQLRowHandler {
 
-  private final Session session;
+  private final CqlSession session;
   DriverKeyspace keyspace;
   ResultSet result;
 
@@ -69,7 +78,7 @@ public class DriverCQLRowHandler implements CQLRowHandler {
   private boolean expandCollection = true;
   private int primaryCollectionOutputIndex = -1;
 
-  public DriverCQLRowHandler( DriverKeyspace keyspace, Session session, boolean expandCollection ) {
+  public DriverCQLRowHandler( DriverKeyspace keyspace, CqlSession session, boolean expandCollection ) {
     this.keyspace = keyspace;
     this.session = session;
     this.expandCollection = expandCollection;
@@ -106,10 +115,10 @@ public class DriverCQLRowHandler implements CQLRowHandler {
     columns = result.getColumnDefinitions();
     if ( expandCollection ) {
       for ( int i = 0; i < columns.size(); i++ ) {
-        if ( columns.getType( i ).isCollection() ) {
+        if ( CassandraUtils.isCollection( columns.get( i ).getType() ) ) {
           if ( primaryCollectionOutputIndex < 0 ) {
             primaryCollectionOutputIndex = i;
-          } else if ( !keyspace.getTableMetaData( tableName ).getValueMetaForColumn( columns.getName( i ) )
+          } else if ( !keyspace.getTableMetaData( tableName ).getValueMetaForColumn( columns.get( i ).getName().toString() )
               .isString() ) {
             throw new KettleException( BaseMessages.getString( DriverCQLRowHandler.class,
                 "DriverCQLRowHandler.Error.CantHandleAdditionalCollectionsThatAreNotOfTypeText" ) );
@@ -122,12 +131,12 @@ public class DriverCQLRowHandler implements CQLRowHandler {
   @Override
   public Object[][] getNextOutputRow( RowMetaInterface outputRowMeta, Map<String, Integer> outputFormatMap )
     throws Exception {
-    if ( result == null ||  result.isExhausted() ) {
+    Row row = result != null ? result.one() : null;
+    if ( row == null ) {
       result = null;
       columns = null;
       return null;
     }
-    Row row = result.one();
     Object[][] outputRowData = new Object[1][];
     Object[] baseOutputRowData = RowDataUtil.allocateRowData( Math.max( outputRowMeta.size(), columns.size() ) );
     for ( int i = 0; i < columns.size(); i++ ) {
@@ -172,34 +181,34 @@ public class DriverCQLRowHandler implements CQLRowHandler {
          * column of FLOAT datatype throws an NPE ...
          */
         ColumnDefinitions cdef = row.getColumnDefinitions();
-        switch ( cdef.getType( i ).getName() ) {
-          case BIGINT:
-          case COUNTER:
+        switch ( cdef.get( i ).getType().getProtocolCode() ) {
+          case ProtocolConstants.DataType.BIGINT:
+          case ProtocolConstants.DataType.COUNTER:
             return row.getLong( i );
-          case SMALLINT:
+          case ProtocolConstants.DataType.SMALLINT:
             return (long) row.getShort( i );
-          case TINYINT:
+          case ProtocolConstants.DataType.TINYINT:
             return (long) row.getByte( i );
-          case INT:
+          case ProtocolConstants.DataType.INT:
             return (long) row.getInt( i );
-          case FLOAT:
+          case ProtocolConstants.DataType.FLOAT:
             return (double) row.getFloat( i );
-          case DOUBLE:
+          case ProtocolConstants.DataType.DOUBLE:
             return row.getDouble( i );
-          case DECIMAL:
-            return row.getDecimal( i );
-          case VARINT:
-            return new BigDecimal( row.getVarint( i ) );
-          case BOOLEAN:
+          case ProtocolConstants.DataType.DECIMAL:
+            return row.getBigDecimal( i );
+          case ProtocolConstants.DataType.VARINT:
+            return new BigDecimal( row.getBigInteger( i ) );
+          case ProtocolConstants.DataType.BOOLEAN:
             return row.getBool( i );
-          case DATE:
-            return new Date( row.getDate( i ).getMillisSinceEpoch() );
-          case TIMESTAMP:
-            return row.getTimestamp( i );
-          case TIME:
-            return row.getTime( i );
-          case BLOB:
-            return row.getBytes( i ).array();
+          case ProtocolConstants.DataType.DATE:
+            return new Date( row.getInstant( i ).toEpochMilli() );
+          case ProtocolConstants.DataType.TIMESTAMP:
+            return new Date( row.getInstant( i ).toEpochMilli() );
+          case ProtocolConstants.DataType.TIME:
+            return row.getLocalTime( i ).toNanoOfDay();
+          case ProtocolConstants.DataType.BLOB:
+            return row.getByteBuffer( i ).array();
           default:
             return row.getObject( i );
         }
@@ -212,10 +221,11 @@ public class DriverCQLRowHandler implements CQLRowHandler {
   public void batchInsert( RowMetaInterface inputMeta, Iterable<Object[]> rows, ITableMetaData tableMeta,
       String consistencyLevel, boolean insertFieldsNotInMetadata, LogChannelInterface log ) throws Exception {
     String[] columnNames = getColumnNames( inputMeta );
-    Batch batch = unloggedBatch ? QueryBuilder.unloggedBatch() : QueryBuilder.batch();
+    BatchType type = unloggedBatch ? BatchType.UNLOGGED : BatchType.LOGGED;
+    BatchStatementBuilder batch = new BatchStatementBuilder( type );
     if ( !Utils.isEmpty( consistencyLevel ) ) {
       try {
-        batch.setConsistencyLevel( ConsistencyLevel.valueOf( consistencyLevel ) );
+        batch.setConsistencyLevel( DefaultConsistencyLevel.valueOf( consistencyLevel ) );
       } catch ( Exception e ) {
         log.logError( e.getLocalizedMessage(), e );
       }
@@ -237,20 +247,26 @@ public class DriverCQLRowHandler implements CQLRowHandler {
       Object[] values = toRemove.size() == 0
           ? Arrays.copyOf( row, columnNames.length )
           : copyExcluding( row, new Object[ columnNames.length ], toRemove );
-      Insert insert = QueryBuilder.insertInto( keyspace.getName(), tableMeta.getTableName() );
-      insert = ttlSec > 0
-          ? insert.using( QueryBuilder.ttl( ttlSec ) ).values( columnNames, values )
-          : insert.values( columnNames, values );
-      batch.add( insert );
+      Map<String, Term> toInsert = new HashMap<>();
+      for ( int i = 0; i< columnNames.length; i++ ) {
+        toInsert.put( CassandraUtils.quoteIdentifier( columnNames[1] ), QueryBuilder.literal( values[i] ) );
+      }
+      InsertInto insertInto = QueryBuilder.insertInto( CassandraUtils.quoteIdentifier( keyspace.getName() ),
+                                                       CassandraUtils.quoteIdentifier( tableMeta.getTableName() ) );
+      Insert insert = insertInto.values( toInsert );
+      if ( ttlSec > 0 ) {
+        insert.usingTtl( ttlSec );
+      }
+      batch.addStatement( insert.build() );
     }
     if ( batchInsertTimeout > 0 ) {
       try {
-        getSession().executeAsync( batch ).getUninterruptibly( batchInsertTimeout, TimeUnit.MILLISECONDS );
+        getSession().executeAsync( batch.build() ).toCompletableFuture().get( batchInsertTimeout, TimeUnit.MILLISECONDS );
       } catch ( TimeoutException e ) {
         log.logError( BaseMessages.getString( DriverCQLRowHandler.class, "DriverCQLRowHandler.Error.TimeoutReached" ) );
       }
     } else {
-      getSession().execute( batch );
+      getSession().execute( batch.build() );
     }
   }
 
@@ -294,7 +310,7 @@ public class DriverCQLRowHandler implements CQLRowHandler {
     return unloggedBatch;
   }
 
-  private Session getSession() {
+  private CqlSession getSession() {
     return session;
   }
 

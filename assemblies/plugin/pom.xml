@@ -36,8 +36,8 @@
 			</exclusions>
 		</dependency>
 		<dependency>
-			<groupId>com.datastax.cassandra</groupId>
-			<artifactId>cassandra-driver-core</artifactId>
+			<groupId>com.datastax.oss</groupId>
+			<artifactId>java-driver-core</artifactId>
 			<scope>compile</scope>
 			<exclusions>
 				<exclusion>
@@ -47,8 +47,8 @@
 			</exclusions>
 		</dependency>
 		<dependency>
-			<groupId>com.datastax.cassandra</groupId>
-			<artifactId>cassandra-driver-extras</artifactId>
+			<groupId>com.datastax.oss</groupId>
+			<artifactId>java-driver-shaded-guava</artifactId>
 			<scope>compile</scope>
 			<exclusions>
 				<exclusion>
@@ -56,6 +56,33 @@
 					<artifactId>*</artifactId>
 				</exclusion>
 			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>com.datastax.oss</groupId>
+			<artifactId>java-driver-query-builder</artifactId>
+			<scope>compile</scope>
+			<exclusions>
+				<exclusion>
+					<groupId>*</groupId>
+					<artifactId>*</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>com.datastax.oss</groupId>
+			<artifactId>native-protocol</artifactId>
+			<scope>compile</scope>
+			<exclusions>
+				<exclusion>
+					<groupId>*</groupId>
+					<artifactId>*</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>com.typesafe</groupId>
+		        <artifactId>config</artifactId>
+			<version>1.4.3</version>
 		</dependency>
 		<dependency>
 			<groupId>com.google.guava</groupId>
@@ -80,6 +107,17 @@
 			</exclusions>
 		</dependency>
 		<dependency>
+			<groupId>com.github.ben-manes.caffeine</groupId>
+			<artifactId>caffeine</artifactId>
+			<scope>compile</scope>
+			<exclusions>
+				<exclusion>
+					<groupId>*</groupId>
+					<artifactId>*</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
 			<groupId>com.github.jbellis</groupId>
 			<artifactId>jamm</artifactId>
 			<scope>compile</scope>
@@ -91,8 +129,41 @@
 			</exclusions>
 		</dependency>
 		<dependency>
+			<groupId>javax.inject</groupId>
+			<artifactId>javax.inject</artifactId>
+			<scope>compile</scope>
+			<exclusions>
+				<exclusion>
+					<groupId>*</groupId>
+					<artifactId>*</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
 			<groupId>net.java.dev.jna</groupId>
 			<artifactId>jna</artifactId>
+			<scope>compile</scope>
+			<exclusions>
+				<exclusion>
+					<groupId>*</groupId>
+					<artifactId>*</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>net.openhft</groupId>
+			<artifactId>chronicle-core</artifactId>
+			<scope>compile</scope>
+			<exclusions>
+				<exclusion>
+					<groupId>*</groupId>
+					<artifactId>*</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-lang3</artifactId>
 			<scope>compile</scope>
 			<exclusions>
 				<exclusion>
@@ -148,6 +219,17 @@
 		<dependency>
 			<groupId>io.netty</groupId>
 			<artifactId>netty-common</artifactId>
+			<scope>compile</scope>
+			<exclusions>
+				<exclusion>
+					<groupId>*</groupId>
+					<artifactId>*</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>io.netty</groupId>
+			<artifactId>netty-resolver</artifactId>
 			<scope>compile</scope>
 			<exclusions>
 				<exclusion>
@@ -259,6 +341,36 @@
 					<artifactId>*</artifactId>
 				</exclusion>
 			</exclusions>
+		</dependency>
+    		<dependency>
+	        	<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-annotations</artifactId>
+			<version>2.10.1</version>
+			<scope>compile</scope>
+		</dependency>
+    		<dependency>
+	        	<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-core</artifactId>
+			<version>2.10.1</version>
+			<scope>compile</scope>
+		</dependency>
+    		<dependency>
+	        	<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
+			<version>2.10.1</version>
+			<scope>compile</scope>
+		</dependency>
+    		<dependency>
+	        	<groupId>com.fasterxml.jackson.datatype</groupId>
+			<artifactId>jackson-datatype-jsr310</artifactId>
+			<version>2.10.1</version>
+			<scope>compile</scope>
+		</dependency>
+    		<dependency>
+	        	<groupId>com.google.code.findbugs</groupId>
+			<artifactId>jsr305</artifactId>
+			<version>3.0.2</version>
+			<scope>compile</scope>
 		</dependency>
 	</dependencies>
 </project>

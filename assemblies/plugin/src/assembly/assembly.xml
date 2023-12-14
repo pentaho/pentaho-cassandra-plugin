@@ -20,27 +20,40 @@
 			<unpack>false</unpack>
 			<includes>
 				<include>org.apache.cassandra:cassandra-all</include>
-				<include>com.datastax.cassandra:cassandra-driver-core</include>
-				<include>com.datastax.cassandra:cassandra-driver-extras</include>
+				<include>com.datastax.oss:java-driver-core</include>
+				<include>com.datastax.oss:java-driver-query-builder</include>
+				<include>com.datastax.oss:java-driver-shaded-guava</include>
+				<include>com.datastax.oss:native-protocol</include>
+				<include>com.typesafe:config</include>
 				<include>com.google.guava:guava</include>
 				<include>com.boundary:high-scale-lib</include>
+				<include>com.github.ben-manes.caffeine:caffeine</include>
 				<include>com.github.jbellis:jamm</include>
 				<include>net.java.dev.jna:jna</include>
 				<include>org.apache.thrift:libthrift</include>
+				<include>org.apache.commons:commons-lang3</include>
 				<include>net.jpountz.lz4:lz4</include>
+				<include>net.openhft:chronicle-core</include>
 				<include>io.dropwizard.metrics:metrics-core</include>
 				<include>io.dropwizard.metrics:metrics-jvm</include>
 				<include>io.netty:netty-buffer</include>
 				<include>io.netty:netty-codec</include>
 				<include>io.netty:netty-common</include>
 				<include>io.netty:netty-handler</include>
+				<include>io.netty:netty-resolver</include>
 				<include>io.netty:netty-transport</include>
+				<include>javax.inject:javax.inject</include>
 				<include>org.fusesource:sigar</include>
 				<include>org.yaml:snakeyaml</include>
 				<include>com.clearspring.analytics:stream</include>
 				<include>net.sf.supercsv:super-csv</include>
 				<include>org.codehaus.jackson:jackson-core-asl</include>
 				<include>org.codehaus.jackson:jackson-mapper-asl</include>
+				<include>com.fasterxml.jackson.core:jackson-annotations</include>
+				<include>com.fasterxml.jackson.core:jackson-core</include>
+				<include>com.fasterxml.jackson.core:jackson-databind</include>
+				<include>com.fasterxml.jackson.datatype:jackson-datatype-jsr310</include>
+				<include>com.google.code.findbugs:jsr305</include>
 			</includes>
 		</dependencySet>
 	</dependencySets>

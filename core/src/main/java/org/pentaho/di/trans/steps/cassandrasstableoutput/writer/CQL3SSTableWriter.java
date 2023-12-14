@@ -25,8 +25,7 @@ package org.pentaho.di.trans.steps.cassandrasstableoutput.writer;
 import java.util.Arrays;
 import java.util.Map;
 
-import org.apache.cassandra.config.CFMetaData;
-import org.apache.cassandra.config.Schema;
+import org.apache.cassandra.schema.Schema;
 import org.apache.cassandra.db.marshal.UTF8Type;
 import org.apache.cassandra.io.sstable.CQLSSTableWriter;
 import org.pentaho.cassandra.util.CassandraUtils;
@@ -42,18 +41,7 @@ class CQL3SSTableWriter extends AbstractSSTableWriter {
   @Override
   public void init() throws Exception {
     //Allow table to be reloaded
-    purgeSchemaInstance();
     writer = getCQLSSTableWriter();
-  }
-
-  void purgeSchemaInstance() {
-    // Since the unload function only cares about the keyspace and table name,
-    // the partition key and class don't matter (however, creating the CFMetaData
-    // will fail unless something is passed in
-    CFMetaData cfm = CFMetaData.Builder.create( getKeyspace(), getTable() ).withPartitioner(
-        CassandraUtils.getPartitionerClassInstance( getPartitionerClass() ) ).addPartitionKey(
-            getPartitionKey(), UTF8Type.instance ).build();
-    Schema.instance.unload( cfm );
   }
 
   CQLSSTableWriter getCQLSSTableWriter() {

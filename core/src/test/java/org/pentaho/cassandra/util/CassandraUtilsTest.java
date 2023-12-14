@@ -24,8 +24,6 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.datastax.driver.core.DataType;
-import com.datastax.driver.core.LocalDate;
 import org.apache.cassandra.dht.ByteOrderedPartitioner;
 import org.apache.cassandra.dht.Murmur3Partitioner;
 import org.apache.cassandra.dht.OrderPreservingPartitioner;
@@ -37,10 +35,13 @@ import org.pentaho.di.core.row.RowMetaInterface;
 import org.pentaho.di.core.row.ValueMetaInterface;
 import org.pentaho.di.core.row.value.ValueMetaDate;
 import org.pentaho.di.core.row.value.ValueMetaTimestamp;
+import com.datastax.oss.driver.api.core.type.DataType;
+import com.datastax.oss.driver.api.core.type.DataTypes;
 
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.time.LocalDate;
 
 public class CassandraUtilsTest {
 
@@ -148,8 +149,8 @@ public class CassandraUtilsTest {
     cqlColumnNames.add( "date" );
     cqlColumnNames.add( "timestamp" );
     when( mockTableMeta.getColumnNames() ).thenReturn( cqlColumnNames );
-    when( mockTableMeta.getColumnCQLType( "date" ) ).thenReturn( DataType.date() );
-    when( mockTableMeta.getColumnCQLType( "timestamp" ) ).thenReturn( DataType.timestamp() );
+    when( mockTableMeta.getColumnCQLType( "date" ) ).thenReturn( DataTypes.DATE );
+    when( mockTableMeta.getColumnCQLType( "timestamp" ) ).thenReturn( DataTypes.TIMESTAMP );
 
     when( inputMeta.indexOfValue( "date" ) ).thenReturn( 0 );
     when( inputMeta.indexOfValue( "timestamp" ) ).thenReturn( 1 );
@@ -158,7 +159,7 @@ public class CassandraUtilsTest {
     List<Object[]> batch = new ArrayList<>();
     batch.add( row );
 
-    LocalDate testLocalDate = LocalDate.fromMillisSinceEpoch( 1523542916441L );
+    LocalDate testLocalDate = LocalDate.ofEpochDay( 17633L );
 
     batch = CassandraUtils.fixBatchMismatchedTypes( batch, inputMeta, mockTableMeta );
 

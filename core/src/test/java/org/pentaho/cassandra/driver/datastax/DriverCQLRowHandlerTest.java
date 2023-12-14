@@ -22,8 +22,10 @@ package org.pentaho.cassandra.driver.datastax;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.time.Instant;
 import java.util.Iterator;
 import java.util.List;
+import java.time.LocalDate;
 
 import org.junit.Test;
 import org.mockito.ArgumentMatcher;
@@ -36,14 +38,18 @@ import org.pentaho.di.core.row.value.ValueMetaString;
 import org.pentaho.di.core.row.value.ValueMetaDate;
 import org.pentaho.di.trans.step.StepInterface;
 
-import com.datastax.driver.core.ColumnDefinitions;
-import com.datastax.driver.core.ConsistencyLevel;
-import com.datastax.driver.core.DataType;
-import com.datastax.driver.core.LocalDate;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.Statement;
+import com.datastax.oss.driver.api.core.ConsistencyLevel;
+import com.datastax.oss.driver.api.core.cql.BatchStatement;
+import com.datastax.oss.driver.api.core.cql.ColumnDefinition;
+import com.datastax.oss.driver.api.core.cql.ColumnDefinitions;
+import com.datastax.oss.driver.api.core.cql.ResultSet;
+import com.datastax.oss.driver.api.core.cql.Row;
+import com.datastax.oss.driver.api.core.cql.Statement;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.session.Session;
+import com.datastax.oss.driver.api.core.type.DataType;
+import com.datastax.oss.driver.api.core.type.DataTypes;
+
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -60,7 +66,7 @@ public class DriverCQLRowHandlerTest {
   @Test
   public void testNextOutputRowNoQuery() throws Exception {
     DriverKeyspace keyspace = mock( DriverKeyspace.class );
-    Session session = mock( Session.class );
+    CqlSession session = mock( CqlSession.class );
 
     DriverCQLRowHandler rowHandler = new DriverCQLRowHandler( keyspace, session, true );
     RowMetaInterface rowMeta = new RowMeta();
@@ -75,18 +81,20 @@ public class DriverCQLRowHandlerTest {
     rowList.add( new Object[] { 2L, "b", 42d } );
 
     DriverKeyspace keyspace = mock( DriverKeyspace.class );
-    Session session = mock( Session.class );
+    CqlSession session = mock( CqlSession.class );
     ResultSet rs = mock( ResultSet.class );
 
-    DataType[] columnTypes = { DataType.bigint(), DataType.text(), DataType.cdouble() };
+    DataType[] columnTypes = { DataTypes.BIGINT, DataTypes.TEXT, DataTypes.DOUBLE};
 
     mockColumnDefinitions( rs, columnTypes );
 
     when( session.execute( anyString() ) ).thenReturn( rs );
 
     Iterator<Object[]> it = rowList.iterator();
-    when( rs.isExhausted() ).then( invoc -> { return !it.hasNext(); } );
     when( rs.one() ).then( invocation -> {
+      if ( !it.hasNext() ) {
+        return null;
+      }
       Object[] rowArr = it.next();
       Row row = mock( Row.class );
       mockColumnDefinitions( row, columnTypes );
@@ -124,14 +132,16 @@ public class DriverCQLRowHandlerTest {
     rowList.add( new Object[] { 2L, new ArrayList<Long>() } );
     Iterator<Object[]> it = rowList.iterator();
 
-    DataType[] columnTypes = { DataType.bigint(), DataType.list( DataType.bigint() ) };
+    DataType[] columnTypes = { DataTypes.BIGINT, DataTypes.listOf( DataTypes.BIGINT ) };
 
     DriverKeyspace keyspace = mock( DriverKeyspace.class );
-    Session session = mock( Session.class );
+    CqlSession session = mock( CqlSession.class );
     ResultSet rs = mock( ResultSet.class );
     when( session.execute( anyString() ) ).thenReturn( rs );
-    when( rs.isExhausted() ).then( invoc -> { return !it.hasNext(); } );
     when( rs.one() ).then( invocation -> {
+      if ( !it.hasNext() ) {
+        return null;
+      }
       Object[] rowArr = it.next();
       Row row = mock( Row.class );
       mockColumnDefinitions( row, columnTypes );
@@ -162,7 +172,7 @@ public class DriverCQLRowHandlerTest {
   public void testBatchInsert() throws Exception {
     DriverKeyspace keyspace = mock( DriverKeyspace.class );
     when( keyspace.getName() ).thenReturn( "ks" );
-    Session session = mock( Session.class );
+    CqlSession session = mock( CqlSession.class );
     TableMetaData familyMeta = mock( TableMetaData.class );
 
     ArrayList<Object[]> batch = new ArrayList<>();
@@ -180,9 +190,8 @@ public class DriverCQLRowHandlerTest {
     verify( session, times( 1 ) ).execute( argThat( new ArgumentMatcher<Statement>() {
       @Override
       public boolean matches( Object argument ) {
-        Statement stmt = (Statement) argument;
-        return stmt.toString().equals( "BEGIN UNLOGGED BATCH INSERT INTO ks.\"tab tab\" (id,\"a spaced name\") "
-            + "VALUES (1,'a');INSERT INTO ks.\"tab tab\" (id,\"a spaced name\") VALUES (2,'b');APPLY BATCH;" );
+        BatchStatement stmt = (BatchStatement) argument;
+        return stmt.size() == 2 && stmt.getConsistencyLevel() == null;
       }
     } ) );
   }
@@ -191,7 +200,7 @@ public class DriverCQLRowHandlerTest {
   public void testBatchInsertIgnoreColumns() throws Exception {
     DriverKeyspace keyspace = mock( DriverKeyspace.class );
     when( keyspace.getName() ).thenReturn( "ks" );
-    Session session = mock( Session.class );
+    CqlSession session = mock( CqlSession.class );
     TableMetaData familyMeta = mock( TableMetaData.class );
     when( familyMeta.getTableName() ).thenReturn( "tab" );
     ArrayList<Object[]> batch = new ArrayList<>();
@@ -216,10 +225,8 @@ public class DriverCQLRowHandlerTest {
     verify( session, times( 1 ) ).execute( argThat( new ArgumentMatcher<Statement>() {
       @Override
       public boolean matches( Object argument ) {
-        Statement stmt = (Statement) argument;
-        return stmt.toString().equals( "BEGIN BATCH INSERT INTO ks.tab (there1,there2) "
-            + "VALUES (1,3);INSERT INTO ks.tab (there1,there2) VALUES (5,7);APPLY BATCH;" )
-            && stmt.getConsistencyLevel().equals( ConsistencyLevel.TWO );
+        BatchStatement stmt = (BatchStatement) argument;
+        return stmt.size() == 2 && stmt.getConsistencyLevel().equals( ConsistencyLevel.TWO );
       }
     } ) );
   }
@@ -229,12 +236,12 @@ public class DriverCQLRowHandlerTest {
     // Use case for existing Cassandra table with a CQL Date column
     Row row = mock( Row.class );
 
-    mockColumnDefinitions( row, DataType.bigint(), DataType.timestamp(), DataType.date(), DataType.timestamp() );
+    mockColumnDefinitions( row, DataTypes.BIGINT, DataTypes.TIMESTAMP, DataTypes.DATE, DataTypes.TIMESTAMP );
 
     when( row.getLong( 0 ) ).thenReturn( 1L );
-    when( row.getTimestamp( 1 ) ).thenReturn( new Date( 1520538054000L ) );
-    when( row.getDate( 2 ) ).thenReturn( LocalDate.fromYearMonthDay( 2018, 01, 1 ) );
-    when( row.getTimestamp( 3 ) ).thenReturn( new Date( 1520298371938L ) );
+    when( row.getInstant( 1 ) ).thenReturn( Instant.ofEpochMilli( 1520538054000L ) );
+    when( row.getInstant( 2 ) ).thenReturn( Instant.ofEpochMilli( 1514764800000L ) );
+    when( row.getInstant( 3 ) ).thenReturn( Instant.ofEpochMilli( 1520298371938L ) );
     assertEquals( 1L, DriverCQLRowHandler.readValue( new ValueMetaInteger( "row" ), row, 0 ) );
     assertEquals( new Date( 1520538054000L ),
       DriverCQLRowHandler.readValue( new ValueMetaDate( "timestamp" ), row, 1 ) );
@@ -258,7 +265,9 @@ public class DriverCQLRowHandlerTest {
     ColumnDefinitions cdef = mock( ColumnDefinitions.class );
     when( cdef.size() ).thenReturn( dataTypes.length );
     for ( int i = 0; i < dataTypes.length; i++ ) {
-      when( cdef.getType( i ) ).thenReturn( dataTypes[i] );
+      ColumnDefinition def = mock( ColumnDefinition.class );
+      when( def.getType() ).thenReturn( dataTypes[i] );
+      when( cdef.get( i ) ).thenReturn( def );
     }
     return cdef;
   }

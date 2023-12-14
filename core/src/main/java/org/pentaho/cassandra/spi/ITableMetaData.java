@@ -24,9 +24,9 @@ package org.pentaho.cassandra.spi;
 
 import java.util.List;
 
-import com.datastax.driver.core.DataType;
 import org.pentaho.cassandra.util.Selector;
 import org.pentaho.di.core.row.ValueMetaInterface;
+import com.datastax.oss.driver.api.core.type.DataType;
 
 /**
  * Interface to something that can fetch and represent meta data

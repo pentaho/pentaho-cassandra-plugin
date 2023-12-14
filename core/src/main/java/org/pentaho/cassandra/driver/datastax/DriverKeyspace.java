@@ -22,6 +22,7 @@ package org.pentaho.cassandra.driver.datastax;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.pentaho.cassandra.util.CassandraUtils;
@@ -33,13 +34,16 @@ import org.pentaho.di.core.logging.LogChannelInterface;
 import org.pentaho.di.core.row.RowMetaInterface;
 import org.pentaho.di.core.row.ValueMetaInterface;
 import org.pentaho.di.core.util.Utils;
+import com.datastax.oss.driver.api.core.CqlSession;
 
-import com.datastax.driver.core.KeyspaceMetadata;
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.TableMetadata;
-import com.datastax.driver.core.querybuilder.QueryBuilder;
-import com.datastax.driver.core.schemabuilder.Create;
-import com.datastax.driver.core.schemabuilder.SchemaBuilder;
+import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
+import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
+import com.datastax.oss.driver.api.core.session.Session;
+import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
+import com.datastax.oss.driver.api.querybuilder.schema.CreateTable;
+import com.datastax.oss.driver.api.querybuilder.schema.CreateTableStart;
+import com.datastax.oss.driver.api.querybuilder.schema.OngoingPartitionKey;
+import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
 
 public class DriverKeyspace implements Keyspace {
 
@@ -50,7 +54,7 @@ public class DriverKeyspace implements Keyspace {
   public DriverKeyspace( DriverConnection conn, KeyspaceMetadata keyspace ) {
     this.meta = keyspace;
     this.conn = conn;
-    this.name = keyspace.getName();
+    this.name = keyspace.getName().toString();
   }
 
   @Override
@@ -91,7 +95,7 @@ public class DriverKeyspace implements Keyspace {
 
   @Override
   public List<String> getTableNamesCQL3() throws Exception {
-    return meta.getTables().stream().map( tab -> tab.getName() ).collect( Collectors.toList() );
+    return meta.getTables().keySet().stream().map( tab -> tab.toString() ).collect( Collectors.toList() );
   }
 
   @Override
@@ -101,32 +105,45 @@ public class DriverKeyspace implements Keyspace {
 
   @Override
   public ITableMetaData getTableMetaData( String familyName ) throws Exception {
-    TableMetadata tableMeta = meta.getTable( familyName );
-    return new TableMetaData( this, tableMeta );
+    Optional<TableMetadata> tableMeta = meta.getTable( familyName );
+    return tableMeta.map( tm -> new TableMetaData( this, tm ) ).orElse( null );
   }
 
   @Override
   public boolean createTable( String tableName, RowMetaInterface rowMeta, List<Integer> keyIndexes,
       String createTableWithClause, LogChannelInterface log ) throws Exception {
-    Create createTable = SchemaBuilder.createTable( tableName );
+    CreateTableStart createTableStart = SchemaBuilder.createTable( tableName );
+
+    OngoingPartitionKey ongoingPartitionKey = createTableStart;
+    CreateTable createTable = null;
+    // First add the partition keys. Needed to get to a CreateTable.
+    for ( int i = 0; i < rowMeta.size(); i++ ) {
+      if ( keyIndexes.contains( i ) ) {
+        ValueMetaInterface key = rowMeta.getValueMeta( i );
+        createTable = ongoingPartitionKey.withPartitionKey( key.getName(),
+                                                            CassandraUtils.getCassandraDataTypeFromValueMeta( key ) );
+        ongoingPartitionKey = createTable;
+      }
+    }
+    // add the rest of the columns
+    if ( createTable == null ) {
+      throw new IllegalArgumentException( "partition keys in keyIndexes are required" );
+    }
     for ( int i = 0; i < rowMeta.size(); i++ ) {
       if ( !keyIndexes.contains( i ) ) {
         ValueMetaInterface valueMeta = rowMeta.getValueMeta( i );
-        createTable.addColumn( valueMeta.getName(), CassandraUtils.getCassandraDataTypeFromValueMeta( valueMeta ) );
-      } else {
-        ValueMetaInterface key = rowMeta.getValueMeta( i );
-        createTable.addPartitionKey( key.getName(), CassandraUtils.getCassandraDataTypeFromValueMeta( key ) );
+        createTable.withColumn( valueMeta.getName(), CassandraUtils.getCassandraDataTypeFromValueMeta( valueMeta ) );
       }
     }
     if ( !Utils.isEmpty( createTableWithClause ) ) {
-      StringBuilder cql = new StringBuilder( createTable.toString() );
+      StringBuilder cql = new StringBuilder( createTable.asCql() );
       if ( !createTableWithClause.toLowerCase().trim().startsWith( "with" ) ) {
         cql.append( " WITH " );
       }
       cql.append( createTableWithClause );
       getSession().execute( cql.toString() );
     } else {
-      getSession().execute( createTable );
+      getSession().execute( createTable.asCql() );
     }
     return true;
   }
@@ -137,22 +154,22 @@ public class DriverKeyspace implements Keyspace {
   @Override
   public void updateTableCQL3( String tableName, RowMetaInterface rowMeta, List<Integer> keyIndexes,
       LogChannelInterface log ) throws Exception {
-    Session session = getSession();
+    CqlSession session = getSession();
     ITableMetaData table = getTableMetaData( tableName );
     for ( ValueMetaInterface valueMeta : rowMeta.getValueMetaList() ) {
       if ( !table.columnExistsInSchema( valueMeta.getName() ) ) {
-        session.execute( SchemaBuilder.alterTable( tableName ).alterColumn( valueMeta.getName() ).type(
-            CassandraUtils.getCassandraDataTypeFromValueMeta( valueMeta ) ) );
+        session.execute( SchemaBuilder.alterTable( tableName ).alterColumn( valueMeta.getName(),
+            CassandraUtils.getCassandraDataTypeFromValueMeta( valueMeta ) ).build() );
       }
     }
   }
 
   @Override
   public void truncateTable( String tableName, LogChannelInterface log ) throws Exception {
-    getSession().execute( QueryBuilder.truncate( tableName ) );
+    getSession().execute( QueryBuilder.truncate( tableName ).build() );
   }
 
-  protected Session getSession() {
+  protected CqlSession getSession() {
     return conn.getSession( name );
   }
 

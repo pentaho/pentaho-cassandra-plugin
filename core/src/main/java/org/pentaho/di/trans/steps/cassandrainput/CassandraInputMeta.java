@@ -68,7 +68,7 @@ import org.w3c.dom.Node;
  */
 @Step( id = "CassandraInput", image = "Cassandrain.svg", name = "Cassandra input",
     description = "Reads data from a Cassandra table",
-    documentationUrl = "Products/Cassandra_Input",
+    documentationUrl = "mk-95pdia003/pdi-transformation-steps/cassandra-input",
     categoryDescription = "Big Data" )
 @InjectionSupported( localizationPrefix = "CassandraInput.Injection." )
 public class CassandraInputMeta extends BaseStepMeta implements StepMetaInterface {

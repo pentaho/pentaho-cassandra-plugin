@@ -115,7 +115,10 @@ public class TableMetaData implements ITableMetaData {
   @Override
   public ValueMetaInterface getValueMeta( Selector selector ) {
     String name = selector.getColumnName();
-    return getValueMetaForColumn( name );
+    ValueMetaInterface valueMetaForColumn = getValueMetaForColumn( name );
+    if(selector.getAlias() != null)
+    	valueMetaForColumn.setName(selector.getAlias());
+	return valueMetaForColumn;
   }
 
   @Override

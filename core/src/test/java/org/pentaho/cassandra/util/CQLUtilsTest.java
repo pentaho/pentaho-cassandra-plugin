@@ -21,6 +21,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
@@ -213,7 +214,8 @@ public class CQLUtilsTest {
     assertNull( selector.getFunction() );
     assertFalse( selector.isFunction() );
   }
-
+  
+  
   @Test
   public void testSelectorForCQLColumnWithAlias_AliasShouldNotBeInLowerCase() {
     selectorExpression = "User as Alias";
@@ -433,5 +435,28 @@ public class CQLUtilsTest {
       }
     }
   }
+  @Test
+  public void testSelectorForCQLColumnWithFunction() {
+    selectorExpression = "max( User)";
+    expectedSelector = new Selector( "User", null, "MAX" );
+    isCql3 = false;
+    selector = CQLUtils.buildSelector( selectorExpression, isCql3 );
+    assertEquals( COLUMN_NAME_IS_INCORRECT, expectedSelector.getColumnName(), selector.getColumnName() );
+    assertEquals( expectedSelector.getAlias(), selector.getAlias() );
+    assertEquals( selector.getFunction(), expectedSelector.getFunction());
+    assertTrue( selector.isFunction() );
+  }
+  @Test
+  public void testSelectorForCQLColumnWithFunctionWithAlias() {
+    selectorExpression = "min( User) as test";
+    expectedSelector = new Selector( "User", "test", "MIN" );
+    isCql3 = false;
+    selector = CQLUtils.buildSelector( selectorExpression, isCql3 );
+    assertEquals( COLUMN_NAME_IS_INCORRECT, expectedSelector.getColumnName(), selector.getColumnName() );
+    assertEquals( expectedSelector.getAlias(), selector.getAlias() );
+    assertEquals( selector.getFunction(), expectedSelector.getFunction());
+    assertTrue( selector.isFunction() );
+  }
+
 
 }

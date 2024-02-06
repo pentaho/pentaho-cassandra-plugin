@@ -29,7 +29,7 @@ public enum CQLFunctions {
   TOKEN( false, "org.apache.cassandra.db.marshal.LongType" ), COUNT( false, "org.apache.cassandra.db.marshal.LongType" ), WRITETIME(
       false, "org.apache.cassandra.db.marshal.LongType" ), TTL( false, "org.apache.cassandra.db.marshal.Int32Type" ), DATEOF(
       true, "org.apache.cassandra.db.marshal.TimestampType" ), UNIXTIMESTAMPOF( true,
-      "org.apache.cassandra.db.marshal.LongType" );
+      "org.apache.cassandra.db.marshal.LongType" ), MAX(false, null), MIN(false,null);
 
   private final boolean isCaseSensitive;
   private final String validator;
@@ -74,6 +74,22 @@ public enum CQLFunctions {
       }
     }
     return null;
+  }
+  
+  public static boolean isTypedFunction(String input) {
+	  CQLFunctions function = getFromString(input);
+	  if(function == null)return false;
+	  boolean result = false;
+	  switch (function) {
+		case MIN:
+		case MAX:
+		result = true;
+		break;
+
+	default:
+		break;
+	}
+		return result;
   }
 
   private static boolean isFunction( CQLFunctions fs, String input ) {

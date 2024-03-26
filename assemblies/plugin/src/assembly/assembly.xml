@@ -36,7 +36,7 @@
 				<include>io.netty:netty-handler</include>
 				<include>io.netty:netty-transport</include>
 				<include>org.fusesource:sigar</include>
-				<include>org.yaml:snakeyaml</include>
+				<include>org.hitachivantara:safeyaml</include>
 				<include>com.clearspring.analytics:stream</include>
 				<include>net.sf.supercsv:super-csv</include>
 				<include>org.codehaus.jackson:jackson-core-asl</include>

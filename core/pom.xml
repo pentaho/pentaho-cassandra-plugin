@@ -13,6 +13,12 @@
   <packaging>jar</packaging>
   <name>Cassandra Plugin Core</name>
   <properties>
+    <maven-surefire-plugin.argLine>
+      --add-opens=java.base/java.math=ALL-UNNAMED
+      --add-opens=java.base/java.io=ALL-UNNAMED
+      --add-opens=java.base/java.lang.Object=ALL-UNNAMED
+      --add-opens=java.base/sun.nio.ch=ALL-UNNAMED
+    </maven-surefire-plugin.argLine>
   </properties>
   <dependencies>
     <!-- compile dependencies -->
@@ -122,11 +128,22 @@
     </dependency>
     <dependency>
       <groupId>org.mockito</groupId>
-      <artifactId>mockito-all</artifactId>
+      <artifactId>mockito-core</artifactId>
     </dependency>
     <dependency>
       <groupId>xml-apis</groupId>
       <artifactId>xml-apis</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>net.bytebuddy</groupId>
+      <artifactId>byte-buddy</artifactId>
+      <version>${byte-buddy.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>net.bytebuddy</groupId>
+      <artifactId>byte-buddy-agent</artifactId>
+      <version>${byte-buddy.version}</version>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 </project>

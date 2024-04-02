@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Hitachi Vantara.  All rights reserved.
+ * Copyright 2018-2024 Hitachi Vantara.  All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package org.pentaho.di.trans.steps.cassandrasstableoutput.writer;
 
 import org.apache.cassandra.io.sstable.CQLSSTableWriter;
 import org.junit.Test;
+import org.mockito.ArgumentMatchers;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.pentaho.di.core.row.RowMetaInterface;
@@ -33,10 +34,9 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.anyMapOf;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -77,7 +77,7 @@ public class CQL3SSTableWriterTest {
             checker.set( true );
             return null;
           }
-        } ).when( ssWriter ).addRow( anyMapOf( String.class, Object.class ) );
+      } ).when( ssWriter ).addRow( ArgumentMatchers.anyMap() );
       } catch ( Exception e ) {
         fail( e.toString() );
       }

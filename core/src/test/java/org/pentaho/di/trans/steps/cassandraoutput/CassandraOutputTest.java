@@ -2,7 +2,7 @@
  *
  * Pentaho Data Integration
  *
- * Copyright (C) 2002-2020 by Hitachi Vantara : http://www.pentaho.com
+ * Copyright (C) 2002-2024 by Hitachi Vantara : http://www.pentaho.com
  *
  *******************************************************************************
  *
@@ -23,15 +23,16 @@
 package org.pentaho.di.trans.steps.cassandraoutput;
 
 import org.junit.Test;
+import org.mockito.Mockito;
 import org.pentaho.cassandra.driver.datastax.DriverCQLRowHandler;
 import org.pentaho.cassandra.util.CassandraUtils;
 
 
 import java.util.Map;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -100,9 +101,9 @@ public class CassandraOutputTest {
     String ttlOption =  "None";
     int expectedValue = -1;
 
-    when( co.environmentSubstitute( anyString() ) ).thenReturn( ttlEnvironmentSubstituteValue );
+    when( co.environmentSubstitute( Mockito.<String>any() ) ).thenReturn( ttlEnvironmentSubstituteValue );
     when( co.m_meta.getTTLUnit() ).thenReturn( ttlOption );
-    when( co.m_opts.put( anyString(), anyString()) ).thenReturn( "dummy" );
+    when( co.m_opts.put( any(), any()) ).thenReturn( "dummy" );
 
 
     doCallRealMethod().when( co ).setTTLIfSpecified();
@@ -121,9 +122,9 @@ public class CassandraOutputTest {
     String ttlOption =  "Seconds";
     int expectedValue = 1;
 
-    when( co.environmentSubstitute( anyString() ) ).thenReturn( ttlEnvironmentSubstituteValue );
+    when( co.environmentSubstitute( Mockito.<String>any() ) ).thenReturn( ttlEnvironmentSubstituteValue );
     when( co.m_meta.getTTLUnit() ).thenReturn( ttlOption );
-    when( co.m_opts.put( anyString(), anyString()) ).thenReturn( "dummy" );
+    when( co.m_opts.put( any(), any()) ).thenReturn( "dummy" );
 
 
     doCallRealMethod().when( co ).setTTLIfSpecified();
@@ -142,9 +143,9 @@ public class CassandraOutputTest {
     String ttlOption =  "Minutes";
     int expectedValue = 60;
 
-    when( co.environmentSubstitute( anyString() ) ).thenReturn( ttlEnvironmentSubstituteValue );
+    when( co.environmentSubstitute( Mockito.<String>any() ) ).thenReturn( ttlEnvironmentSubstituteValue );
     when( co.m_meta.getTTLUnit() ).thenReturn( ttlOption );
-    when( co.m_opts.put( anyString(), anyString()) ).thenReturn( "dummy" );
+    when( co.m_opts.put( any(), any()) ).thenReturn( "dummy" );
 
 
     doCallRealMethod().when( co ).setTTLIfSpecified();
@@ -163,9 +164,9 @@ public class CassandraOutputTest {
     String ttlOption =  "Hours";
     int expectedValue = 3600;
 
-    when( co.environmentSubstitute( anyString() ) ).thenReturn( ttlEnvironmentSubstituteValue );
+    when( co.environmentSubstitute( Mockito.<String>any() ) ).thenReturn( ttlEnvironmentSubstituteValue );
     when( co.m_meta.getTTLUnit() ).thenReturn( ttlOption );
-    when( co.m_opts.put( anyString(), anyString()) ).thenReturn( "dummy" );
+    when( co.m_opts.put( any(), any()) ).thenReturn( "dummy" );
 
 
     doCallRealMethod().when( co ).setTTLIfSpecified();
@@ -184,9 +185,9 @@ public class CassandraOutputTest {
     String ttlOption =  "Days";
     int expectedValue = 86400;
 
-    when( co.environmentSubstitute( anyString() ) ).thenReturn( ttlEnvironmentSubstituteValue );
+    when( co.environmentSubstitute( Mockito.<String>any() ) ).thenReturn( ttlEnvironmentSubstituteValue );
     when( co.m_meta.getTTLUnit() ).thenReturn( ttlOption );
-    when( co.m_opts.put( anyString(), anyString()) ).thenReturn( "dummy" );
+    when( co.m_opts.put( any(), any()) ).thenReturn( "dummy" );
 
 
     doCallRealMethod().when( co ).setTTLIfSpecified();

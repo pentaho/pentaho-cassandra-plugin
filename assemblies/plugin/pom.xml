@@ -212,8 +212,8 @@
 			</exclusions>
 		</dependency>
 		<dependency>
-			<groupId>org.yaml</groupId>
-			<artifactId>snakeyaml</artifactId>
+			<groupId>org.hitachivantara</groupId>
+			<artifactId>safeyaml</artifactId>
 			<scope>compile</scope>
 			<exclusions>
 				<exclusion>

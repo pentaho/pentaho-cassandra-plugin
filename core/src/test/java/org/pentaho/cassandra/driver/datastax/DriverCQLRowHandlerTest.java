@@ -1,6 +1,6 @@
 /*******************************************************************************
  *
- * Copyright (C) 2018 by Hitachi Vantara : http://www.pentaho.com
+ * Copyright (C) 2018-2024 by Hitachi Vantara : http://www.pentaho.com
  *
  *******************************************************************************
  *
@@ -20,22 +20,6 @@
 
 package org.pentaho.cassandra.driver.datastax;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
-
-import org.junit.Test;
-import org.mockito.ArgumentMatcher;
-import org.pentaho.di.core.logging.LogChannelInterface;
-import org.pentaho.di.core.row.RowMeta;
-import org.pentaho.di.core.row.RowMetaInterface;
-import org.pentaho.di.core.row.value.ValueMetaInteger;
-import org.pentaho.di.core.row.value.ValueMetaNumber;
-import org.pentaho.di.core.row.value.ValueMetaString;
-import org.pentaho.di.core.row.value.ValueMetaDate;
-import org.pentaho.di.trans.step.StepInterface;
-
 import com.datastax.driver.core.ColumnDefinitions;
 import com.datastax.driver.core.ConsistencyLevel;
 import com.datastax.driver.core.DataType;
@@ -44,16 +28,33 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.Statement;
+import org.junit.Test;
+import org.mockito.ArgumentMatcher;
+import org.pentaho.di.core.logging.LogChannelInterface;
+import org.pentaho.di.core.row.RowMeta;
+import org.pentaho.di.core.row.RowMetaInterface;
+import org.pentaho.di.core.row.value.ValueMetaDate;
+import org.pentaho.di.core.row.value.ValueMetaInteger;
+import org.pentaho.di.core.row.value.ValueMetaNumber;
+import org.pentaho.di.core.row.value.ValueMetaString;
+import org.pentaho.di.trans.step.StepInterface;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-import static org.mockito.Matchers.argThat;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
+
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
 
 public class DriverCQLRowHandlerTest {
 
@@ -178,11 +179,10 @@ public class DriverCQLRowHandlerTest {
     rowHandler.batchInsert( rowMeta, batch, familyMeta, null, true, null );
 
     verify( session, times( 1 ) ).execute( argThat( new ArgumentMatcher<Statement>() {
-      @Override
-      public boolean matches( Object argument ) {
-        Statement stmt = (Statement) argument;
-        return stmt.toString().equals( "BEGIN UNLOGGED BATCH INSERT INTO ks.\"tab tab\" (id,\"a spaced name\") "
-            + "VALUES (1,'a');INSERT INTO ks.\"tab tab\" (id,\"a spaced name\") VALUES (2,'b');APPLY BATCH;" );
+
+      @Override public boolean matches( Statement statement ) {
+        return statement.toString().equals( "BEGIN UNLOGGED BATCH INSERT INTO ks.\"tab tab\" (id,\"a spaced name\") "
+          + "VALUES (1,'a');INSERT INTO ks.\"tab tab\" (id,\"a spaced name\") VALUES (2,'b');APPLY BATCH;" );
       }
     } ) );
   }
@@ -214,15 +214,14 @@ public class DriverCQLRowHandlerTest {
     rowHandler.batchInsert( rowMeta, batch, familyMeta, "TWO", false, null );
 
     verify( session, times( 1 ) ).execute( argThat( new ArgumentMatcher<Statement>() {
-      @Override
-      public boolean matches( Object argument ) {
-        Statement stmt = (Statement) argument;
-        return stmt.toString().equals( "BEGIN BATCH INSERT INTO ks.tab (there1,there2) "
-            + "VALUES (1,3);INSERT INTO ks.tab (there1,there2) VALUES (5,7);APPLY BATCH;" )
-            && stmt.getConsistencyLevel().equals( ConsistencyLevel.TWO );
+      @Override public boolean matches( Statement statement ) {
+        return statement.toString().equals( "BEGIN BATCH INSERT INTO ks.tab (there1,there2) "
+          + "VALUES (1,3);INSERT INTO ks.tab (there1,there2) VALUES (5,7);APPLY BATCH;" )
+          && statement.getConsistencyLevel().equals( ConsistencyLevel.TWO );
       }
     } ) );
   }
+
 
   @Test
   public void testQueryRowsTimestamp() {

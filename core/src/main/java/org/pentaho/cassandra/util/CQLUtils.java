@@ -59,7 +59,7 @@ public class CQLUtils {
 
   private enum SpecificNames {
 
-    COUNT( "count", "count(*)", "count(1)" );
+    COUNT( "count", "count(*)", "count(1)" );	  
 
     List<String> variants;
 
@@ -71,18 +71,19 @@ public class CQLUtils {
       return variants;
     }
 
-    private static final Map<String, String> SPECIFIC_NAMES = new HashMap<>();
+    private static final Map<String, SpecificNames> SPECIFIC_NAMES = new HashMap<>();
     static {
       for ( SpecificNames sName : SpecificNames.values() ) {
         for ( String variants : sName.getVariants() ) {
-          SPECIFIC_NAMES.put( variants.toUpperCase(), sName.name() );
+          SPECIFIC_NAMES.put( variants.toUpperCase(), sName );
         }
       }
     }
 
-    private static String getName( String value ) {
+    private static SpecificNames getName( String value ) {
       return SPECIFIC_NAMES.get( value.toUpperCase() );
     }
+    
   };
 
   private static ArrayList<Selector> getSelectors( String selectExpression, boolean isCql3 ) {
@@ -273,12 +274,19 @@ public class CQLUtils {
   }
 
   private static String getGeneralVariantForSpecificNames( String sName ) {
-    String gName = null;
+    String gName = sName;
     if ( sName != null ) {
-      String name = SpecificNames.getName( sName );
-      gName = name != null ? name : sName;
-    }
+    	SpecificNames specificNames = SpecificNames.getName( gName );
+    	if(specificNames != null) return specificNames.name();
+    	if(isFunction(sName) && CQLFunctions.isTypedFunction(getFunction(gName)))
+    		return extractColumnName(sName);
+    } 
     return gName;
+  }
+  
+  private static  String extractColumnName(String sName) {
+	  sName = sName.substring(sName.indexOf(OPEN_BRACKET)+1, sName.indexOf(CLOSE_BRACKET));
+	  return sName.trim();
   }
 
   private static String getNormalizedForCql3Name( String input, boolean isCql3 ) {
@@ -296,5 +304,4 @@ public class CQLUtils {
     }
     return result;
   }
-
 }

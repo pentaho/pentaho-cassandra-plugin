@@ -252,6 +252,7 @@
 		<dependency>
 			<groupId>org.codehaus.jackson</groupId>
 			<artifactId>jackson-mapper-asl</artifactId>
+			<version>${codehaus-jackson.version}</version>
 			<scope>compile</scope>
 			<exclusions>
 				<exclusion>

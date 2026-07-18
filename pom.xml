@@ -27,7 +27,7 @@
     <swt.version>4.6</swt.version>
     <cassandra-driver.version>3.11.3</cassandra-driver.version>
     <mockito.version>5.10.0</mockito.version>
-    <apache.commons.lang3.version>3.0</apache.commons.lang3.version>
+    <apache.commons.lang3.version>3.18.0</apache.commons.lang3.version>
     <commons-lang.version>2.6</commons-lang.version>
     <jface.version>3.3.0-I20070606-0010</jface.version>
     <commons-xul.version>10.2.0.0-SNAPSHOT</commons-xul.version>
